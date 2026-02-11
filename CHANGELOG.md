@@ -9,7 +9,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Changed
 
-- **Default API URL**: `DEFAULT_API_BASE_URL` y `DEFAULT_TELEMETRY_ENDPOINT` usan ahora `https://api.trymellonauth.com` (antes `https://api.trymellon.com`). Documentación y ejemplos del SDK actualizados al mismo dominio.
+- **Default API URL**: `DEFAULT_API_BASE_URL` and `DEFAULT_TELEMETRY_ENDPOINT` now use `https://api.trymellonauth.com` (was `https://api.trymellon.com`). SDK docs and examples updated to the same domain.
+- **README**: Full translation to English; badge URLs updated to `ResakaGit/trymellon-js`.
+- **package.json**: `repository.url` set to `https://github.com/ResakaGit/trymellon-js.git`.
 
 ---
 

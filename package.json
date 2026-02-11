@@ -75,7 +75,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/trymellon/js-sdk.git"
+    "url": "https://github.com/ResakaGit/trymellon-js.git"
   },
   "engines": {
     "node": ">=18.0.0"

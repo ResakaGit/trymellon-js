@@ -1,39 +1,39 @@
 # @trymellon/js
 
 [![npm version](https://img.shields.io/npm/v/@trymellon/js)](https://www.npmjs.com/package/@trymellon/js)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/trymellon/js-sdk/ci.yml)](https://github.com/trymellon/js-sdk/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/trymellon/js-sdk)](https://codecov.io/gh/trymellon/js-sdk)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ResakaGit/trymellon-js/ci.yml)](https://github.com/ResakaGit/trymellon-js/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/ResakaGit/trymellon-js)](https://codecov.io/gh/ResakaGit/trymellon-js)
 
-SDK oficial de **TryMellon** para integrar autenticación passwordless con **Passkeys / WebAuthn** desde aplicaciones web.
+Official **TryMellon** SDK for integrating **passwordless authentication** with **Passkeys / WebAuthn** in web applications.
 
-Este SDK abstrae completamente WebAuthn y permite autenticar usuarios sin passwords, enviando el resultado a tu backend para que crees tu propia sesión.
-
----
-
-## ¿Qué hace este SDK?
-
-* ✅ Maneja el flujo completo de Passkeys en el browser
-* ✅ Se comunica directamente con TryMellon API
-* ✅ Devuelve un `session_token` verificable por tu backend
-* ✅ Maneja conversiones Base64URL ↔ ArrayBuffer automáticamente
-* ✅ Incluye sistema de eventos para mejorar UX
-* ✅ Soporta fallback por email (OTP) cuando WebAuthn no está disponible
-* ✅ Reintentos automáticos con backoff exponencial
-* ✅ Validación exhaustiva de inputs y respuestas
+This SDK fully abstracts WebAuthn and lets you authenticate users without passwords, returning a result your backend can use to create your own session.
 
 ---
 
-## ¿Qué NO hace?
+## What does this SDK do?
 
-* ❌ No crea sesiones de usuario (tu backend lo hace)
-* ❌ No reemplaza tu sistema de auth
-* ❌ No guarda usuarios finales
-* ❌ No expone APIs WebAuthn directamente
-* ❌ No maneja cookies ni almacenamiento local
+* ✅ Handles the full Passkeys flow in the browser
+* ✅ Communicates directly with the TryMellon API
+* ✅ Returns a `session_token` your backend can verify
+* ✅ Handles Base64URL ↔ ArrayBuffer conversion automatically
+* ✅ Event system for better UX (spinners, analytics)
+* ✅ Email (OTP) fallback when WebAuthn is not available
+* ✅ Automatic retries with exponential backoff
+* ✅ Thorough validation of inputs and API responses
 
 ---
 
-## Instalación
+## What does it NOT do?
+
+* ❌ Does not create user sessions (your backend does)
+* ❌ Does not replace your auth system
+* ❌ Does not store end users
+* ❌ Does not expose raw WebAuthn APIs
+* ❌ Does not manage cookies or local storage
+
+---
+
+## Installation
 
 ```bash
 npm install @trymellon/js
@@ -41,15 +41,15 @@ npm install @trymellon/js
 
 ---
 
-## Requisitos
+## Requirements
 
-* Navegador con soporte WebAuthn (Chrome, Safari, Firefox, Edge)
-* HTTPS (obligatorio excepto `localhost`)
-* Una Application creada en TryMellon con el origin configurado
+* Browser with WebAuthn support (Chrome, Safari, Firefox, Edge)
+* HTTPS (required except on `localhost`)
+* A TryMellon Application with the correct origin configured
 
 ---
 
-## Quickstart (5 minutos)
+## Quickstart (5 minutes)
 
 ```bash
 npm install @trymellon/js
@@ -59,17 +59,17 @@ npm install @trymellon/js
 import { TryMellon } from '@trymellon/js'
 
 const client = new TryMellon({
-  appId: 'app_live_xxxx',   // De tu dashboard TryMellon
-  publishableKey: 'key_live_xxxx', // API Key de la aplicación
+  appId: 'app_live_xxxx',   // From your TryMellon dashboard
+  publishableKey: 'key_live_xxxx', // Application API key
 })
 
-// Registrar passkey (recomendado: camelCase en opciones)
+// Register passkey (camelCase recommended in options)
 const registerResult = await client.register({ externalUserId: 'user_123' })
 if (registerResult.ok) {
   console.log('Session token:', registerResult.value.session_token)
 }
 
-// Autenticar
+// Authenticate
 const authResult = await client.authenticate({ externalUserId: 'user_123' })
 if (authResult.ok) {
   console.log('Session token:', authResult.value.session_token)
@@ -78,52 +78,52 @@ if (authResult.ok) {
 
 ---
 
-## Inicialización
+## Initialization
 
 ```typescript
 import { TryMellon } from '@trymellon/js'
 
 const client = new TryMellon({
-  appId: 'app_live_xxxx',     // Requerido: identificador de la aplicación (tenant)
-  publishableKey: 'key_live_xxxx',   // Requerido: API Key para autenticación
-  apiBaseUrl: 'https://api.trymellonauth.com', // opcional
-  timeoutMs: 30000,          // opcional, default: 30000
-  maxRetries: 3,             // opcional
-  retryDelayMs: 1000,        // opcional
+  appId: 'app_live_xxxx',     // Required: application (tenant) identifier
+  publishableKey: 'key_live_xxxx',   // Required: API key for authentication
+  apiBaseUrl: 'https://api.trymellonauth.com', // optional
+  timeoutMs: 30000,          // optional, default: 30000
+  maxRetries: 3,             // optional
+  retryDelayMs: 1000,        // optional
 })
 ```
 
-**Opciones de configuración:**
+**Configuration options:**
 
-- `appId` (requerido): Identificador de tu aplicación en TryMellon. Se envía en header `X-App-Id`.
-- `publishableKey` (requerido): API Key pública para autenticación. Se envía en header `Authorization: Bearer <publishableKey>`.
-- `apiBaseUrl` (opcional): URL base de la API. Default: `'https://api.trymellonauth.com'`
-- `timeoutMs` (opcional): Timeout para requests HTTP. Rango: `1000` - `300000`. Default: `30000`
-- `maxRetries` (opcional): Reintentos para errores de red. Rango: `0` - `10`. Default: `3`
-- `retryDelayMs` (opcional): Delay entre reintentos. Rango: `100` - `10000`. Default: `1000`
-- `logger` (opcional): Implementación de `Logger` para correlación de requests (p. ej. `requestId` en logs y en `error.details`).
+- `appId` (required): Your application identifier in TryMellon. Sent in header `X-App-Id`.
+- `publishableKey` (required): Public API key for authentication. Sent in header `Authorization: Bearer <publishableKey>`.
+- `apiBaseUrl` (optional): API base URL. Default: `'https://api.trymellonauth.com'`
+- `timeoutMs` (optional): HTTP request timeout. Range: `1000` - `300000`. Default: `30000`
+- `maxRetries` (optional): Retries for network errors. Range: `0` - `10`. Default: `3`
+- `retryDelayMs` (optional): Delay between retries. Range: `100` - `10000`. Default: `1000`
+- `logger` (optional): `Logger` implementation for request correlation (e.g. `requestId` in logs and `error.details`).
 
-**Opciones de registro/autenticación:** Se aceptan `externalUserId` (camelCase, recomendado) o `external_user_id` (snake_case). El SDK normaliza internamente a snake_case para la API.
+**Register/authenticate options:** Both `externalUserId` (camelCase, recommended) and `external_user_id` (snake_case) are accepted. The SDK normalizes to snake_case for the API.
 
 ---
 
-## Uso básico
+## Basic usage
 
-### Verificar soporte de WebAuthn
+### Check WebAuthn support
 
 ```typescript
 if (TryMellon.isSupported()) {
-  // WebAuthn está disponible, usar passkeys
+  // WebAuthn available, use passkeys
 } else {
-  // Usar fallback por email
+  // Use email fallback
 }
 ```
 
-### Registro de Passkey
+### Passkey registration
 
 ```typescript
 const result = await client.register({
-  externalUserId: 'user_123'  // recomendado: camelCase. También acepta external_user_id
+  externalUserId: 'user_123'  // recommended: camelCase. external_user_id also accepted
 })
 
 if (!result.ok) {
@@ -131,23 +131,23 @@ if (!result.ok) {
   return
 }
 
-// Enviar session_token al backend
+// Send session_token to your backend
 await fetch('/api/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
-    sessionToken: result.value.session_token 
+  body: JSON.stringify({
+    sessionToken: result.value.session_token
   })
 })
 ```
 
-**Opciones de registro:**
+**Registration options:**
 
-- `externalUserId` o `external_user_id` (requerido uno de los dos): ID único del usuario en tu sistema. Se recomienda camelCase.
-- `authenticatorType` (opcional): `'platform'` (dispositivo) o `'cross-platform'` (USB/NFC)
-- `signal` (opcional): `AbortSignal` para cancelar la operación
+- `externalUserId` or `external_user_id` (one required): Unique user ID in your system. camelCase recommended.
+- `authenticatorType` (optional): `'platform'` (device) or `'cross-platform'` (USB/NFC)
+- `signal` (optional): `AbortSignal` to cancel the operation
 
-**Respuesta:**
+**Response:**
 
 ```typescript
 {
@@ -164,15 +164,15 @@ await fetch('/api/login', {
 }
 ```
 
-### Autenticación con Passkey
+### Passkey authentication
 
 ```typescript
 const result = await client.authenticate({
   external_user_id: 'user_123',
-  hint: 'user@example.com'  // opcional, mejora la UX
+  hint: 'user@example.com'  // optional, improves UX
 })
 
-// Enviar al backend
+// Send to backend
 await fetch('/api/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -182,13 +182,13 @@ await fetch('/api/login', {
 })
 ```
 
-**Opciones de autenticación:**
+**Authentication options:**
 
-- `externalUserId` o `external_user_id` (requerido uno de los dos): ID del usuario. Recomendado camelCase.
-- `hint` (opcional): Hint para la passkey (ej: email)
-- `signal` (opcional): AbortSignal para cancelar
+- `externalUserId` or `external_user_id` (one required): User ID. camelCase recommended.
+- `hint` (optional): Hint for the passkey (e.g. email)
+- `signal` (optional): AbortSignal to cancel
 
-**Respuesta:**
+**Response:**
 
 ```typescript
 {
@@ -208,18 +208,18 @@ await fetch('/api/login', {
 }
 ```
 
-### Validar sesión
+### Validate session
 
 ```typescript
 const validationResult = await client.validateSession('session_token_123')
 
 if (validationResult.ok && validationResult.value.valid) {
   const v = validationResult.value
-  console.log('Usuario:', v.external_user_id, 'Tenant:', v.tenant_id, 'App:', v.app_id)
+  console.log('User:', v.external_user_id, 'Tenant:', v.tenant_id, 'App:', v.app_id)
 }
 ```
 
-**Respuesta:**
+**Response:**
 
 ```typescript
 {
@@ -231,22 +231,22 @@ if (validationResult.ok && validationResult.value.valid) {
 }
 ```
 
-### Obtener estado del cliente
+### Get client status
 
 ```typescript
 const status = await client.getStatus()
 
 if (status.isPasskeySupported) {
-  console.log('Passkeys disponibles')
+  console.log('Passkeys available')
   if (status.platformAuthenticatorAvailable) {
-    console.log('Authenticator platform disponible')
+    console.log('Platform authenticator available')
   }
 } else {
-  console.log('Usar fallback')
+  console.log('Use fallback')
 }
 ```
 
-**Respuesta:**
+**Response:**
 
 ```typescript
 {
@@ -258,19 +258,19 @@ if (status.isPasskeySupported) {
 
 ---
 
-## Sistema de eventos
+## Event system
 
-El SDK emite eventos para mejorar la UX y permitir analytics:
+The SDK emits events for better UX and analytics:
 
 ```typescript
-// Suscribirse a eventos
+// Subscribe to events
 client.on('start', (payload) => {
-  console.log('Operación iniciada:', payload.operation)  // 'register' | 'authenticate'
+  console.log('Operation started:', payload.operation)  // 'register' | 'authenticate'
   showSpinner()
 })
 
 client.on('success', (payload) => {
-  console.log('Operación exitosa:', payload.operation)
+  console.log('Operation succeeded:', payload.operation)
   hideSpinner()
   showSuccessMessage()
 })
@@ -281,51 +281,50 @@ client.on('error', (payload) => {
   showError(payload.error.message)
 })
 
-// Desuscribirse
+// Unsubscribe
 const unsubscribe = client.on('start', handler)
 unsubscribe()
 ```
 
-**Eventos disponibles:**
+**Available events:**
 
-- `'start'`: Operación iniciada (`register` o `authenticate`)
-- `'success'`: Operación completada exitosamente
-- `'error'`: Error durante la operación
-- `'cancelled'`: Operación cancelada (futuro)
+- `'start'`: Operation started (`register` or `authenticate`)
+- `'success'`: Operation completed successfully
+- `'error'`: Error during the operation
+- `'cancelled'`: Operation cancelled (future)
 
 ---
 
-## Fallback por email (OTP)
+## Email fallback (OTP)
 
-Cuando WebAuthn no está disponible, puedes usar el fallback por email. Todos los métodos devuelven `Result<T, TryMellonError>`:
+When WebAuthn is not available, you can use the email fallback. All methods return `Result<T, TryMellonError>`:
 
 ```typescript
-// 1. Enviar código OTP por email
+// 1. Send OTP code by email
 const startResult = await client.fallback.email.start({ userId: 'user_123' })
 if (!startResult.ok) { console.error(startResult.error); return }
 
-// 2. Solicitar código al usuario
-const code = prompt('Ingresa el código enviado por email:')
+// 2. Ask user for the code
+const code = prompt('Enter the code sent by email:')
 
-// 3. Verificar código
+// 3. Verify code
 const verifyResult = await client.fallback.email.verify({
   userId: 'user_123',
   code: code
 })
 if (!verifyResult.ok) { console.error(verifyResult.error); return }
 
-// 4. Enviar sessionToken al backend
+// 4. Send sessionToken to backend
 await fetch('/api/login', {
   method: 'POST',
   body: JSON.stringify({ sessionToken: verifyResult.value.sessionToken })
 })
 ```
 
-**Flujo completo con fallback:**
+**Full flow with fallback:**
 
 ```typescript
 async function authenticateUser(userId: string) {
-  // Verificar soporte
   if (!TryMellon.isSupported()) {
     return await authenticateWithEmail(userId)
   }
@@ -341,7 +340,7 @@ async function authenticateUser(userId: string) {
 async function authenticateWithEmail(userId: string) {
   const startRes = await client.fallback.email.start({ userId })
   if (!startRes.ok) return startRes
-  const code = prompt('Ingresa el código enviado por email:')
+  const code = prompt('Enter the code sent by email:')
   return await client.fallback.email.verify({ userId, code })
 }
 ```
@@ -350,7 +349,7 @@ async function authenticateWithEmail(userId: string) {
 
 ## Result type
 
-El SDK exporta el tipo `Result<T, E>` y las funciones `ok(value)` y `err(error)` para tipado y construcción de resultados (útil en tests o utilidades):
+The SDK exports the `Result<T, E>` type and the `ok(value)` and `err(error)` helpers for typing and building results (useful in tests or utilities):
 
 ```typescript
 import { Result, ok, err } from '@trymellon/js'
@@ -361,9 +360,9 @@ if (result.ok) console.log(result.value.id)
 
 ---
 
-## Manejo de errores
+## Error handling
 
-El SDK devuelve `Result<T, TryMellonError>`: comprueba `result.ok` y en caso de error usa `result.error.code`:
+The SDK returns `Result<T, TryMellonError>`: check `result.ok` and on error use `result.error.code`:
 
 ```typescript
 import { isTryMellonError } from '@trymellon/js'
@@ -374,7 +373,7 @@ if (!result.ok) {
   const error = result.error
   switch (error.code) {
     case 'USER_CANCELLED':
-      console.log('Usuario canceló la operación')
+      console.log('User cancelled the operation')
       break
     case 'NOT_SUPPORTED':
       await client.fallback.email.start({ userId: 'user_123' })
@@ -383,10 +382,10 @@ if (!result.ok) {
       await client.register({ externalUserId: 'user_123' })
       break
     case 'NETWORK_FAILURE':
-      console.error('Error de red:', error.details)
+      console.error('Network error:', error.details)
       break
     case 'TIMEOUT':
-      console.error('Operación expiró')
+      console.error('Operation timed out')
       break
     default:
       console.error('Error:', error.code, error.message)
@@ -394,33 +393,33 @@ if (!result.ok) {
   return
 }
 
-// result.value contiene session_token, user, etc.
+// result.value contains session_token, user, etc.
 ```
 
-**Códigos de error:**
+**Error codes:**
 
-| Código | Descripción |
-|--------|-------------|
-| `NOT_SUPPORTED` | WebAuthn no está disponible en este entorno |
-| `USER_CANCELLED` | Usuario canceló la operación |
-| `PASSKEY_NOT_FOUND` | No se encontró passkey para el usuario |
-| `SESSION_EXPIRED` | Sesión expirada |
-| `NETWORK_FAILURE` | Error de red (con reintentos automáticos) |
-| `INVALID_ARGUMENT` | Argumento inválido en configuración o métodos |
-| `TIMEOUT` | Operación expiró |
-| `ABORTED` | Operación abortada por AbortSignal |
-| `UNKNOWN_ERROR` | Error desconocido |
+| Code | Description |
+|------|-------------|
+| `NOT_SUPPORTED` | WebAuthn not available in this environment |
+| `USER_CANCELLED` | User cancelled the operation |
+| `PASSKEY_NOT_FOUND` | No passkey found for the user |
+| `SESSION_EXPIRED` | Session expired |
+| `NETWORK_FAILURE` | Network error (with automatic retries) |
+| `INVALID_ARGUMENT` | Invalid argument in config or method call |
+| `TIMEOUT` | Operation timed out |
+| `ABORTED` | Operation aborted via AbortSignal |
+| `UNKNOWN_ERROR` | Unknown error |
 
 ---
 
-## Cancelación de operaciones
+## Cancelling operations
 
-Puedes cancelar operaciones usando `AbortSignal`:
+You can cancel operations with `AbortSignal`:
 
 ```typescript
 const controller = new AbortController()
 
-// Cancelar después de 10 segundos
+// Cancel after 10 seconds
 setTimeout(() => controller.abort(), 10000)
 
 const result = await client.register({
@@ -428,22 +427,22 @@ const result = await client.register({
   signal: controller.signal
 })
 if (!result.ok && result.error.code === 'ABORTED') {
-  console.log('Operación cancelada')
+  console.log('Operation cancelled')
 }
 ```
 
 ---
 
-## Backend del cliente
+## Client backend
 
-Tu backend debe validar el `session_token` con TryMellon y crear su propia sesión:
+Your backend must validate the `session_token` with TryMellon and create its own session:
 
 ```typescript
 // POST /api/login
 POST https://api.trymellonauth.com/v1/sessions/validate
 Authorization: Bearer {session_token}
 
-// Respuesta de TryMellon
+// TryMellon response
 {
   valid: true,
   user_id: string,
@@ -453,103 +452,102 @@ Authorization: Bearer {session_token}
 }
 ```
 
-Luego crea tu propia sesión en tu sistema.
+Then create your own session in your system.
 
 ---
 
-## Seguridad
+## Security
 
-* ✅ WebAuthn nativo del navegador (no hay criptografía del lado del cliente)
-* ✅ Challenges con TTL corto generados por TryMellon
-* ✅ Protección contra replay attacks (counters automáticos)
-* ✅ El SDK nunca maneja secretos ni claves privadas
-* ✅ Validación exhaustiva de inputs y respuestas de API
-* ✅ Manejo robusto de errores con tipos seguros
-* ✅ Limpieza garantizada de recursos (timeouts, signals)
-* ✅ Origin validation automática
-
----
-
-## Compatibilidad
-
-| Browser | Soporte WebAuthn | Soporte Passkeys |
-|---------|------------------|------------------|
-| Chrome  | ✅                | ✅                |
-| Safari  | ✅                | ✅                |
-| Firefox | ✅                | ✅                |
-| Edge    | ✅                | ✅                |
-
-**Requisitos:**
-- HTTPS (obligatorio excepto `localhost`)
-- Navegador moderno con soporte WebAuthn
+* ✅ Native browser WebAuthn (no client-side cryptography)
+* ✅ Short-lived challenges generated by TryMellon
+* ✅ Replay attack protection (automatic counters)
+* ✅ SDK never handles secrets or private keys
+* ✅ Thorough validation of inputs and API responses
+* ✅ Robust error handling with typed errors
+* ✅ Guaranteed cleanup of resources (timeouts, signals)
+* ✅ Automatic origin validation
 
 ---
 
-## Características
+## Compatibility
 
-* ✅ **Zero runtime dependencies** - Sin dependencias externas en runtime
-* ✅ **TypeScript first** - Tipos completos y strict mode
-* ✅ **Framework agnostic** - Funciona con React, Vue, Angular, Vanilla JS, etc.
-* ✅ **Reintentos automáticos** - Backoff exponencial para errores transitorios
-* ✅ **Validación exhaustiva** - Validación de inputs y respuestas de API
-* ✅ **Manejo robusto de errores** - Errores tipados y descriptivos
-* ✅ **Eventos para UX** - Sistema de eventos para spinners y analytics
-* ✅ **Fallback por email** - OTP por email cuando WebAuthn no está disponible
-* ✅ **Cancelación de operaciones** - Soporte para AbortSignal
-* ✅ **Detección automática** - Origin y soporte WebAuthn detectados automáticamente
+| Browser | WebAuthn support | Passkeys support |
+|---------|-------------------|-------------------|
+| Chrome  | ✅                 | ✅                |
+| Safari  | ✅                 | ✅                |
+| Firefox | ✅                 | ✅                |
+| Edge    | ✅                 | ✅                |
+
+**Requirements:**
+- HTTPS (required except on `localhost`)
+- Modern browser with WebAuthn support
+
+---
+
+## Features
+
+* ✅ **Zero runtime dependencies** – No external runtime dependencies
+* ✅ **TypeScript first** – Full types and strict mode
+* ✅ **Framework agnostic** – Works with React, Vue, Angular, Vanilla JS, etc.
+* ✅ **Automatic retries** – Exponential backoff for transient errors
+* ✅ **Thorough validation** – Input and API response validation
+* ✅ **Robust error handling** – Typed, descriptive errors
+* ✅ **Events for UX** – Event system for spinners and analytics
+* ✅ **Email fallback** – OTP by email when WebAuthn is unavailable
+* ✅ **Operation cancellation** – AbortSignal support
+* ✅ **Automatic detection** – Origin and WebAuthn support detected automatically
 
 ---
 
 ## Troubleshooting
 
-### WebAuthn no está disponible
+### WebAuthn not available
 
-Si `TryMellon.isSupported()` retorna `false`:
+If `TryMellon.isSupported()` returns `false`:
 
-- Verifica que estás usando HTTPS (requerido excepto en `localhost`)
-- Verifica que tu navegador soporta WebAuthn (Chrome, Safari, Firefox, Edge)
-- Usa el fallback por email: `client.fallback.email.start({ userId })`
+- Ensure you are on HTTPS (required except on `localhost`)
+- Ensure your browser supports WebAuthn (Chrome, Safari, Firefox, Edge)
+- Use the email fallback: `client.fallback.email.start({ userId })`
 
-### Usuario canceló la operación
+### User cancelled the operation
 
-Si recibes el error `USER_CANCELLED`:
+If you get `USER_CANCELLED`:
 
-- Esto es normal cuando el usuario cierra el prompt
-- No es un error crítico, simplemente informa al usuario
-- Puedes reintentar la operación si es necesario
+- This is normal when the user dismisses the prompt
+- Not a critical error; inform the user and optionally retry
 
-### Passkey no encontrada
+### Passkey not found
 
-Si recibes el error `PASSKEY_NOT_FOUND`:
+If you get `PASSKEY_NOT_FOUND`:
 
-- El usuario no tiene una passkey registrada
-- Ofrece la opción de registrar una nueva passkey: `client.register()`
-- O usa el fallback por email: `client.fallback.email.start()`
+- The user has no registered passkey
+- Offer to register: `client.register()`
+- Or use email fallback: `client.fallback.email.start()`
 
-### Errores de red
+### Network errors
 
-Si recibes el error `NETWORK_FAILURE`:
+If you get `NETWORK_FAILURE`:
 
-- Verifica tu conexión a internet
-- Verifica que `apiBaseUrl` sea una URL válida
-- El SDK reintenta automáticamente con backoff exponencial para:
-  - Errores HTTP 5xx (errores del servidor)
-  - Errores HTTP 429 (rate limiting)
-  - Errores de red transitorios
-- Puedes configurar `maxRetries` y `retryDelayMs` para ajustar el comportamiento
+- Check your internet connection
+- Ensure `apiBaseUrl` is a valid URL
+- The SDK retries automatically with exponential backoff for:
+  - HTTP 5xx (server errors)
+  - HTTP 429 (rate limiting)
+  - Transient network errors
+- You can configure `maxRetries` and `retryDelayMs` to tune behavior
 
 ---
 
-## Seguridad: CSP y SRI
+## Security: CSP and SRI
 
 ### Content-Security-Policy (CSP)
 
-Si cargas el SDK vía `<script>` o restringes políticas de contenido, incluye en tu `Content-Security-Policy`:
+If you load the SDK via `<script>` or enforce a content security policy, include in your `Content-Security-Policy`:
 
-- **script-src:** el origen del script (ej. `https://cdn.trymellon.com` o `'self'`) y `'unsafe-inline'` solo si usas inline scripts; para el SDK en bundle no hace falta `unsafe-inline`.
-- **connect-src:** el origen de la API TryMellon (ej. `https://api.trymellonauth.com`) para que las peticiones de registro/autenticación no se bloqueen.
+- **script-src:** The script origin (e.g. `https://cdn.trymellon.com` or `'self'`) and `'unsafe-inline'` only if you use inline scripts; not needed for a bundled SDK.
+- **connect-src:** The TryMellon API origin (e.g. `https://api.trymellonauth.com`) so register/authenticate requests are not blocked.
 
-Ejemplo mínimo (ajusta orígenes a tu entorno):
+Minimal example (adjust origins to your environment):
 
 ```
 Content-Security-Policy: script-src 'self'; connect-src 'self' https://api.trymellonauth.com;
@@ -557,54 +555,54 @@ Content-Security-Policy: script-src 'self'; connect-src 'self' https://api.tryme
 
 ### SRI (Subresource Integrity)
 
-Para cargar `index.global.js` con integridad, genera el hash SRI después del build:
+To load `index.global.js` with integrity, generate the SRI hash after building:
 
 ```bash
 openssl dgst -sha384 -binary dist/index.global.js | openssl base64 -A
 ```
 
-Usa el valor en el atributo `integrity`:
+Use the value in the `integrity` attribute:
 
 ```html
 <script
   src="https://cdn.example.com/trymellon/index.global.js"
-  integrity="sha384-<hash-generado>"
+  integrity="sha384-<generated-hash>"
   crossorigin="anonymous"
 ></script>
 ```
 
-Opcional: en el build se puede generar `dist/sri.json` con el hash (script en `package.json`: `"sri": "node -e \"...\""`).
+Optional: the build can generate `dist/sri.json` with the hash (see `package.json` script: `"sri": "node ..."`).
 
 ---
 
-## Telemetría (opt-in)
+## Telemetry (opt-in)
 
-El SDK puede enviar telemetría anónima (evento + latencia, sin identificadores de usuario) cuando `enableTelemetry: true` en la config. Útil para mejorar el producto. Payload mínimo: `{ event: 'register'|'authenticate', latencyMs: number, ok: true }`. Puedes inyectar un `telemetrySender` custom para enviar a tu propio endpoint o desactivar con `enableTelemetry: false` (por defecto).
+The SDK can send anonymous telemetry (event + latency, no user identifiers) when `enableTelemetry: true` in config. Used to improve the product. Minimal payload: `{ event: 'register'|'authenticate', latencyMs: number, ok: true }`. You can inject a custom `telemetrySender` to send to your own endpoint or disable with `enableTelemetry: false` (default).
 
 ---
 
-## Documentación adicional
+## Additional documentation
 
-- [API Reference](./documentation/API.md) - Referencia completa de la API
-- [Ejemplos de Uso](./documentation/EXAMPLES.md) - Ejemplos prácticos de integración
-- [Guía de Contribución](./documentation/CONTRIBUTING.md) - Cómo contribuir al proyecto (incl. cómo ejecutar tests, cobertura, Angular, E2E, audit y lint de workflows en local)
-- [Estándares CI (fintech)](./documentation/CI-FINTECH-STANDARDS.md) - Criterios de cobertura, seguridad, E2E y validación de workflows
+- [API Reference](./documentation/API.md) – Full API reference
+- [Usage examples](./documentation/EXAMPLES.md) – Practical integration examples
+- [Contributing](./documentation/CONTRIBUTING.md) – How to contribute (including running tests, coverage, Angular, E2E, audit and workflow lint locally)
+- [CI standards (fintech)](./documentation/CI-FINTECH-STANDARDS.md) – Coverage, security, E2E and workflow validation criteria
 
 ---
 
 ## Changelog
 
-Ver [CHANGELOG.md](./CHANGELOG.md) para el historial de cambios.
+See [CHANGELOG.md](./CHANGELOG.md) for the change history.
 
 ---
 
-## Licencia
+## License
 
 MIT
 
 ---
 
-## Filosofía
+## Philosophy
 
-> Implementar Passkeys debería tomar minutos, no semanas.
-> El backend sigue siendo tuyo.
+> Implementing Passkeys should take minutes, not weeks.
+> The backend remains yours.
