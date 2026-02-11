@@ -1,3 +1,10 @@
+# 1.0.0 (2026-02-11)
+
+
+### Bug Fixes
+
+* **ci:** build artifacts + security audit allowlist; CHANGELOG 1.0.1 ([147590b](https://github.com/ResakaGit/trymellon-js/commit/147590bf89a92bddc5e50030ab44540b73233a9f))
+
 # Changelog
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
