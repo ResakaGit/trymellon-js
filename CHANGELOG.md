@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/ResakaGit/trymellon-js/compare/v1.1.1...v1.1.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* final sync for npm organization publication ([84dd39f](https://github.com/ResakaGit/trymellon-js/commit/84dd39f0bd7aaa159ce7e0c7d023766e47a5a864))
+
 ## [1.1.1](https://github.com/ResakaGit/trymellon-js/compare/v1.1.0...v1.1.1) (2026-02-11)
 
 
