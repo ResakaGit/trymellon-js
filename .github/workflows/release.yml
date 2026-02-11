@@ -13,6 +13,12 @@ jobs:
       issues: write
       pull-requests: write
     steps:
+      - name: Require NPM_TOKEN for publish
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "::error::NPM_TOKEN secret is not set. Configure it in repo Settings > Secrets and variables > Actions to enable npm publish."
+            exit 1
+          fi
       - name: Checkout
         uses: actions/checkout@v4
         with:
