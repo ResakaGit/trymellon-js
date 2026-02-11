@@ -25,6 +25,11 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - **CI Build**: Build script now cleans `dist/` before tsup; first tsup bundle uses `clean: false` so all artifacts (index.*, react, vue, angular) are produced reliably. Added `ls -la dist/` in workflow for debugging.
 - **CI Security audit**: Allowlisted 4 dev-only advisories (GHSA-34x7-hfp2-rc4v, GHSA-5j98-mcp5-4vw2, GHSA-8qq5-rm4j-mr97, GHSA-r6q2-hw4h-h46w) in `audit-ci.jsonc` so the audit job passes; vulnerabilities are in semantic-release and vitest devDependencies only.
 
+### Release / CI-CD
+
+- **Release workflow**: Job fails fast at start when `NPM_TOKEN` secret is not set (with error message pointing to Settings > Secrets). Ensures publish is only attempted when token exists. `NPM_TOKEN` is used only in the Release workflow step that runs semantic-release.
+- **package.json**: Added `publishConfig.access: "public"` so the scoped package `@trymellon/js` is published as public on npm.
+
 ---
 
 ## [1.0.0] - 2026-01-22
