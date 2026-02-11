@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/ResakaGit/trymellon-js/compare/v1.0.0...v1.1.0) (2026-02-11)
+
+
+### Features
+
+* stable automated release with npm organization support ([b9bcbfd](https://github.com/ResakaGit/trymellon-js/commit/b9bcbfdf932c03d70db95e188c0c90cf4eae6ea0))
+
 # 1.0.0 (2026-02-11)
 
 ### Bug Fixes
