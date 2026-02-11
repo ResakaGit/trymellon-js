@@ -31,7 +31,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     external: ['react', 'react-dom', 'vue', '@angular/core'],
     dts: true,
-    clean: true,
+    clean: false,
     splitting: false,
     minify: true,
     outDir: 'dist',
