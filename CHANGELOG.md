@@ -1,3 +1,12 @@
+## [1.1.3](https://github.com/ResakaGit/trymellon-js/compare/v1.1.2...v1.1.3) (2026-02-11)
+
+
+### Bug Fixes
+
+* final production release with revised npm token ([ce9c98f](https://github.com/ResakaGit/trymellon-js/commit/ce9c98f277b0c9d99ceddbddd37b5f1415d6653a))
+* final production release with revised npm token ([c509eac](https://github.com/ResakaGit/trymellon-js/commit/c509eacc845a06d0ad93902d71f38c5067d67786))
+* final production release with revised npm token ([05d0df0](https://github.com/ResakaGit/trymellon-js/commit/05d0df0f372e889366eff23335dfd7a29eb7cbf7))
+
 ## [1.1.2](https://github.com/ResakaGit/trymellon-js/compare/v1.1.1...v1.1.2) (2026-02-11)
 
 
