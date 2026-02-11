@@ -7,10 +7,9 @@
 
 # [1.1.0](https://github.com/ResakaGit/trymellon-js/compare/v1.0.0...v1.1.0) (2026-02-11)
 
-
 ### Features
 
-* stable automated release with npm organization support ([b9bcbfd](https://github.com/ResakaGit/trymellon-js/commit/b9bcbfdf932c03d70db95e188c0c90cf4eae6ea0))
+- stable automated release with npm organization support ([b9bcbfd](https://github.com/ResakaGit/trymellon-js/commit/b9bcbfdf932c03d70db95e188c0c90cf4eae6ea0))
 
 # 1.0.0 (2026-02-11)
 
@@ -42,6 +41,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 - **Release workflow**: Job fails fast at start when `NPM_TOKEN` secret is not set (with error message pointing to Settings > Secrets). Ensures publish is only attempted when token exists. `NPM_TOKEN` is used only in the Release workflow step that runs semantic-release.
 - **package.json**: Added `publishConfig.access: "public"` so the scoped package `@trymellon/js` is published as public on npm.
+- **CI**: Single build per run. The Build job uploads `dist/` as an artifact; Test Angular adapter and E2E jobs depend on it and download the artifact instead of running `npm run build`, reducing CI from 3 builds to 1.
 
 ---
 
