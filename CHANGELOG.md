@@ -1,9 +1,8 @@
 # 1.0.0 (2026-02-11)
 
-
 ### Bug Fixes
 
-* **ci:** build artifacts + security audit allowlist; CHANGELOG 1.0.1 ([147590b](https://github.com/ResakaGit/trymellon-js/commit/147590bf89a92bddc5e50030ab44540b73233a9f))
+- **ci:** build artifacts + security audit allowlist; CHANGELOG 1.0.1 ([147590b](https://github.com/ResakaGit/trymellon-js/commit/147590bf89a92bddc5e50030ab44540b73233a9f))
 
 # Changelog
 
@@ -22,7 +21,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Fixed
 
-- **CI Build**: Build script now cleans `dist/` before tsup; first tsup bundle uses `clean: false` so all artifacts (index.*, react, vue, angular) are produced reliably. Added `ls -la dist/` in workflow for debugging.
+- **CI Build**: Build script now cleans `dist/` before tsup; first tsup bundle uses `clean: false` so all artifacts (index.\*, react, vue, angular) are produced reliably. Added `ls -la dist/` in workflow for debugging.
 - **CI Security audit**: Allowlisted 4 dev-only advisories (GHSA-34x7-hfp2-rc4v, GHSA-5j98-mcp5-4vw2, GHSA-8qq5-rm4j-mr97, GHSA-r6q2-hw4h-h46w) in `audit-ci.jsonc` so the audit job passes; vulnerabilities are in semantic-release and vitest devDependencies only.
 
 ### Release / CI-CD
