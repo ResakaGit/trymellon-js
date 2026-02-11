@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TryMellon SDK E2E</title>
+</head>
+<body>
+  <h1>TryMellon SDK load test</h1>
+  <script src="../dist/index.global.js"></script>
+  <script>
+    var root = window.TryMellon;
+    window.__sdkLoaded = typeof root !== 'undefined';
+    var Cls = root && root.TryMellon;
+    if (Cls && typeof Cls.isSupported === 'function') {
+      window.__isSupportedResult = Cls.isSupported();
+    }
+  </script>
+</body>
+</html>

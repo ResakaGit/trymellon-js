@@ -1,0 +1,37 @@
+# Source files
+src/
+tests/
+*.config.{js,ts}
+*.test.{ts,js}
+*.spec.{ts,js}
+
+# Development files
+.vscode/
+.idea/
+.github/
+.gitignore
+.prettierrc*
+.eslintrc*
+eslint.config.js
+prettier.config.js
+tsconfig*.json
+vitest.config.ts
+tsup.config.ts
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment
+.env*
+.env.example
+
+# Build configs
+*.config.{js,ts}
