@@ -28,8 +28,8 @@ jobs:
       - name: Run actionlint
         uses: eifinger/actionlint-action@v1
 
-  typecheck:
-    name: Type Check
+  typecheck-and-test:
+    name: Type Check & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,17 +39,6 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run typecheck
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
       - run: npm run test:coverage
 
   security-audit:

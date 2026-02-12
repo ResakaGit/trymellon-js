@@ -39,15 +39,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test
-        run: npm run test
-
-      - name: Type Check
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
-
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
