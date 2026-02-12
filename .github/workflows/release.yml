@@ -28,10 +28,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
           scope: '@trymellon'
+
+      - name: Check lockfile
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
 
       - name: Install dependencies
         run: npm ci

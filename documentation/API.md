@@ -407,7 +407,10 @@ type AuthenticateOptions = {
 type AuthenticateResult = {
   sessionToken: string;
   user?: {
-    externalId: string;
+    userId: string;
+    externalUserId: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
   };
 };
 ```

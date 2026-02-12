@@ -6,21 +6,27 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  NODE_VERSION: "22"
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Ensure npm lockfile
+      - name: Check lockfile
         run: |
-          pwd
-          ls
-          test -f package-lock.json
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
@@ -28,6 +34,8 @@ jobs:
   lint-workflows:
     name: Lint workflows
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Run actionlint
@@ -36,17 +44,20 @@ jobs:
   typecheck-and-test:
     name: Type Check & Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Ensure npm lockfile
+      - name: Check lockfile
         run: |
-          pwd
-          ls
-          test -f package-lock.json
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:coverage
@@ -54,17 +65,20 @@ jobs:
   security-audit:
     name: Security audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Ensure npm lockfile
+      - name: Check lockfile
         run: |
-          pwd
-          ls
-          test -f package-lock.json
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run audit:ci
 
@@ -72,17 +86,20 @@ jobs:
     name: Test Angular adapter
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Ensure npm lockfile
+      - name: Check lockfile
         run: |
-          pwd
-          ls
-          test -f package-lock.json
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
       - run: npm ci
       - name: Download dist
         uses: actions/download-artifact@v4
@@ -96,17 +113,20 @@ jobs:
     name: E2E
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Ensure npm lockfile
+      - name: Check lockfile
         run: |
-          pwd
-          ls
-          test -f package-lock.json
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
       - run: npm ci
       - name: Download dist
         uses: actions/download-artifact@v4
@@ -120,13 +140,22 @@ jobs:
 
   build:
     name: Build
+    needs: [lint, typecheck-and-test, security-audit]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+      - name: Check lockfile
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is missing. Run 'npm install', commit the file, and push."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run build
       - name: Check build artifacts

@@ -23,7 +23,7 @@ async function registerUser(externalUserId: string) {
     await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_token: result.value.session_token }),
+      body: JSON.stringify({ sessionToken: result.value.sessionToken }),
     });
   } else {
     if (result.error.code === 'USER_CANCELLED') {
@@ -54,7 +54,7 @@ async function loginUser(externalUserId: string) {
     const response = await fetch('/api/login/passkey', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_token: result.value.session_token }),
+      body: JSON.stringify({ sessionToken: result.value.sessionToken }),
     });
     if (response.ok) {
       const data = await response.json();
@@ -105,7 +105,7 @@ client.on('cancelled', (payload) => {
 
 // Usar el cliente
 const result = await client.register({ externalUserId: 'user_123' });
-if (result.ok) console.log('Registro OK:', result.value.session_token);
+if (result.ok) console.log('Registro OK:', result.value.sessionToken);
 ```
 
 ---
@@ -126,7 +126,7 @@ async function authenticateWithFallback(userId: string) {
   }
 
   const result = await client.authenticate({ externalUserId: userId });
-  if (result.ok) return await sendToBackend(result.value.session_token);
+  if (result.ok) return await sendToBackend(result.value.sessionToken);
 
   if (result.error.code === 'NOT_SUPPORTED' || result.error.code === 'USER_CANCELLED') {
     return await authenticateWithEmail(userId);
@@ -195,7 +195,7 @@ function PasskeyAuth() {
       if (result.error.code !== 'USER_CANCELLED') setError(result.error.message);
       return;
     }
-    // Opcional: enviar result.value.session_token al backend
+    // Opcional: enviar result.value.sessionToken al backend
   };
 
   const handleLogin = async () => {
@@ -208,7 +208,7 @@ function PasskeyAuth() {
     await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_token: result.value.session_token }),
+      body: JSON.stringify({ sessionToken: result.value.sessionToken }),
     });
   };
 
@@ -291,7 +291,7 @@ const handleLogin = async () => {
   await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_token: result.value.session_token }),
+    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
   });
 };
 </script>
@@ -343,7 +343,7 @@ const handleLogin = async () => {
         const response = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_token: result.value.session_token }),
+          body: JSON.stringify({ sessionToken: result.value.sessionToken }),
         });
         if (response.ok) showStatus('Login exitoso');
       });
@@ -436,7 +436,7 @@ async function completeFlow() {
   const response = await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_token: registerResult.value.session_token }),
+    body: JSON.stringify({ sessionToken: registerResult.value.sessionToken }),
   });
   if (response.ok) {
     console.log('Usuario autenticado después del registro');
@@ -452,7 +452,7 @@ async function completeFlow() {
   await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_token: authResult.value.session_token }),
+    body: JSON.stringify({ sessionToken: authResult.value.sessionToken }),
   });
 }
 

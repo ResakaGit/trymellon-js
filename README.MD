@@ -198,13 +198,13 @@ const client = new TryMellon({
 // Register passkey (camelCase recommended in options)
 const registerResult = await client.register({ externalUserId: 'user_123' })
 if (registerResult.ok) {
-  console.log('Session token:', registerResult.value.session_token)
+  console.log('Session token:', registerResult.value.sessionToken)
 }
 
 // Authenticate
 const authResult = await client.authenticate({ externalUserId: 'user_123' })
 if (authResult.ok) {
-  console.log('Session token:', authResult.value.session_token)
+  console.log('Session token:', authResult.value.sessionToken)
 }
 ```
 
@@ -268,7 +268,7 @@ await fetch('/api/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    sessionToken: result.value.session_token
+    sessionToken: result.value.sessionToken
   })
 })
 ```
@@ -284,12 +284,12 @@ await fetch('/api/login', {
 ```typescript
 {
   success: true,
-  credential_id: string,
+  credentialId: string,
   status: string,
-  session_token: string,
+  sessionToken: string,
   user: {
-    user_id: string,
-    external_user_id: string,
+    userId: string,
+    externalUserId: string,
     email?: string,
     metadata?: Record<string, unknown>
   }
@@ -309,7 +309,7 @@ await fetch('/api/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    sessionToken: result.session_token
+    sessionToken: result.value.sessionToken
   })
 })
 ```
@@ -325,10 +325,10 @@ await fetch('/api/login', {
 ```typescript
 {
   authenticated: boolean,
-  session_token: string,
+  sessionToken: string,
   user: {
-    user_id: string,
-    external_user_id: string,
+    userId: string,
+    externalUserId: string,
     email?: string,
     metadata?: Record<string, unknown>
   },
@@ -512,7 +512,7 @@ if (!pollResult.ok) {
 }
 
 // Success!
-console.log('Session token:', pollResult.value.session_token)
+console.log('Session token:', pollResult.value.sessionToken)
 ```
 
 ### 2. Mobile: Approve Login
