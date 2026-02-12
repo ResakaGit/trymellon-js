@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/ResakaGit/trymellon-js/compare/v1.2.0...v1.2.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* webauthn types and bump 1.2.1 ([7dc1f80](https://github.com/ResakaGit/trymellon-js/commit/7dc1f80ffce344edbde492ed61ff149c7f904673))
+
 ## [1.2.1] - 2026-02-12
 
 ### Fixed
