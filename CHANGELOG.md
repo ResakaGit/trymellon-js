@@ -1,25 +1,15 @@
-## [1.2.1](https://github.com/ResakaGit/trymellon-js/compare/v1.2.0...v1.2.1) (2026-02-12)
-
-
-### Bug Fixes
-
-* webauthn types and bump 1.2.1 ([7dc1f80](https://github.com/ResakaGit/trymellon-js/commit/7dc1f80ffce344edbde492ed61ff149c7f904673))
-
 ## [1.2.1] - 2026-02-12
 
 ### Fixed
 
-- **WebAuthn Types:** Correcciones de tipos para las requests `finishRegister` y `finishAuth` (uso consistente de credenciales serializadas y `externalUserId` en resultados), alineando el SDK con el contrato de API sin cambios de comportamiento.
-- **Cross-Device Validators:** Alineación interna de los validadores de respuestas cross-device para usar tipos estrictos (`CrossDeviceContextResult['options']`) en lugar de `any`, mejorando type-safety sin cambios de comportamiento público.
+- **WebAuthn Types:** Correcciones de tipos para las requests `finishRegister` y `finishAuth` (uso
+  consistente de credenciales serializadas y `externalUserId` en resultados), alineando el SDK con
+  el contrato de API sin cambios de comportamiento.
+- **Cross-Device Validators:** Alineación interna de los validadores de respuestas cross-device para
+  usar tipos estrictos (`CrossDeviceContextResult['options']`) en lugar de `any`, mejorando
+  type-safety sin cambios de comportamiento público.
 
 ---
-
-# [1.2.0](https://github.com/ResakaGit/trymellon-js/compare/v1.1.3...v1.2.0) (2026-02-12)
-
-
-### Features
-
-* **cross-device:** SDK QR login flow 1.2.0 ([b7cce83](https://github.com/ResakaGit/trymellon-js/commit/b7cce83c9679a18e89b3aacb5fba4dd17ba917c7))
 
 ## [1.2.0] - 2026-02-12
 
@@ -55,19 +45,19 @@
 
 - force publish to npm organization after sync ([0276a88](https://github.com/ResakaGit/trymellon-js/commit/0276a888472e3935910c7c3d286c74db5c542210))
 
-# [1.1.0](https://github.com/ResakaGit/trymellon-js/compare/v1.0.0...v1.1.0) (2026-02-11)
+## [1.1.0] - 2026-02-11
 
 ### Features
 
 - stable automated release with npm organization support ([b9bcbfd](https://github.com/ResakaGit/trymellon-js/commit/b9bcbfdf932c03d70db95e188c0c90cf4eae6ea0))
 
-# 1.0.0 (2026-02-11)
+## [1.0.0] - 2026-02-11
 
 ### Bug Fixes
 
 - **ci:** build artifacts + security audit allowlist; CHANGELOG 1.0.1 ([147590b](https://github.com/ResakaGit/trymellon-js/commit/147590bf89a92bddc5e50030ab44540b73233a9f))
 
-# Changelog
+## Changelog
 
 Todos los cambios notables en este proyecto serán documentados en este archivo.
 

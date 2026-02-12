@@ -1,0 +1,188 @@
+import { describe, it, expect } from 'vitest';
+import {
+  validateCrossDeviceInitResponse,
+  validateCrossDeviceStatusResponse,
+  validateCrossDeviceContextResponse,
+} from '../../../src/core/validators/cross-device';
+
+describe('validateCrossDeviceInitResponse', () => {
+  const validPayload = {
+    session_id: 'sess_cd_123',
+    qr_url: 'https://example.com/qr/abc',
+    expires_at: '2026-02-12T12:00:00Z',
+  };
+
+  it('should return ok for valid payload', () => {
+    const result = validateCrossDeviceInitResponse(validPayload);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.session_id).toBe('sess_cd_123');
+      expect(result.value.qr_url).toBe('https://example.com/qr/abc');
+      expect(result.value.expires_at).toBe('2026-02-12T12:00:00Z');
+    }
+  });
+
+  it('should return err for null', () => {
+    const result = validateCrossDeviceInitResponse(null);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('NETWORK_FAILURE');
+  });
+
+  it('should return err for undefined', () => {
+    const result = validateCrossDeviceInitResponse(undefined);
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err for non-object', () => {
+    const result = validateCrossDeviceInitResponse('string');
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when session_id is missing', () => {
+    const result = validateCrossDeviceInitResponse({
+      qr_url: validPayload.qr_url,
+      expires_at: validPayload.expires_at,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('required fields');
+  });
+
+  it('should return err when qr_url is missing', () => {
+    const result = validateCrossDeviceInitResponse({
+      session_id: validPayload.session_id,
+      expires_at: validPayload.expires_at,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when expires_at is missing', () => {
+    const result = validateCrossDeviceInitResponse({
+      session_id: validPayload.session_id,
+      qr_url: validPayload.qr_url,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when session_id is not string', () => {
+    const result = validateCrossDeviceInitResponse({
+      ...validPayload,
+      session_id: 123,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when qr_url is not string', () => {
+    const result = validateCrossDeviceInitResponse({
+      ...validPayload,
+      qr_url: null,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when expires_at is not string', () => {
+    const result = validateCrossDeviceInitResponse({
+      ...validPayload,
+      expires_at: {},
+    });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('validateCrossDeviceStatusResponse', () => {
+  it('should return ok for status pending', () => {
+    const result = validateCrossDeviceStatusResponse({ status: 'pending' });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe('pending');
+  });
+
+  it('should return ok for status authenticated', () => {
+    const result = validateCrossDeviceStatusResponse({ status: 'authenticated' });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe('authenticated');
+  });
+
+  it('should return ok for status completed with user_id and session_token', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: 'user_1',
+      session_token: 'st_abc',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.status).toBe('completed');
+      expect(result.value.user_id).toBe('user_1');
+      expect(result.value.session_token).toBe('st_abc');
+    }
+  });
+
+  it('should return err for null', () => {
+    const result = validateCrossDeviceStatusResponse(null);
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err for non-object', () => {
+    const result = validateCrossDeviceStatusResponse([]);
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when status is missing', () => {
+    const result = validateCrossDeviceStatusResponse({});
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('invalid status');
+  });
+
+  it('should return err when status is not string', () => {
+    const result = validateCrossDeviceStatusResponse({ status: 123 });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when status is invalid value', () => {
+    const result = validateCrossDeviceStatusResponse({ status: 'invalid' });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when status is empty string', () => {
+    const result = validateCrossDeviceStatusResponse({ status: '' });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('validateCrossDeviceContextResponse', () => {
+  const validOptions = {
+    challenge: { rp: { id: 'example.com' }, challenge: 'c', pubKeyCredParams: [] },
+  };
+
+  it('should return ok for valid payload with options', () => {
+    const result = validateCrossDeviceContextResponse({ options: validOptions });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.options).toEqual(validOptions);
+    }
+  });
+
+  it('should return err for null', () => {
+    const result = validateCrossDeviceContextResponse(null);
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err for non-object', () => {
+    const result = validateCrossDeviceContextResponse('string');
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when options is missing', () => {
+    const result = validateCrossDeviceContextResponse({});
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('options are required');
+  });
+
+  it('should return err when options is not object', () => {
+    const result = validateCrossDeviceContextResponse({ options: 'not-an-object' });
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err when options is null', () => {
+    const result = validateCrossDeviceContextResponse({ options: null });
+    expect(result.ok).toBe(false);
+  });
+});

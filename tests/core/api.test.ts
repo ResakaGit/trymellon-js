@@ -100,7 +100,7 @@ describe('ApiClient', () => {
     });
 
     it('should handle HTTP errors', async () => {
-      mockHttpClient.post.mockResolvedValue(err(createError('NETWORK_ERROR', 'API error')));
+      mockHttpClient.post.mockResolvedValue(err(createError('NETWORK_FAILURE', 'API error')));
 
       const client = new ApiClient(
         mockHttpClient as unknown as HttpClient,
@@ -299,7 +299,7 @@ describe('ApiClient', () => {
     });
 
     it('should handle HTTP errors', async () => {
-      mockHttpClient.get.mockResolvedValue(err(createError('NETWORK_ERROR', 'Unauthorized')));
+      mockHttpClient.get.mockResolvedValue(err(createError('NETWORK_FAILURE', 'Unauthorized')));
       const client = new ApiClient(
         mockHttpClient as unknown as HttpClient,
         'https://api.example.com'
@@ -457,6 +457,149 @@ describe('ApiClient', () => {
         { company_name: 'acme' },
         expect.any(Object)
       );
+    });
+  });
+
+  describe('initCrossDeviceAuth', () => {
+    it('should request cross-device init and return session_id, qr_url, expires_at', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          session_id: 'sess_cd_123',
+          qr_url: 'https://example.com/qr/abc',
+          expires_at: '2026-02-12T12:00:00Z',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.initCrossDeviceAuth();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.session_id).toBe('sess_cd_123');
+        expect(result.value.qr_url).toBe('https://example.com/qr/abc');
+        expect(result.value.expires_at).toBe('2026-02-12T12:00:00Z');
+      }
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/init',
+        {},
+        expect.any(Object)
+      );
+    });
+
+    it('should return err when API fails', async () => {
+      mockHttpClient.post.mockResolvedValue(err(createError('NETWORK_FAILURE', 'API error')));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.initCrossDeviceAuth();
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  describe('getCrossDeviceStatus', () => {
+    it('should request status for session and return result', async () => {
+      mockHttpClient.get.mockResolvedValue(
+        ok({ status: 'completed', user_id: 'u1', session_token: 'st_1' })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.getCrossDeviceStatus('sess_cd_456');
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.status).toBe('completed');
+        expect(result.value.user_id).toBe('u1');
+        expect(result.value.session_token).toBe('st_1');
+      }
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/status/sess_cd_456',
+        expect.any(Object)
+      );
+    });
+
+    it('should return err when API fails', async () => {
+      mockHttpClient.get.mockResolvedValue(err(createError('NETWORK_FAILURE', 'fail')));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.getCrossDeviceStatus('sess_cd_456');
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  describe('getCrossDeviceContext', () => {
+    it('should request context for session and return options', async () => {
+      const options = { challenge: { rp: { id: 'x.com' }, challenge: 'c', pubKeyCredParams: [] } };
+      mockHttpClient.get.mockResolvedValue(ok({ options }));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.getCrossDeviceContext('sess_cd_789');
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.options).toEqual(options);
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/context/sess_cd_789',
+        expect.any(Object)
+      );
+    });
+
+    it('should return err when API fails', async () => {
+      mockHttpClient.get.mockResolvedValue(err(createError('NETWORK_FAILURE', 'fail')));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.getCrossDeviceContext('sess_cd_789');
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  describe('verifyCrossDeviceAuth', () => {
+    it('should post verify request with session_id and credential', async () => {
+      mockHttpClient.post.mockResolvedValue(ok(undefined));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const request = {
+        session_id: 'sess_cd_verify',
+        credential: {
+          type: 'public-key' as const,
+          id: 'cred_id',
+          rawId: 'raw_id',
+          response: { clientDataJSON: 'cdj', authenticatorData: 'ad', signature: 'sig' },
+        },
+      };
+      const result = await client.verifyCrossDeviceAuth(request);
+      expect(result.ok).toBe(true);
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/verify',
+        request,
+        expect.any(Object)
+      );
+    });
+
+    it('should return err when API fails', async () => {
+      mockHttpClient.post.mockResolvedValue(err(createError('NETWORK_FAILURE', 'fail')));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.verifyCrossDeviceAuth({
+        session_id: 's',
+        credential: {
+          type: 'public-key',
+          id: 'id',
+          rawId: 'rid',
+          response: { clientDataJSON: 'cdj', authenticatorData: 'ad', signature: 'sig' },
+        },
+      });
+      expect(result.ok).toBe(false);
     });
   });
 });
