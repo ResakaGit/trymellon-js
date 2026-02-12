@@ -479,6 +479,62 @@ async function authenticateWithEmail(userId: string) {
 
 ---
 
+## Cross-Device Authentication (QR Login)
+
+Enable users to sign in on a desktop device by scanning a QR code with their mobile phone (where their passkey is stored).
+
+### 1. Desktop: Initialize and Show QR
+
+```typescript
+// Initialize session
+const initResult = await client.auth.crossDevice.init()
+if (!initResult.ok) { console.error(initResult.error); return }
+
+const { session_id, qr_url } = initResult.value
+
+// Show QR code with `qr_url`
+renderQrCode(qr_url)
+
+// Start polling for approval
+// Use AbortController to cancel if user leaves the page
+const controller = new AbortController()
+
+const pollResult = await client.auth.crossDevice.waitForSession(
+  session_id, 
+  controller.signal
+)
+
+if (!pollResult.ok) {
+  if (pollResult.error.code === 'TIMEOUT') {
+    showError('QR code expired')
+  }
+  return
+}
+
+// Success!
+console.log('Session token:', pollResult.value.session_token)
+```
+
+### 2. Mobile: Approve Login
+
+When the user scans the QR code, your mobile web app should handle the URL (containing `session_id`) and call `approve`:
+
+```typescript
+// Extract session_id from URL query params
+const sessionId = getSessionIdFromUrl()
+
+// Trigger WebAuthn flow on mobile
+const approveResult = await client.auth.crossDevice.approve(sessionId)
+
+if (approveResult.ok) {
+  showSuccess('Process complete! Check your desktop.')
+} else {
+  showError('Failed to approve login: ' + approveResult.error.message)
+}
+```
+
+---
+
 ## Result type
 
 The SDK exports the `Result<T, E>` type and the `ok(value)` and `err(error)` helpers for typing and building results (useful in tests or utilities):
@@ -627,6 +683,7 @@ Then create your own session in your system.
 * ✅ **Events for UX** – Event system for spinners and analytics
 * ✅ **Email fallback** – OTP by email when WebAuthn is unavailable
 * ✅ **Operation cancellation** – AbortSignal support
+* ✅ **Cross-Device Auth** – QR Login flow support (Desktop to Mobile)
 * ✅ **Automatic detection** – Origin and WebAuthn support detected automatically
 
 ---

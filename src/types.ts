@@ -31,54 +31,33 @@ export type TryMellonConfig = {
 // Public API Types
 // ============================================================================
 
-export type RegisterOptions = {
-  /** User identifier (recommended: camelCase). */
+export interface RegisterOptions {
+  /**
+   * Impacto en Analytics y Dashboard.
+   */
   externalUserId?: string;
-  /** User identifier (snake_case alias). */
+  /**
+   * @deprecated Use `externalUserId` instead.
+   */
   external_user_id?: string;
   authenticatorType?: 'platform' | 'cross-platform';
   signal?: AbortSignal;
-};
+}
 
-export type RegisterResult = {
-  success: true;
-  credential_id: string;
-  status: string;
-  session_token: string;
-  user: {
-    user_id: string;
-    external_user_id: string;
-    email?: string;
-    metadata?: Record<string, unknown>;
-  };
-};
-
-export type AuthenticateOptions = {
-  /** User identifier (recommended: camelCase). */
+export interface AuthenticateOptions {
+  /**
+   * Impacto en Analytics y Dashboard.
+   */
   externalUserId?: string;
-  /** User identifier (snake_case alias). */
+  /**
+   * @deprecated Use `externalUserId` instead.
+   */
   external_user_id?: string;
   hint?: string;
   signal?: AbortSignal;
   /** Conditional UI mediation for passkey autofill / conditional UI. */
   mediation?: 'optional' | 'conditional' | 'required';
-};
-
-export type AuthenticateResult = {
-  authenticated: boolean;
-  session_token: string;
-  user: {
-    user_id: string;
-    external_user_id: string;
-    email?: string;
-    metadata?: Record<string, unknown>;
-  };
-  signals: {
-    userVerification?: boolean;
-    backupEligible?: boolean;
-    backupStatus?: boolean;
-  };
-};
+}
 
 export type ClientStatus = {
   isPasskeySupported: boolean;
@@ -171,6 +150,31 @@ export type OnboardingCompleteResult = {
 };
 
 // ============================================================================
+// Cross-Device Types
+// ============================================================================
+
+export type CrossDeviceInitResult = {
+  session_id: string;
+  qr_url: string;
+  expires_at: string;
+};
+
+export type CrossDeviceStatusResult = {
+  status: 'pending' | 'authenticated' | 'completed';
+  user_id?: string;
+  session_token?: string;
+};
+
+export type CrossDeviceContextResult = {
+  options: AuthStartResponse['challenge'];
+};
+
+export type CrossDeviceVerifyRequest = {
+  session_id: string;
+  credential: AuthFinishRequest['credential'];
+};
+
+// ============================================================================
 // API Request Types
 // ============================================================================
 
@@ -260,7 +264,7 @@ export type AuthStartResponse = {
   session_id: string;
 };
 
-export type RegisterFinishResponse = {
+export interface RegisterFinishResponse {
   credential_id: string;
   status: string;
   session_token: string;
@@ -270,9 +274,9 @@ export type RegisterFinishResponse = {
     email?: string;
     metadata?: Record<string, unknown>;
   };
-};
+}
 
-export type AuthFinishResponse = {
+export interface AuthFinishResponse {
   authenticated: boolean;
   user: {
     user_id: string;
@@ -286,7 +290,34 @@ export type AuthFinishResponse = {
     backupStatus?: boolean;
   };
   session_token: string;
-};
+}
+
+export interface RegisterResult {
+  success: true;
+  credentialId: string;
+  status: string;
+  sessionToken: string;
+  user: {
+    userId: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+export interface AuthenticateResult {
+  authenticated: boolean;
+  sessionToken: string;
+  user: {
+    userId: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
+  signals?: {
+    userVerification?: boolean;
+    backupEligible?: boolean;
+    backupStatus?: boolean;
+  };
+}
 
 export type SessionValidateResponse = {
   valid: boolean;

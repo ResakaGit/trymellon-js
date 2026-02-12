@@ -1,8 +1,22 @@
-## [Unreleased]
+## [1.2.0] - 2026-02-12
 
 ### Added
 
-- **README**: Framework support & entry points section with table and examples for React, Vue, Angular, Vanilla JS, and Svelte; specification summary for project ingestion; corrected React/Vue examples to use `client` prop and `provideTryMellon(client)`.
+- **Cross-Device Authentication (QR Login)**: Implementation of the "Sign in with QR" flow.
+  - `auth.crossDevice.init()`: Initializes a cross-device session (Desktop side).
+  - `auth.crossDevice.waitForSession()`: Polling helper to wait for mobile approval (Desktop side).
+  - `auth.crossDevice.approve()`: Complete verification with biometric passkey on mobile (Mobile side).
+- **Cross-Device Manager**: New internal orchestration logic for cross-device flows.
+- **Validators**: Added validation for cross-device API responses.
+- **Types**: New TypeScript types for `CrossDeviceInitResult`, `CrossDeviceStatusResult`, etc.
+
+---
+
+## [Unreleased]
+
+### Fixed
+
+- **Cross-Device Validators:** Alineación interna de los validadores de respuestas cross-device para usar tipos estrictos (`CrossDeviceContextResult['options']`) en lugar de `any`, mejorando type-safety sin cambios de comportamiento público.
 
 ---
 

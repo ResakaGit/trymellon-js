@@ -13,4 +13,9 @@ export {
   validateOnboardingRegisterPasskeyResponse,
   validateOnboardingCompleteResponse,
 } from './onboarding';
+export {
+  validateCrossDeviceInitResponse,
+  validateCrossDeviceStatusResponse,
+  validateCrossDeviceContextResponse,
+} from './cross-device';
 export type { OnboardingRegisterResponseWithChallenge } from './onboarding';

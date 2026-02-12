@@ -14,6 +14,9 @@ import {
   validateOnboardingRegisterResponse,
   validateOnboardingRegisterPasskeyResponse,
   validateOnboardingCompleteResponse,
+  validateCrossDeviceInitResponse,
+  validateCrossDeviceStatusResponse,
+  validateCrossDeviceContextResponse,
 } from './validators';
 import type {
   RegisterStartRequest,
@@ -32,6 +35,10 @@ import type {
   OnboardingRegisterPasskeyResponse,
   OnboardingCompleteRequest,
   OnboardingCompleteResponse,
+  CrossDeviceInitResult,
+  CrossDeviceStatusResult,
+  CrossDeviceContextResult,
+  CrossDeviceVerifyRequest,
 } from '../types';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
 
@@ -92,7 +99,7 @@ export class ApiClient {
     return this.post('/v1/passkeys/register/finish', request, validateRegisterFinishResponse);
   }
 
-  async finishAuth(
+  async finishAuthentication(
     request: AuthFinishRequest
   ): Promise<Result<AuthFinishResponse, TryMellonError>> {
     return this.post('/v1/passkeys/auth/finish', request, validateAuthFinishResponse);
@@ -158,5 +165,33 @@ export class ApiClient {
       request,
       validateOnboardingCompleteResponse
     );
+  }
+
+  async initCrossDeviceAuth(): Promise<Result<CrossDeviceInitResult, TryMellonError>> {
+    return this.post('/v1/auth/cross-device/init', {}, validateCrossDeviceInitResponse);
+  }
+
+  async getCrossDeviceStatus(
+    sessionId: string
+  ): Promise<Result<CrossDeviceStatusResult, TryMellonError>> {
+    return this.get(`/v1/auth/cross-device/status/${sessionId}`, validateCrossDeviceStatusResponse);
+  }
+
+  async getCrossDeviceContext(
+    sessionId: string
+  ): Promise<Result<CrossDeviceContextResult, TryMellonError>> {
+    return this.get(
+      `/v1/auth/cross-device/context/${sessionId}`,
+      validateCrossDeviceContextResponse
+    );
+  }
+
+  async verifyCrossDeviceAuth(
+    request: CrossDeviceVerifyRequest
+  ): Promise<Result<void, TryMellonError>> {
+    const url = `${this.baseUrl}/v1/auth/cross-device/verify`;
+    const result = await this.httpClient.post<unknown>(url, request, this.mergeHeaders());
+    if (!result.ok) return err(result.error);
+    return ok(undefined);
   }
 }

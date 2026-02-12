@@ -5,9 +5,8 @@ import {
   createInvalidArgumentError,
   validateBase64Url,
 } from '../errors';
-import { base64UrlDecodeToArrayBuffer } from '../utils/base64url';
+import { base64UrlDecodeToArrayBuffer, base64UrlEncode } from '../utils/base64url';
 import { validateCredentialStructure } from '../utils/validation';
-import { serializeCredentialForRegister, serializeCredentialForAuth } from './webauthn-utils';
 import type { ApiClient } from './api';
 import type { EventEmitter } from './events';
 import type {
@@ -94,7 +93,7 @@ export function createRegistrationOptions(
  * Crea las opciones de autenticación para WebAuthn.
  * Convierte la respuesta del servidor en formato WebAuthn API.
  */
-function createAuthenticationOptions(
+export function createAuthenticationOptions(
   challenge: AuthStartResponse['challenge'],
   mediation?: AuthenticateOptions['mediation']
 ): Result<CredentialRequestOptions, TryMellonError> {
@@ -134,43 +133,31 @@ export async function registerPasskey(
   apiClient: ApiClient,
   eventEmitter: EventEmitter
 ): Promise<Result<RegisterResult, TryMellonError>> {
-  eventEmitter.emit('start', { type: 'start', operation: 'register' });
-
   try {
-    const external_user_id = options.externalUserId ?? options.external_user_id;
-    if (
-      !external_user_id ||
-      typeof external_user_id !== 'string' ||
-      external_user_id.trim() === ''
-    ) {
-      return err(
-        createInvalidArgumentError(
-          'external_user_id',
-          'must be provided (use externalUserId or external_user_id)'
-        )
-      );
-    }
+    eventEmitter.emit('start', { type: 'start', operation: 'register' });
 
     if (!isWebAuthnSupported()) {
-      return err(createNotSupportedError());
+      const error = createNotSupportedError();
+      eventEmitter.emit('error', { type: 'error', error });
+      return err(error);
     }
 
-    // 1. Iniciar registro en el servidor
-    const startResponseResult = await apiClient.startRegister({
-      external_user_id: external_user_id.trim(),
+    const extId = options.externalUserId ?? options.external_user_id;
+    if (!extId) throw new Error('externalUserId is required');
+
+    // 1. Obtener challenge del servidor
+    const startResult = await apiClient.startRegister({
+      external_user_id: extId,
     });
 
-    if (!startResponseResult.ok) {
-      eventEmitter.emit('error', { type: 'error', error: startResponseResult.error });
-      return err(startResponseResult.error);
+    if (!startResult.ok) {
+      eventEmitter.emit('error', { type: 'error', error: startResult.error });
+      return err(startResult.error);
     }
 
-    const startResponse = startResponseResult.value;
-    const session_id = startResponse.session_id;
-
-    // 2. Crear opciones de registro para WebAuthn API
+    // 2. Crear opciones de creación de credencial
     const creationOptionsResult = createRegistrationOptions(
-      startResponse.challenge,
+      startResult.value.challenge,
       options.authenticatorType
     );
 
@@ -180,47 +167,43 @@ export async function registerPasskey(
     }
 
     const creationOptions = creationOptionsResult.value;
-
     if (options.signal) {
       creationOptions.signal = options.signal;
     }
 
-    // 3. Crear credencial usando WebAuthn API del navegador
-    let credential: Credential | null;
+    // 3. Solicitar al navegador la creación de la credencial
+    const credential = (await navigator.credentials.create(creationOptions)) as PublicKeyCredential;
+
+    if (!credential) {
+      const error = createInvalidArgumentError('credential', 'creation failed');
+      eventEmitter.emit('error', { type: 'error', error });
+      return err(error);
+    }
+
     try {
-      credential = await navigator.credentials.create(creationOptions);
+      validateCredentialStructure(credential);
     } catch (e) {
       const error = mapWebAuthnError(e);
       eventEmitter.emit('error', { type: 'error', error });
       return err(error);
     }
 
-    // We can't trust validateCredentialStructure to bail out with TryMellon error gracefully if it throws generic error.
-    // It throws errors. We should wrap.
-    try {
-      validateCredentialStructure(credential, 'create');
-    } catch (e) {
-      const error = mapWebAuthnError(e);
-      eventEmitter.emit('error', { type: 'error', error });
-      return err(error);
-    }
-
-    // 4. Serializar credencial para registro
-    let serializedCredential;
-    try {
-      serializedCredential = serializeCredentialForRegister(credential as PublicKeyCredential);
-    } catch (e) {
-      // serializeCredentialForRegister throws TryMellonError (via createError)
-      // or unknown.
-      const error = mapWebAuthnError(e);
-      eventEmitter.emit('error', { type: 'error', error });
-      return err(error);
-    }
-
-    // 5. Completar registro en el servidor
+    // 4. Completar registro en el servidor
     const finishResult = await apiClient.finishRegister({
-      session_id,
-      credential: serializedCredential,
+      session_id: startResult.value.session_id,
+      credential: {
+        id: credential.id,
+        rawId: credential.rawId,
+        response: {
+          clientDataJSON: base64UrlEncode(
+            (credential.response as AuthenticatorAttestationResponse).clientDataJSON
+          ),
+          attestationObject: base64UrlEncode(
+            (credential.response as AuthenticatorAttestationResponse).attestationObject
+          ),
+        },
+        type: 'public-key',
+      },
     });
 
     if (!finishResult.ok) {
@@ -228,22 +211,25 @@ export async function registerPasskey(
       return err(finishResult.error);
     }
 
-    const result = finishResult.value;
+    const result: RegisterResult = {
+      success: true,
+      credentialId: finishResult.value.credential_id,
+      status: finishResult.value.status,
+      sessionToken: finishResult.value.session_token,
+      user: {
+        userId: finishResult.value.user.user_id,
+        externalUserId: finishResult.value.user.external_user_id,
+        email: finishResult.value.user.email,
+        metadata: finishResult.value.user.metadata,
+      },
+    };
 
     eventEmitter.emit('success', { type: 'success', operation: 'register' });
-
-    return ok({
-      success: true,
-      credential_id: result.credential_id,
-      status: result.status,
-      session_token: result.session_token,
-      user: result.user,
-    });
+    return ok(result);
   } catch (error) {
-    // Catch-all for unexpected synchronous errors
-    const mappedError = mapWebAuthnError(error);
-    eventEmitter.emit('error', { type: 'error', error: mappedError });
-    return err(mappedError);
+    const tryMellonError = mapWebAuthnError(error);
+    eventEmitter.emit('error', { type: 'error', error: tryMellonError });
+    return err(tryMellonError);
   }
 }
 
@@ -256,88 +242,76 @@ export async function authenticatePasskey(
   apiClient: ApiClient,
   eventEmitter: EventEmitter
 ): Promise<Result<AuthenticateResult, TryMellonError>> {
-  eventEmitter.emit('start', { type: 'start', operation: 'authenticate' });
-
   try {
-    const external_user_id = options.externalUserId ?? options.external_user_id;
-    if (
-      !external_user_id ||
-      typeof external_user_id !== 'string' ||
-      external_user_id.trim() === ''
-    ) {
-      return err(
-        createInvalidArgumentError(
-          'external_user_id',
-          'must be provided (use externalUserId or external_user_id)'
-        )
-      );
-    }
+    eventEmitter.emit('start', { type: 'start', operation: 'authenticate' });
 
     if (!isWebAuthnSupported()) {
-      return err(createNotSupportedError());
+      const error = createNotSupportedError();
+      eventEmitter.emit('error', { type: 'error', error });
+      return err(error);
     }
 
-    // 1. Iniciar autenticación en el servidor
-    const startResponseResult = await apiClient.startAuth({
-      external_user_id: external_user_id.trim(),
+    const extId = options.externalUserId ?? options.external_user_id;
+    if (!extId) throw new Error('externalUserId is required');
+
+    // 1. Obtener challenge del servidor
+    const startResult = await apiClient.startAuth({
+      external_user_id: extId,
     });
 
-    if (!startResponseResult.ok) {
-      eventEmitter.emit('error', { type: 'error', error: startResponseResult.error });
-      return err(startResponseResult.error);
+    if (!startResult.ok) {
+      eventEmitter.emit('error', { type: 'error', error: startResult.error });
+      return err(startResult.error);
     }
 
-    const startResponse = startResponseResult.value;
-    const session_id = startResponse.session_id;
-
-    // 2. Crear opciones de autenticación para WebAuthn API
+    // 2. Crear opciones de autenticación
     const requestOptionsResult = createAuthenticationOptions(
-      startResponse.challenge,
+      startResult.value.challenge,
       options.mediation
     );
+
     if (!requestOptionsResult.ok) {
       eventEmitter.emit('error', { type: 'error', error: requestOptionsResult.error });
       return err(requestOptionsResult.error);
     }
 
     const requestOptions = requestOptionsResult.value;
-
     if (options.signal) {
       requestOptions.signal = options.signal;
     }
 
-    // 3. Obtener credencial usando WebAuthn API del navegador
-    let credential: Credential | null;
+    // 3. Solicitar al navegador la autenticación
+    const credential = (await navigator.credentials.get(requestOptions)) as PublicKeyCredential;
+
+    if (!credential) {
+      const error = createInvalidArgumentError('credential', 'retrieval failed');
+      eventEmitter.emit('error', { type: 'error', error });
+      return err(error);
+    }
+
     try {
-      credential = await navigator.credentials.get(requestOptions);
+      validateCredentialStructure(credential);
     } catch (e) {
       const error = mapWebAuthnError(e);
       eventEmitter.emit('error', { type: 'error', error });
       return err(error);
     }
 
-    try {
-      validateCredentialStructure(credential, 'get');
-    } catch (e) {
-      const error = mapWebAuthnError(e);
-      eventEmitter.emit('error', { type: 'error', error });
-      return err(error);
-    }
-
-    // 4. Serializar credencial para autenticación
-    let serializedCredential;
-    try {
-      serializedCredential = serializeCredentialForAuth(credential as PublicKeyCredential);
-    } catch (e) {
-      const error = mapWebAuthnError(e);
-      eventEmitter.emit('error', { type: 'error', error });
-      return err(error);
-    }
-
-    // 5. Completar autenticación en el servidor
-    const finishResult = await apiClient.finishAuth({
-      session_id,
-      credential: serializedCredential,
+    // 4. Completar autenticación en el servidor
+    const response = credential.response as AuthenticatorAssertionResponse;
+    const finishResult = await apiClient.finishAuthentication({
+      session_id: startResult.value.session_id,
+      credential: {
+        id: credential.id,
+        rawId: credential.rawId,
+        response: {
+          authenticatorData: base64UrlEncode(response.authenticatorData),
+          clientDataJSON: base64UrlEncode(response.clientDataJSON),
+          signature: base64UrlEncode(response.signature),
+          userHandle: response.userHandle ? base64UrlEncode(response.userHandle) : undefined,
+        },
+        type: 'public-key',
+      },
     });
 
     if (!finishResult.ok) {
@@ -345,22 +319,23 @@ export async function authenticatePasskey(
       return err(finishResult.error);
     }
 
-    const result = finishResult.value;
+    const result: AuthenticateResult = {
+      authenticated: finishResult.value.authenticated,
+      sessionToken: finishResult.value.session_token,
+      user: {
+        userId: finishResult.value.user.user_id,
+        externalUserId: finishResult.value.user.external_user_id,
+        email: finishResult.value.user.email,
+        metadata: finishResult.value.user.metadata,
+      },
+      signals: finishResult.value.signals,
+    };
 
-    eventEmitter.emit('success', {
-      type: 'success',
-      operation: 'authenticate',
-    });
-
-    return ok({
-      authenticated: result.authenticated,
-      session_token: result.session_token,
-      user: result.user,
-      signals: result.signals,
-    });
+    eventEmitter.emit('success', { type: 'success', operation: 'authenticate' });
+    return ok(result);
   } catch (error) {
-    const mappedError = mapWebAuthnError(error);
-    eventEmitter.emit('error', { type: 'error', error: mappedError });
-    return err(mappedError);
+    const tryMellonError = mapWebAuthnError(error);
+    eventEmitter.emit('error', { type: 'error', error: tryMellonError });
+    return err(tryMellonError);
   }
 }

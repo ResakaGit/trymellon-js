@@ -1,6 +1,7 @@
 import { ApiClient } from './api';
 import { FetchHttpClient } from './fetch-client';
 import { OnboardingManager } from './onboarding-manager';
+import { CrossDeviceManager } from './cross-device-manager';
 import { EventEmitter } from './events';
 import { registerPasskey, authenticatePasskey } from './webauthn';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
@@ -43,6 +44,7 @@ export class TryMellon {
   private apiClient: ApiClient;
   private eventEmitter: EventEmitter;
   private telemetrySender: TelemetrySender | undefined;
+  private crossDeviceManager: CrossDeviceManager;
   public onboarding: OnboardingManager;
 
   constructor(config: TryMellonConfig) {
@@ -80,6 +82,7 @@ export class TryMellon {
 
     this.apiClient = new ApiClient(httpClient, apiBaseUrl, defaultHeaders);
     this.onboarding = new OnboardingManager(this.apiClient);
+    this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.eventEmitter = new EventEmitter();
 
     if (config.enableTelemetry) {
@@ -145,6 +148,15 @@ export class TryMellon {
       ): Promise<Result<EmailFallbackVerifyResult, TryMellonError>> => {
         return this.apiClient.verifyEmailCode(options.userId, options.code);
       },
+    },
+  };
+
+  auth = {
+    crossDevice: {
+      init: () => this.crossDeviceManager.init(),
+      waitForSession: (sessionId: string, signal?: AbortSignal) =>
+        this.crossDeviceManager.waitForSession(sessionId, signal),
+      approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
     },
   };
 }

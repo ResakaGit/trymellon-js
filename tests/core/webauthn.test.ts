@@ -100,7 +100,7 @@ describe('registerPasskey', () => {
     if (result.ok) {
       expect(result.value.success).toBe(true);
       expect(result.value.credential_id).toBe('cred_123');
-      expect(result.value.session_token).toBe('session_token_123');
+      expect(result.value.sessionToken).toBe('session_token_123');
     }
     expect(apiClient.startRegister).toHaveBeenCalledWith({
       external_user_id: 'user_123',
@@ -145,8 +145,8 @@ describe('registerPasskey', () => {
       expect(result.value.success).toBe(true);
       expect(result.value.credential_id).toBe('cred_123');
       expect(result.value.status).toBe('verified');
-      expect(result.value.session_token).toBe('session_token_123');
-      expect(result.value.user.external_user_id).toBe('user_123');
+      expect(result.value.sessionToken).toBe('session_token_123');
+      expect(result.value.user.externalUserId).toBe('user_123');
     }
   });
 
@@ -527,7 +527,7 @@ describe('authenticatePasskey', () => {
       })
     );
 
-    vi.spyOn(apiClient, 'finishAuth').mockResolvedValue(
+    vi.spyOn(apiClient, 'finishAuthentication').mockResolvedValue(
       ok({
         authenticated: true,
         session_token: 'session_token_123',
@@ -573,8 +573,8 @@ describe('authenticatePasskey', () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.authenticated).toBe(true);
-      expect(result.value.session_token).toBe('session_token_123');
-      expect(result.value.user?.external_user_id).toBe('user_123');
+      expect(result.value.sessionToken).toBe('session_token_123');
+      expect(result.value.user?.externalUserId).toBe('user_123');
       expect(result.value.signals.userVerification).toBe(true);
     }
     expect(apiClient.startAuth).toHaveBeenCalledWith({
@@ -781,7 +781,7 @@ describe('authenticatePasskey', () => {
 
     mockGet.mockResolvedValue(mockCredential);
 
-    vi.spyOn(apiClient, 'finishAuth').mockResolvedValue(
+    vi.spyOn(apiClient, 'finishAuthentication').mockResolvedValue(
       err(createError('NETWORK_ERROR', 'API error'))
     );
 

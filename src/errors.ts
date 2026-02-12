@@ -7,6 +7,7 @@ export type TryMellonErrorCode =
   | 'INVALID_ARGUMENT'
   | 'TIMEOUT'
   | 'ABORTED'
+  | 'ABORT_ERROR'
   | 'UNKNOWN_ERROR';
 
 export class TryMellonError extends Error {
@@ -35,6 +36,7 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   INVALID_ARGUMENT: 'Invalid argument provided',
   TIMEOUT: 'Operation timed out',
   ABORTED: 'Operation was aborted',
+  ABORT_ERROR: 'Operation aborted by user or timeout',
   UNKNOWN_ERROR: 'An unknown error occurred',
 };
 
