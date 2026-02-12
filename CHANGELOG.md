@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/ResakaGit/trymellon-js/compare/v1.1.3...v1.2.0) (2026-02-12)
+
+
+### Features
+
+* **cross-device:** SDK QR login flow 1.2.0 ([b7cce83](https://github.com/ResakaGit/trymellon-js/commit/b7cce83c9679a18e89b3aacb5fba4dd17ba917c7))
+
 ## [1.2.0] - 2026-02-12
 
 ### Added
