@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Added
+
+- **README**: Framework support & entry points section with table and examples for React, Vue, Angular, Vanilla JS, and Svelte; specification summary for project ingestion; corrected React/Vue examples to use `client` prop and `provideTryMellon(client)`.
+
+---
+
 ## [1.1.3](https://github.com/ResakaGit/trymellon-js/compare/v1.1.2...v1.1.3) (2026-02-11)
 
 ### Bug Fixes
