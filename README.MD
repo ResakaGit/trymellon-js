@@ -49,6 +49,138 @@ npm install @trymellon/js
 
 ---
 
+## Framework support & entry points
+
+The SDK is **framework-agnostic**. Use the main entry for Vanilla JS, Svelte, or any environment; use framework-specific entry points for React, Vue, and Angular to get hooks/services and tree-shaking.
+
+| Entry point | Use case | Exports |
+|-------------|----------|---------|
+| `@trymellon/js` | Vanilla JS, Svelte, Node, or any bundler | `TryMellon`, `TryMellon.isSupported()`, `Result`, `ok`, `err`, `isTryMellonError`, types |
+| `@trymellon/js/react` | React 18+ | `TryMellonProvider`, `useTryMellon`, `useRegister`, `useAuthenticate` |
+| `@trymellon/js/vue` | Vue 3 (Composition API) | `provideTryMellon`, `useTryMellon`, `useRegister`, `useAuthenticate`, `TryMellonKey` |
+| `@trymellon/js/angular` | Angular (standalone or NgModule) | `TryMellonService`, `provideTryMellonConfig`, `TRYMELLON_CONFIG` |
+
+**Runtime:** ESM and CJS supported. For UMD/script tag use `@trymellon/js/umd` or the built `dist/index.global.js` (exposes `window.TryMellon`).
+
+### React
+
+```bash
+npm install @trymellon/js
+```
+
+```tsx
+import { TryMellon } from '@trymellon/js'
+import { TryMellonProvider, useTryMellon, useRegister, useAuthenticate } from '@trymellon/js/react'
+
+const client = new TryMellon({ appId: 'app_live_xxxx', publishableKey: 'key_live_xxxx' })
+
+function App() {
+  return (
+    <TryMellonProvider client={client}>
+      <LoginForm />
+    </TryMellonProvider>
+  )
+}
+
+function LoginForm() {
+  const { execute: register, loading } = useRegister()
+  const { execute: authenticate } = useAuthenticate()
+
+  const onRegister = () => register({ externalUserId: 'user_123' })
+  const onLogin = () => authenticate({ externalUserId: 'user_123' })
+
+  return (
+    <>
+      <button onClick={onRegister} disabled={loading}>Register passkey</button>
+      <button onClick={onLogin} disabled={loading}>Sign in</button>
+    </>
+  )
+}
+```
+
+- **Requirements:** React 18+. Create a `TryMellon` instance (e.g. at app root), wrap your app (or auth subtree) with `TryMellonProvider` passing `client={client}`; then use `useTryMellon()`, `useRegister()`, and `useAuthenticate()` in children.
+
+### Vue
+
+```bash
+npm install @trymellon/js
+```
+
+```vue
+<script setup lang="ts">
+import { TryMellon } from '@trymellon/js'
+import { provideTryMellon, useTryMellon, useRegister, useAuthenticate } from '@trymellon/js/vue'
+
+const client = new TryMellon({ appId: 'app_live_xxxx', publishableKey: 'key_live_xxxx' })
+provideTryMellon(client)
+
+const { execute: register, loading } = useRegister()
+const { execute: authenticate } = useAuthenticate()
+
+const onRegister = () => register({ externalUserId: 'user_123' })
+const onLogin = () => authenticate({ externalUserId: 'user_123' })
+</script>
+
+<template>
+  <button @click="onRegister" :disabled="loading">Register passkey</button>
+  <button @click="onLogin" :disabled="loading">Sign in</button>
+</template>
+```
+
+- **Requirements:** Vue 3 with Composition API. Create a `TryMellon` instance and call `provideTryMellon(client)` once (e.g. in root or a parent); then use `useTryMellon()`, `useRegister()`, and `useAuthenticate()` in components.
+
+### Angular
+
+```bash
+npm install @trymellon/js
+```
+
+In your app config (e.g. `app.config.ts` or root module):
+
+```typescript
+import { provideTryMellonConfig } from '@trymellon/js/angular'
+
+export const appConfig = {
+  providers: [
+    provideTryMellonConfig({
+      appId: 'app_live_xxxx',
+      publishableKey: 'key_live_xxxx',
+    }),
+  ],
+}
+```
+
+In a component or service:
+
+```typescript
+import { TryMellonService } from '@trymellon/js/angular'
+
+@Injectable({ providedIn: 'root' })
+export class AuthService {
+  private tryMellon = inject(TryMellonService)
+
+  register(userId: string) {
+    return this.tryMellon.client.register({ externalUserId: userId })
+  }
+
+  authenticate(userId: string) {
+    return this.tryMellon.client.authenticate({ externalUserId: userId })
+  }
+}
+```
+
+- **Requirements:** Angular (standalone or NgModule). Add `provideTryMellonConfig(config)` to your app `providers`; inject `TryMellonService` and use `.client` for `register()`, `authenticate()`, and other methods.
+
+### Vanilla JavaScript
+
+Use the main entry and instantiate `TryMellon` directly (see Quickstart below). Works in any ES module or CJS environment. For script-tag usage, use the UMD build: `@trymellon/js/umd` or `dist/index.global.js`; the global is `window.TryMellon`.
+
+### Svelte (and other frameworks)
+
+No dedicated adapter. Use the **main entry** `@trymellon/js`: create one `TryMellon` instance (e.g. in a module or store) and call `register()` / `authenticate()` from your components. Same API as Quickstart; no provider required.
+
+---
+
 ## Quickstart (5 minutes)
 
 ```bash
@@ -486,9 +618,9 @@ Then create your own session in your system.
 
 ## Features
 
-* ✅ **Zero runtime dependencies** – No external runtime dependencies
-* ✅ **TypeScript first** – Full types and strict mode
-* ✅ **Framework agnostic** – Works with React, Vue, Angular, Vanilla JS, etc.
+* ✅ **Zero runtime dependencies** – No external runtime dependencies in the core bundle
+* ✅ **TypeScript first** – Full types and strict mode; all entry points typed
+* ✅ **Framework support** – Dedicated entry points: `@trymellon/js` (core), `@trymellon/js/react`, `@trymellon/js/vue`, `@trymellon/js/angular`; Vanilla and Svelte use core
 * ✅ **Automatic retries** – Exponential backoff for transient errors
 * ✅ **Thorough validation** – Input and API response validation
 * ✅ **Robust error handling** – Typed, descriptive errors
@@ -581,10 +713,24 @@ The SDK can send anonymous telemetry (event + latency, no user identifiers) when
 
 ---
 
+## Specification summary (for project ingestion)
+
+Projects integrating this SDK should document in their README:
+
+- **SDK:** `@trymellon/js` (and optionally `/react`, `/vue`, `/angular` if using those entry points)
+- **Node:** >= 18 (per `engines`)
+- **Browsers:** WebAuthn-capable (Chrome, Safari, Firefox, Edge); HTTPS required except `localhost`
+- **Config:** `appId` and `publishableKey` from TryMellon dashboard; optional `apiBaseUrl` for self-hosted API
+- **Backend:** Must validate `session_token` via TryMellon API (`GET /v1/sessions/validate`) and create own session
+
+Framework-specific: React uses `TryMellonProvider` + hooks; Vue uses `provideTryMellon` + composables; Angular uses `provideTryMellonConfig` + `TryMellonService`; Vanilla/Svelte use core `TryMellon` only.
+
+---
+
 ## Additional documentation
 
 - [API Reference](./documentation/API.md) – Full API reference
-- [Usage examples](./documentation/EXAMPLES.md) – Practical integration examples
+- [Usage examples](./documentation/EXAMPLES.md) – Practical integration examples (React, Vue, Vanilla, events, fallback)
 - [Contributing](./documentation/CONTRIBUTING.md) – How to contribute (including running tests, coverage, Angular, E2E, audit and workflow lint locally)
 - [CI standards (fintech)](./documentation/CI-FINTECH-STANDARDS.md) – Coverage, security, E2E and workflow validation criteria
 
