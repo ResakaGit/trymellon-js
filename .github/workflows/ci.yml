@@ -16,6 +16,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - name: Ensure npm lockfile
+        run: |
+          pwd
+          ls
+          test -f package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
@@ -37,6 +42,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - name: Ensure npm lockfile
+        run: |
+          pwd
+          ls
+          test -f package-lock.json
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:coverage
@@ -50,6 +60,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - name: Ensure npm lockfile
+        run: |
+          pwd
+          ls
+          test -f package-lock.json
       - run: npm ci
       - run: npm run audit:ci
 
@@ -63,6 +78,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - name: Ensure npm lockfile
+        run: |
+          pwd
+          ls
+          test -f package-lock.json
       - run: npm ci
       - name: Download dist
         uses: actions/download-artifact@v4
@@ -82,6 +102,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - name: Ensure npm lockfile
+        run: |
+          pwd
+          ls
+          test -f package-lock.json
       - run: npm ci
       - name: Download dist
         uses: actions/download-artifact@v4
