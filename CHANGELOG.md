@@ -1,3 +1,12 @@
+## [1.2.1] - 2026-02-12
+
+### Fixed
+
+- **WebAuthn Types:** Correcciones de tipos para las requests `finishRegister` y `finishAuth` (uso consistente de credenciales serializadas y `externalUserId` en resultados), alineando el SDK con el contrato de API sin cambios de comportamiento.
+- **Cross-Device Validators:** Alineación interna de los validadores de respuestas cross-device para usar tipos estrictos (`CrossDeviceContextResult['options']`) en lugar de `any`, mejorando type-safety sin cambios de comportamiento público.
+
+---
+
 # [1.2.0](https://github.com/ResakaGit/trymellon-js/compare/v1.1.3...v1.2.0) (2026-02-12)
 
 
@@ -16,14 +25,6 @@
 - **Cross-Device Manager**: New internal orchestration logic for cross-device flows.
 - **Validators**: Added validation for cross-device API responses.
 - **Types**: New TypeScript types for `CrossDeviceInitResult`, `CrossDeviceStatusResult`, etc.
-
----
-
-## [Unreleased]
-
-### Fixed
-
-- **Cross-Device Validators:** Alineación interna de los validadores de respuestas cross-device para usar tipos estrictos (`CrossDeviceContextResult['options']`) en lugar de `any`, mejorando type-safety sin cambios de comportamiento público.
 
 ---
 

@@ -580,7 +580,7 @@ describe('authenticatePasskey', () => {
     expect(apiClient.startAuth).toHaveBeenCalledWith({
       external_user_id: 'user_123',
     });
-    expect(apiClient.finishAuth).toHaveBeenCalled();
+    expect(apiClient.finishAuthentication).toHaveBeenCalled();
   });
 
   it('should authenticate with hint', async () => {

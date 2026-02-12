@@ -295,10 +295,16 @@ export interface AuthFinishResponse {
 export interface RegisterResult {
   success: true;
   credentialId: string;
+  /**
+   * Alias para compatibilidad con versiones anteriores que usaban snake_case.
+   * Preferir `credentialId` en código nuevo.
+   */
+  credential_id?: string;
   status: string;
   sessionToken: string;
   user: {
     userId: string;
+    externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
   };
@@ -309,6 +315,7 @@ export interface AuthenticateResult {
   sessionToken: string;
   user: {
     userId: string;
+    externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
   };

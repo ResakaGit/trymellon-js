@@ -197,7 +197,7 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('finishAuth', () => {
+  describe('finishAuthentication', () => {
     it('should finish auth successfully', async () => {
       mockHttpClient.post.mockResolvedValue(
         ok({
@@ -231,7 +231,7 @@ describe('ApiClient', () => {
         },
       };
 
-      const result = await client.finishAuth(request);
+      const result = await client.finishAuthentication(request);
 
       expect(result.ok).toBe(true);
       if (result.ok) {

@@ -5,7 +5,7 @@ import {
   createInvalidArgumentError,
   validateBase64Url,
 } from '../errors';
-import { base64UrlDecodeToArrayBuffer, base64UrlEncode } from '../utils/base64url';
+import { base64UrlDecodeToArrayBuffer } from '../utils/base64url';
 import { validateCredentialStructure } from '../utils/validation';
 import type { ApiClient } from './api';
 import type { EventEmitter } from './events';
@@ -20,6 +20,7 @@ import type {
 import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import type { TryMellonError } from '../errors';
+import { serializeCredentialForAuth, serializeCredentialForRegister } from './webauthn-utils';
 
 /**
  * Crea las opciones de creación de credencial para WebAuthn.
@@ -191,19 +192,7 @@ export async function registerPasskey(
     // 4. Completar registro en el servidor
     const finishResult = await apiClient.finishRegister({
       session_id: startResult.value.session_id,
-      credential: {
-        id: credential.id,
-        rawId: credential.rawId,
-        response: {
-          clientDataJSON: base64UrlEncode(
-            (credential.response as AuthenticatorAttestationResponse).clientDataJSON
-          ),
-          attestationObject: base64UrlEncode(
-            (credential.response as AuthenticatorAttestationResponse).attestationObject
-          ),
-        },
-        type: 'public-key',
-      },
+      credential: serializeCredentialForRegister(credential),
     });
 
     if (!finishResult.ok) {
@@ -214,6 +203,7 @@ export async function registerPasskey(
     const result: RegisterResult = {
       success: true,
       credentialId: finishResult.value.credential_id,
+      credential_id: finishResult.value.credential_id,
       status: finishResult.value.status,
       sessionToken: finishResult.value.session_token,
       user: {
@@ -298,20 +288,9 @@ export async function authenticatePasskey(
     }
 
     // 4. Completar autenticación en el servidor
-    const response = credential.response as AuthenticatorAssertionResponse;
     const finishResult = await apiClient.finishAuthentication({
       session_id: startResult.value.session_id,
-      credential: {
-        id: credential.id,
-        rawId: credential.rawId,
-        response: {
-          authenticatorData: base64UrlEncode(response.authenticatorData),
-          clientDataJSON: base64UrlEncode(response.clientDataJSON),
-          signature: base64UrlEncode(response.signature),
-          userHandle: response.userHandle ? base64UrlEncode(response.userHandle) : undefined,
-        },
-        type: 'public-key',
-      },
+      credential: serializeCredentialForAuth(credential),
     });
 
     if (!finishResult.ok) {
