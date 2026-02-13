@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/ResakaGit/trymellon-js/compare/v1.2.1...v1.3.0) (2026-02-13)
+
+
+### Features
+
+* **sandbox:** add sandbox mode and SANDBOX_SESSION_TOKEN (v1.3.0) ([e2f42bd](https://github.com/ResakaGit/trymellon-js/commit/e2f42bdfecb763e8da484c3e8bd839a7a3de51fb))
+
 ## [1.3.0] - 2026-02-13
 
 ### Added
