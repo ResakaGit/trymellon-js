@@ -144,7 +144,12 @@ export async function registerPasskey(
     }
 
     const extId = options.externalUserId ?? options.external_user_id;
-    if (!extId) throw new Error('externalUserId is required');
+
+    if (!extId || typeof extId !== 'string' || extId.trim() === '') {
+      const error = createInvalidArgumentError('externalUserId', 'must be a non-empty string');
+      eventEmitter.emit('error', { type: 'error', error });
+      return err(error);
+    }
 
     // 1. Obtener challenge del servidor
     const startResult = await apiClient.startRegister({
@@ -167,10 +172,10 @@ export async function registerPasskey(
       return err(creationOptionsResult.error);
     }
 
-    const creationOptions = creationOptionsResult.value;
-    if (options.signal) {
-      creationOptions.signal = options.signal;
-    }
+    const creationOptions = {
+      ...creationOptionsResult.value,
+      ...(options.signal && { signal: options.signal }),
+    };
 
     // 3. Solicitar al navegador la creación de la credencial
     const credential = (await navigator.credentials.create(creationOptions)) as PublicKeyCredential;
@@ -242,7 +247,12 @@ export async function authenticatePasskey(
     }
 
     const extId = options.externalUserId ?? options.external_user_id;
-    if (!extId) throw new Error('externalUserId is required');
+
+    if (!extId || typeof extId !== 'string' || extId.trim() === '') {
+      const error = createInvalidArgumentError('externalUserId', 'must be a non-empty string');
+      eventEmitter.emit('error', { type: 'error', error });
+      return err(error);
+    }
 
     // 1. Obtener challenge del servidor
     const startResult = await apiClient.startAuth({
@@ -265,10 +275,10 @@ export async function authenticatePasskey(
       return err(requestOptionsResult.error);
     }
 
-    const requestOptions = requestOptionsResult.value;
-    if (options.signal) {
-      requestOptions.signal = options.signal;
-    }
+    const requestOptions = {
+      ...requestOptionsResult.value,
+      ...(options.signal && { signal: options.signal }),
+    };
 
     // 3. Solicitar al navegador la autenticación
     const credential = (await navigator.credentials.get(requestOptions)) as PublicKeyCredential;

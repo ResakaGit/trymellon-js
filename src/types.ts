@@ -5,12 +5,33 @@ import type { TelemetrySender } from './core/ports/telemetry';
 export type { TryMellonError };
 
 // ============================================================================
+// Branded Types (Elite Standard)
+// ============================================================================
+
+export type Branded<T, B> = T & { __brand: B };
+
+export type AppId = Branded<string, 'AppId'>;
+export type TenantId = Branded<string, 'TenantId'>;
+export type ExternalUserId = Branded<string, 'ExternalUserId'>;
+export type UserId = Branded<string, 'UserId'>;
+export type SessionId = Branded<string, 'SessionId'>;
+export type SessionToken = Branded<string, 'SessionToken'>;
+
+export function asAppId(value: string): AppId {
+  return value as AppId;
+}
+
+export function asExternalUserId(value: string): ExternalUserId {
+  return value as ExternalUserId;
+}
+
+// ============================================================================
 // Configuration Types
 // ============================================================================
 
 export type TryMellonConfig = {
   /** Application identifier (tenant). Required for API requests. */
-  appId: string;
+  appId: string | AppId;
   /** API key for authentication. Required for API requests. */
   publishableKey: string;
   apiBaseUrl?: string;
@@ -35,11 +56,11 @@ export interface RegisterOptions {
   /**
    * Impacto en Analytics y Dashboard.
    */
-  externalUserId?: string;
+  externalUserId?: string | ExternalUserId;
   /**
    * @deprecated Use `externalUserId` instead.
    */
-  external_user_id?: string;
+  external_user_id?: string | ExternalUserId;
   authenticatorType?: 'platform' | 'cross-platform';
   signal?: AbortSignal;
 }
@@ -48,11 +69,11 @@ export interface AuthenticateOptions {
   /**
    * Impacto en Analytics y Dashboard.
    */
-  externalUserId?: string;
+  externalUserId?: string | ExternalUserId;
   /**
    * @deprecated Use `externalUserId` instead.
    */
-  external_user_id?: string;
+  external_user_id?: string | ExternalUserId;
   hint?: string;
   signal?: AbortSignal;
   /** Conditional UI mediation for passkey autofill / conditional UI. */

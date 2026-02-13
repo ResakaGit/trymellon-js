@@ -68,45 +68,47 @@ export class FetchHttpClient implements HttpClient {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
-        const response = await fetch(url, {
-          ...config,
-          headers,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          let errorData: unknown;
-          try {
-            errorData = await response.json();
-          } catch {
-            // Ignore JSON parse error
-          }
-
-          const body = errorData as { message?: string; error?: string } | undefined;
-          const message = body?.message ?? response.statusText;
-          const code = (body?.error as TryMellonErrorCode | undefined) ?? 'NETWORK_FAILURE';
-          const errResult = createError(code, message, {
-            requestId,
-            status: response.status,
-            statusText: response.statusText,
-            data: errorData,
+        try {
+          const response = await fetch(url, {
+            ...config,
+            headers,
+            signal: controller.signal,
           });
 
-          if (shouldRetryOnStatus(method, response.status) && attempt < this.maxRetries) {
-            lastError = errResult;
-            await new Promise((resolve) =>
-              setTimeout(resolve, getRetryDelayMs(attempt, this.retryDelayMs))
-            );
-            continue;
+          if (!response.ok) {
+            let errorData: unknown;
+            try {
+              errorData = await response.json();
+            } catch {
+              // Ignore JSON parse error
+            }
+
+            const body = errorData as { message?: string; error?: string } | undefined;
+            const message = body?.message ?? response.statusText;
+            const code = (body?.error as TryMellonErrorCode | undefined) ?? 'NETWORK_FAILURE';
+            const errResult = createError(code, message, {
+              requestId,
+              status: response.status,
+              statusText: response.statusText,
+              data: errorData,
+            });
+
+            if (shouldRetryOnStatus(method, response.status) && attempt < this.maxRetries) {
+              lastError = errResult;
+              await new Promise((resolve) =>
+                setTimeout(resolve, getRetryDelayMs(attempt, this.retryDelayMs))
+              );
+              continue;
+            }
+
+            return err(errResult);
           }
 
-          return err(errResult);
+          const data = (await response.json()) as T;
+          return ok(data);
+        } finally {
+          clearTimeout(timeoutId);
         }
-
-        const data = (await response.json()) as T;
-        return ok(data);
       } catch (error) {
         lastError = error;
         const isGet = method === 'GET';

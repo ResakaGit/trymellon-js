@@ -25,7 +25,7 @@ describe('validateCrossDeviceInitResponse', () => {
   it('should return err for null', () => {
     const result = validateCrossDeviceInitResponse(null);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe('NETWORK_FAILURE');
+    if (!result.ok) expect(result.error.code).toBe('UNKNOWN_ERROR');
   });
 
   it('should return err for undefined', () => {

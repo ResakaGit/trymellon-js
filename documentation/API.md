@@ -17,6 +17,7 @@ new TryMellon(config: TryMellonConfig)
 **Parámetros:**
 
 - `config.appId` (string, requerido): ID de la aplicación en TryMellon
+- `config.publishableKey` (string, requerido): Clave pública para autenticación con la API
 - `config.apiBaseUrl` (string, opcional): URL base de la API. Por defecto: `'https://api.trymellonauth.com'`
   - Debe ser una URL válida
 - `config.timeoutMs` (number, opcional): Timeout en milisegundos para requests HTTP. Por defecto: `30000`
@@ -35,6 +36,7 @@ import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
   appId: 'app_123',
+  publishableKey: 'pk_xxx',
   apiBaseUrl: 'https://api.trymellonauth.com',
   timeoutMs: 30000,
   maxRetries: 3,
@@ -46,14 +48,39 @@ const client = new TryMellon({
 
 - Lanza `TryMellonError` con código `'INVALID_ARGUMENT'` si:
   - `appId` está vacío o no es un string
+  - `publishableKey` está vacío o no es un string
   - `apiBaseUrl` no es una URL válida
-  - `timeoutMs` está fuera del rango válido
+  - `timeoutMs` está fuera del rango válido (o no es finito)
   - `maxRetries` está fuera del rango válido
   - `retryDelayMs` está fuera del rango válido
 
 ---
 
 ## Métodos Estáticos
+
+### `TryMellon.create(config)`
+
+Valida la configuración y crea una instancia sin lanzar. Retorna `Result<TryMellon, TryMellonError>`.
+
+```typescript
+static create(config: TryMellonConfig): Result<TryMellon, TryMellonError>
+```
+
+**Ejemplo:**
+
+```typescript
+const result = TryMellon.create({ appId: 'app_123', publishableKey: 'pk_xxx' });
+if (result.ok) {
+  const client = result.value;
+  // usar client
+} else {
+  console.error(result.error.code, result.error.message);
+}
+```
+
+**Recomendado** para manejar errores de configuración sin try/catch. El constructor sigue disponible pero lanza si la config es inválida.
+
+---
 
 ### `TryMellon.isSupported()`
 
@@ -86,50 +113,47 @@ if (!TryMellon.isSupported()) {
 Registra una nueva passkey para un usuario.
 
 ```typescript
-register(options: RegisterOptions): Promise<RegisterResult>
+register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>>
 ```
 
 **Parámetros:**
 
-- `options.userId` (string, requerido): ID único del usuario
+- `options.externalUserId` (string, requerido): ID externo del usuario (ej. en tu sistema). También acepta `external_user_id` (deprecated)
 - `options.authenticatorType` ('platform' | 'cross-platform', opcional): Tipo de authenticator preferido
 - `options.signal` (AbortSignal, opcional): Signal para cancelar la operación
 
 **Retorna:**
 
-- `Promise<RegisterResult>`: Objeto con `success: true` y opcionalmente `sessionToken` si TryMellon Backend lo proporciona
+- `Promise<Result<RegisterResult, TryMellonError>>`: `ok: true` con `value` (success, sessionToken, user, etc.) o `ok: false` con `error` (TryMellonError)
 
 **Ejemplo:**
 
 ```typescript
-try {
-  const result = await client.register({
-    userId: 'user_123',
-    authenticatorType: 'platform',
-  });
+const result = await client.register({
+  externalUserId: 'user_123',
+  authenticatorType: 'platform',
+});
 
-  console.log('Passkey registrada exitosamente');
-
-  // Si TryMellon Backend retorna sessionToken, puedes usarlo inmediatamente
-  if (result.sessionToken) {
+if (result.ok) {
+  if (result.value.sessionToken) {
     await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionToken: result.sessionToken }),
+      body: JSON.stringify({ sessionToken: result.value.sessionToken }),
     });
   }
-} catch (error) {
-  if (error.code === 'USER_CANCELLED') {
+} else {
+  if (result.error.code === 'USER_CANCELLED') {
     console.log('Usuario canceló el registro');
   }
 }
 ```
 
-**Errores:**
+**Errores (result.error.code):**
 
 - `NOT_SUPPORTED`: WebAuthn no está disponible
 - `USER_CANCELLED`: Usuario canceló la operación
-- `INVALID_ARGUMENT`: `userId` inválido
+- `INVALID_ARGUMENT`: `externalUserId` faltante o inválido
 - `NETWORK_FAILURE`: Error de red
 - `TIMEOUT`: Operación expiró
 
@@ -140,42 +164,42 @@ try {
 Autentica un usuario usando su passkey.
 
 ```typescript
-authenticate(options: AuthenticateOptions): Promise<AuthenticateResult>
+authenticate(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>>
 ```
 
 **Parámetros:**
 
-- `options.userId` (string, opcional): ID del usuario. Si no se proporciona, se mostrarán todas las passkeys disponibles
+- `options.externalUserId` (string, opcional): ID externo del usuario. También acepta `external_user_id` (deprecated)
 - `options.hint` (string, opcional): Hint para ayudar al usuario a seleccionar la passkey correcta (ej: email)
 - `options.signal` (AbortSignal, opcional): Signal para cancelar la operación
+- `options.mediation` ('optional' | 'conditional' | 'required', opcional): Para conditional UI / autofill
 
 **Retorna:**
 
-- `Promise<AuthenticateResult>`: Objeto con `sessionToken` y opcionalmente `user`
+- `Promise<Result<AuthenticateResult, TryMellonError>>`: `ok: true` con `value` (sessionToken, user, etc.) o `ok: false` con `error`
 
 **Ejemplo:**
 
 ```typescript
-try {
-  const result = await client.authenticate({
-    userId: 'user_123',
-    hint: 'user@example.com',
-  });
+const result = await client.authenticate({
+  externalUserId: 'user_123',
+  hint: 'user@example.com',
+});
 
-  // Enviar sessionToken al backend
+if (result.ok) {
   await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionToken: result.sessionToken }),
+    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
   });
-} catch (error) {
-  if (error.code === 'PASSKEY_NOT_FOUND') {
+} else {
+  if (result.error.code === 'PASSKEY_NOT_FOUND') {
     console.log('No se encontró passkey para este usuario');
   }
 }
 ```
 
-**Errores:**
+**Errores (result.error.code):**
 
 - `NOT_SUPPORTED`: WebAuthn no está disponible
 - `USER_CANCELLED`: Usuario canceló la operación
@@ -355,18 +379,24 @@ try {
 ```typescript
 type TryMellonConfig = {
   appId: string;
+  publishableKey: string;
   apiBaseUrl?: string;
   timeoutMs?: number;
   maxRetries?: number;
   retryDelayMs?: number;
+  logger?: Logger;
+  enableTelemetry?: boolean;
+  telemetrySender?: TelemetrySender;
+  telemetryEndpoint?: string;
 };
 ```
 
 **Validaciones:**
 
 - `appId`: Debe ser un string no vacío
+- `publishableKey`: Debe ser un string no vacío
 - `apiBaseUrl`: Debe ser una URL válida (validada con `new URL()`)
-- `timeoutMs`: Debe estar entre `1000` y `300000` milisegundos
+- `timeoutMs`: Debe ser un número finito entre `1000` y `300000` milisegundos
 - `maxRetries`: Debe estar entre `0` y `10`
 - `retryDelayMs`: Debe estar entre `100` y `10000` milisegundos
 
@@ -374,7 +404,8 @@ type TryMellonConfig = {
 
 ```typescript
 type RegisterOptions = {
-  userId: string;
+  externalUserId?: string;
+  external_user_id?: string; // deprecated, usar externalUserId
   authenticatorType?: 'platform' | 'cross-platform';
   signal?: AbortSignal;
 };

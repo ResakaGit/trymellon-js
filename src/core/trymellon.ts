@@ -35,8 +35,8 @@ import type {
   EmailFallbackVerifyResult,
   SessionValidateResponse,
 } from '../types';
-import type { Result } from '../utils/result';
-import type { TryMellonError } from '../errors';
+import { ok, err, type Result } from '../utils/result';
+import { type TryMellonError, isTryMellonError } from '../errors';
 
 declare const __VERSION__: string;
 
@@ -47,9 +47,57 @@ export class TryMellon {
   private crossDeviceManager: CrossDeviceManager;
   public onboarding: OnboardingManager;
 
+  /**
+   * Configura una nueva instancia de TryMellon.
+   * Valida la configuración y retorna un Result.
+   * @param config Configuración del SDK
+   */
+  static create(config: TryMellonConfig): Result<TryMellon, TryMellonError> {
+    try {
+      const appId = config.appId;
+      const publishableKey = config.publishableKey;
+
+      if (!appId || typeof appId !== 'string' || appId.trim() === '') {
+        return err(createInvalidArgumentError('appId', 'must be a non-empty string'));
+      }
+      if (!publishableKey || typeof publishableKey !== 'string' || publishableKey.trim() === '') {
+        return err(createInvalidArgumentError('publishableKey', 'must be a non-empty string'));
+      }
+
+      const apiBaseUrl = config.apiBaseUrl ?? DEFAULT_API_BASE_URL;
+      validateUrl(apiBaseUrl, 'apiBaseUrl');
+
+      const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+      validateRange(timeoutMs, 'timeoutMs', MIN_TIMEOUT_MS, MAX_TIMEOUT_MS);
+
+      if (config.maxRetries !== undefined) {
+        validateRange(config.maxRetries, 'maxRetries', MIN_MAX_RETRIES, MAX_MAX_RETRIES);
+      }
+
+      if (config.retryDelayMs !== undefined) {
+        validateRange(config.retryDelayMs, 'retryDelayMs', MIN_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS);
+      }
+
+      // Safe to instantiate now
+      return ok(new TryMellon(config));
+    } catch (e) {
+      if (isTryMellonError(e)) {
+        return err(e);
+      }
+      return err(createInvalidArgumentError('config', (e as Error).message));
+    }
+  }
+
+  /**
+   * @deprecated Use `TryMellon.create(config)` instead to handle validation errors safely.
+   * This constructor will throw errors if configuration is invalid.
+   */
   constructor(config: TryMellonConfig) {
     const appId = config.appId;
     const publishableKey = config.publishableKey;
+
+    // Legacy validation for direct constructor usage (still throws to maintain behavior for legacy code,
+    // but create() handles this safely before calling constructor)
     if (!appId || typeof appId !== 'string' || appId.trim() === '') {
       throw createInvalidArgumentError('appId', 'must be a non-empty string');
     }
@@ -58,6 +106,7 @@ export class TryMellon {
     }
 
     const apiBaseUrl = config.apiBaseUrl ?? DEFAULT_API_BASE_URL;
+    // validateUrl throws, which is expected for the constructor. create() catches it.
     validateUrl(apiBaseUrl, 'apiBaseUrl');
 
     const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;

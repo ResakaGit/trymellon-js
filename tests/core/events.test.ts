@@ -199,6 +199,24 @@ describe('EventEmitter', () => {
       expect(handlers.error).toHaveBeenCalledTimes(1);
       expect(handlers.cancelled).toHaveBeenCalledTimes(1);
     });
+
+    it('should not throw when a handler throws (errors are swallowed)', () => {
+      const emitter = new EventEmitter();
+      const throwingHandler = vi.fn().mockImplementation(() => {
+        throw new Error('Handler error');
+      });
+      const otherHandler = vi.fn();
+
+      emitter.on('start', throwingHandler);
+      emitter.on('start', otherHandler);
+
+      expect(() => {
+        emitter.emit('start', { type: 'start', operation: 'register' });
+      }).not.toThrow();
+
+      expect(throwingHandler).toHaveBeenCalledTimes(1);
+      expect(otherHandler).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('removeAllListeners', () => {

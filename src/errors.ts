@@ -117,6 +117,9 @@ export function validateUrl(url: string, fieldName: string): void {
 }
 
 export function validateRange(value: number, fieldName: string, min: number, max: number): void {
+  if (!Number.isFinite(value)) {
+    throw createInvalidArgumentError(fieldName, 'must be a finite number');
+  }
   if (value < min || value > max) {
     throw createInvalidArgumentError(fieldName, `must be between ${min} and ${max}`);
   }

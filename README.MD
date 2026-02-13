@@ -190,18 +190,26 @@ npm install @trymellon/js
 ```typescript
 import { TryMellon } from '@trymellon/js'
 
-const client = new TryMellon({
+// 1. Initialize safely (Factory Pattern)
+const clientResult = TryMellon.create({
   appId: 'app_live_xxxx',   // From your TryMellon dashboard
   publishableKey: 'key_live_xxxx', // Application API key
 })
 
-// Register passkey (camelCase recommended in options)
+if (!clientResult.ok) {
+  console.error('Invalid config:', clientResult.error.message);
+  throw clientResult.error;
+}
+
+const client = clientResult.value;
+
+// 2. Register passkey (camelCase recommended in options)
 const registerResult = await client.register({ externalUserId: 'user_123' })
 if (registerResult.ok) {
   console.log('Session token:', registerResult.value.sessionToken)
 }
 
-// Authenticate
+// 3. Authenticate
 const authResult = await client.authenticate({ externalUserId: 'user_123' })
 if (authResult.ok) {
   console.log('Session token:', authResult.value.sessionToken)

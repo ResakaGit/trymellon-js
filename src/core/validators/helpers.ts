@@ -27,7 +27,7 @@ export function validationError(
   details?: { field?: string; expected?: string; originalData?: unknown }
 ): Result<never, TryMellonError> {
   return err(
-    createError('NETWORK_FAILURE', message, {
+    createError('UNKNOWN_ERROR', message, {
       ...details,
       originalData: details?.originalData,
     })

@@ -260,4 +260,131 @@ describe('TryMellon', () => {
       expect(result.ok).toBe(true);
     });
   });
+
+  describe('TryMellon.create', () => {
+    it('should return ok with instance when config is valid', () => {
+      const result = TryMellon.create(config);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeInstanceOf(TryMellon);
+      }
+    });
+
+    it('should return err when appId is empty', () => {
+      const result = TryMellon.create({
+        ...config,
+        appId: '',
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    });
+
+    it('should return err when publishableKey is missing', () => {
+      const result = TryMellon.create({
+        appId: config.appId,
+        publishableKey: '',
+      });
+      expect(result.ok).toBe(false);
+    });
+  });
+
+  describe('version', () => {
+    it('should return a string', () => {
+      const v = tryMellon.version();
+      expect(typeof v).toBe('string');
+      expect(v.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('getStatus', () => {
+    it('should return ClientStatus with isPasskeySupported and recommendedFlow', async () => {
+      const status = await tryMellon.getStatus();
+      expect(status).toHaveProperty('isPasskeySupported');
+      expect(status).toHaveProperty('platformAuthenticatorAvailable');
+      expect(status).toHaveProperty('recommendedFlow');
+      expect(['passkey', 'fallback']).toContain(status.recommendedFlow);
+    });
+  });
+
+  describe('on', () => {
+    it('should return unsubscribe function', () => {
+      const handler = vi.fn();
+      const unsubscribe = tryMellon.on('start', handler);
+      expect(typeof unsubscribe).toBe('function');
+      unsubscribe();
+    });
+  });
+
+  describe('fallback.email', () => {
+    it('should call startEmailFallback with userId', async () => {
+      const mockInstance = (
+        tryMellon as { apiClient: { startEmailFallback: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.startEmailFallback.mockResolvedValue(ok(undefined));
+
+      const result = await tryMellon.fallback.email.start({ userId: 'u_123' });
+      expect(mockInstance.startEmailFallback).toHaveBeenCalledWith('u_123');
+      expect(result.ok).toBe(true);
+    });
+
+    it('should call verifyEmailCode with userId and code', async () => {
+      const mockInstance = (
+        tryMellon as { apiClient: { verifyEmailCode: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.verifyEmailCode.mockResolvedValue(ok({ sessionToken: 'st_abc' }));
+
+      const result = await tryMellon.fallback.email.verify({
+        userId: 'u_123',
+        code: '123456',
+      });
+      expect(mockInstance.verifyEmailCode).toHaveBeenCalledWith('u_123', '123456');
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('st_abc');
+    });
+  });
+
+  describe('auth.crossDevice', () => {
+    it('should expose init returning Result', async () => {
+      const mockInstance = (
+        tryMellon as {
+          apiClient: { initCrossDeviceAuth: ReturnType<typeof vi.fn> };
+        }
+      ).apiClient;
+      mockInstance.initCrossDeviceAuth?.mockResolvedValue?.(
+        ok({ session_id: 's1', qr_url: 'https://q.r', expires_at: '2026-01-01T00:00:00Z' })
+      );
+
+      const result = await tryMellon.auth.crossDevice.init();
+      expect(result.ok).toBe(true);
+    });
+
+    it('should expose approve and waitForSession as functions', () => {
+      expect(typeof tryMellon.auth.crossDevice.approve).toBe('function');
+      expect(typeof tryMellon.auth.crossDevice.waitForSession).toBe('function');
+    });
+  });
+
+  describe('telemetry send rejection', () => {
+    it('should not throw when telemetrySender.send rejects', async () => {
+      const mockTelemetrySend = vi.fn().mockRejectedValue(new Error('Network error'));
+      const client = new TryMellon({
+        ...config,
+        enableTelemetry: true,
+        telemetrySender: { send: mockTelemetrySend },
+      });
+      registerPasskeySpy.mockResolvedValue(
+        ok({
+          credential_id: 'c1',
+          status: 'verified',
+          session_token: 't1',
+          user: { user_id: 'u1', external_user_id: 'user_123' },
+        }) as Result<RegisterResult, never>
+      );
+
+      const result = await client.register({ external_user_id: 'user_123' });
+
+      expect(result.ok).toBe(true);
+      expect(mockTelemetrySend).toHaveBeenCalled();
+    });
+  });
 });

@@ -1,3 +1,26 @@
+## [1.2.2] - 2026-02-13
+
+### Added
+
+- **TryMellon.create(config):** Método estático que valida la configuración y retorna `Result<TryMellon, TryMellonError>` en lugar de lanzar, permitiendo manejar errores de configuración sin try/catch.
+- **Tests:** Cobertura ampliada para EventEmitter (handler que lanza), TryMellon.create/version/getStatus/on/fallback/crossDevice, telemetría cuando `send` rechaza, validación de credenciales y helpers de validators.
+
+### Fixed
+
+- **Validación de entrada:** `register()` y `authenticate()` ahora validan `externalUserId` en el boundary y devuelven `err(INVALID_ARGUMENT)` si falta o no es string no vacío (sin lanzar excepciones).
+- **Validators:** Las respuestas de API mal formadas ahora devuelven código `UNKNOWN_ERROR` en lugar de `NETWORK_FAILURE` para reflejar correctamente el tipo de fallo.
+- **validateRange:** Rechaza `NaN` e infinitos con `Number.isFinite()` antes de comprobar el rango.
+- **fetch-client:** Limpieza de `timeoutId` en bloque `finally` dentro del bucle de reintentos para evitar timers huérfanos.
+- **Inmutabilidad:** Opciones WebAuthn (`creationOptions`/`requestOptions`) se construyen con spread en lugar de mutar el objeto devuelto.
+- **Coverage:** Exclusión de `src/types.ts` del reporte de cobertura (solo tipos); umbrales 94/95/89/94 cumplidos.
+- **Lint:** Eliminados imports y variables no usadas en tests (helpers.test.ts, validation.test.ts).
+
+### Documentation
+
+- **API.md:** Añadidos `TryMellon.create()`, `publishableKey` en config y referencia a `externalUserId` en opciones; aclarado que `register`/`authenticate` retornan `Promise<Result<...>>`.
+
+---
+
 ## [1.2.1] - 2026-02-12
 
 ### Fixed

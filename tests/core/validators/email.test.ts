@@ -13,7 +13,7 @@ describe('validateEmailVerifyResponse', () => {
   it('should return err for null', () => {
     const result = validateEmailVerifyResponse(null);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe('NETWORK_FAILURE');
+    if (!result.ok) expect(result.error.code).toBe('UNKNOWN_ERROR');
   });
 
   it('should return err for non-object', () => {
