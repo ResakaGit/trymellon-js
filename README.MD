@@ -792,6 +792,13 @@ Framework-specific: React uses `TryMellonProvider` + hooks; Vue uses `provideTry
 
 ---
 
+## Contact & landing
+
+- **Landing:** [https://trymellon-landing.pages.dev/](https://trymellon-landing.pages.dev/)
+- **Contact:** [siliangrove@gmail.com](mailto:siliangrove@gmail.com) — Sales inquiries by email only.
+
+---
+
 ## Additional documentation
 
 - [API Reference](./documentation/API.md) – Full API reference

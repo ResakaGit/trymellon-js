@@ -1,3 +1,11 @@
+## [1.2.3] - 2026-02-13
+
+### Documentation
+
+- **README.MD:** Actualización de documentación del SDK.
+
+---
+
 ## [1.2.2] - 2026-02-13
 
 ### Added
