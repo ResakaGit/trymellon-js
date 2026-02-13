@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as errors from '../../src/errors';
 import { startEmailFallback, verifyEmailCode } from '../../src/fallback/email';
 import { ApiClient } from '../../src/core/api';
 import type { HttpClient } from '../../src/core/http-client';
@@ -69,6 +70,33 @@ describe('startEmailFallback', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('NETWORK_FAILURE');
   });
+
+  it('should return err reusing TryMellonError when validation throws TryMellonError', async () => {
+    const apiClient = new ApiClient(
+      mockHttpClient as unknown as HttpClient,
+      'https://api.example.com'
+    );
+    const result = await startEmailFallback('', apiClient);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('INVALID_ARGUMENT');
+      expect(result.error).toHaveProperty('isTryMellonError', true);
+    }
+  });
+
+  it('should return err with INVALID_ARGUMENT when validation throws non-TryMellonError', async () => {
+    vi.spyOn(errors, 'validateNonEmptyString').mockImplementationOnce(() => {
+      throw new Error('plain');
+    });
+    const apiClient = new ApiClient(
+      mockHttpClient as unknown as HttpClient,
+      'https://api.example.com'
+    );
+    const result = await startEmailFallback('user_123', apiClient);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    vi.restoreAllMocks();
+  });
 });
 
 describe('verifyEmailCode', () => {
@@ -135,5 +163,22 @@ describe('verifyEmailCode', () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('NETWORK_FAILURE');
+  });
+
+  it('should return err with INVALID_ARGUMENT when code validation throws non-TryMellonError', async () => {
+    vi.spyOn(errors, 'validateNonEmptyString').mockImplementation((value, fieldName) => {
+      if (fieldName === 'code') throw new Error('plain');
+      if (!value || typeof value !== 'string' || (value as string).trim() === '') {
+        throw errors.createInvalidArgumentError(fieldName, 'must be a non-empty string');
+      }
+    });
+    const apiClient = new ApiClient(
+      mockHttpClient as unknown as HttpClient,
+      'https://api.example.com'
+    );
+    const result = await verifyEmailCode('user_123', '123456', apiClient);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    vi.restoreAllMocks();
   });
 });
