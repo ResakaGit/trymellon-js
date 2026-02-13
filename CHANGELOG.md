@@ -1,3 +1,18 @@
+## [1.3.0] - 2026-02-13
+
+### Added
+
+- **Sandbox mode:** Config option `sandbox: true` for local development. When enabled, `register()` and `authenticate()` return immediately with a fixed session token (no API or WebAuthn calls). Option `sandboxToken` allows a custom token; otherwise the exported constant `SANDBOX_SESSION_TOKEN` is used.
+- **SANDBOX_SESSION_TOKEN:** Exported constant (`trymellon_sandbox_session_token_v1`) for backend recognition in development. Backends MUST NOT accept this token in production.
+- **validateSession(sandboxToken):** When the client is in sandbox mode and the token equals the sandbox token, returns a mock valid response without calling the API.
+
+### Documentation
+
+- **README.MD:** New section "Sandbox / development mode" with config, constant, and example.
+- **API.md:** `TryMellonConfig` extended with `sandbox` and `sandboxToken`; new subsection for `SANDBOX_SESSION_TOKEN`.
+
+---
+
 ## [1.2.3] - 2026-02-13
 
 ### Documentation

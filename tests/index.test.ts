@@ -16,6 +16,7 @@ import type {
 } from '../src/index';
 import {
   TryMellon,
+  SANDBOX_SESSION_TOKEN,
   TryMellonError,
   isTryMellonError,
   createError,
@@ -34,6 +35,12 @@ describe('Public API Exports', () => {
   it('should export TryMellon class', () => {
     expect(TryMellon).toBeDefined();
     expect(typeof TryMellon).toBe('function');
+  });
+
+  it('should export SANDBOX_SESSION_TOKEN constant', () => {
+    expect(SANDBOX_SESSION_TOKEN).toBeDefined();
+    expect(typeof SANDBOX_SESSION_TOKEN).toBe('string');
+    expect(SANDBOX_SESSION_TOKEN).toBe('trymellon_sandbox_session_token_v1');
   });
 
   it('should export TryMellonConfig type', () => {

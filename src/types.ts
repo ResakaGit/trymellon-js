@@ -46,6 +46,16 @@ export type TryMellonConfig = {
   telemetrySender?: TelemetrySender;
   /** Endpoint for default telemetry sender when enableTelemetry is true and telemetrySender not set. */
   telemetryEndpoint?: string;
+  /**
+   * When true, register() and authenticate() return immediately with a fixed sandbox token (no API or WebAuthn).
+   * For local development only. Your backend must NOT accept the sandbox token in production.
+   */
+  sandbox?: boolean;
+  /**
+   * Custom token to return in sandbox mode. If not set, SANDBOX_SESSION_TOKEN is used.
+   * Only used when sandbox is true.
+   */
+  sandboxToken?: string;
 };
 
 // ============================================================================

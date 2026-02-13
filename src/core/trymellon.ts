@@ -18,6 +18,7 @@ import {
   MAX_MAX_RETRIES,
   MIN_RETRY_DELAY_MS,
   MAX_RETRY_DELAY_MS,
+  SANDBOX_SESSION_TOKEN,
 } from './constants';
 import { createDefaultTelemetrySender } from './adapters/telemetry-sender';
 import { buildTelemetryPayload, type TelemetrySender } from './ports/telemetry';
@@ -41,6 +42,8 @@ import { type TryMellonError, isTryMellonError } from '../errors';
 declare const __VERSION__: string;
 
 export class TryMellon {
+  private readonly sandbox: boolean;
+  private readonly sandboxToken: string;
   private apiClient: ApiClient;
   private eventEmitter: EventEmitter;
   private telemetrySender: TelemetrySender | undefined;
@@ -93,6 +96,12 @@ export class TryMellon {
    * This constructor will throw errors if configuration is invalid.
    */
   constructor(config: TryMellonConfig) {
+    this.sandbox = config.sandbox === true;
+    this.sandboxToken =
+      this.sandbox && config.sandboxToken != null && config.sandboxToken !== ''
+        ? config.sandboxToken
+        : SANDBOX_SESSION_TOKEN;
+
     const appId = config.appId;
     const publishableKey = config.publishableKey;
 
@@ -146,6 +155,24 @@ export class TryMellon {
   }
 
   async register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
+    if (this.sandbox) {
+      const externalUserId =
+        options.externalUserId ??
+        (options as { external_user_id?: string }).external_user_id ??
+        'sandbox';
+      return Promise.resolve(
+        ok({
+          success: true,
+          credentialId: '',
+          status: 'sandbox',
+          sessionToken: this.sandboxToken,
+          user: {
+            userId: 'sandbox-user',
+            externalUserId: typeof externalUserId === 'string' ? externalUserId : 'sandbox',
+          },
+        })
+      );
+    }
     const start = Date.now();
     const result = await registerPasskey(options, this.apiClient, this.eventEmitter);
     if (result.ok && this.telemetrySender) {
@@ -159,6 +186,22 @@ export class TryMellon {
   async authenticate(
     options: AuthenticateOptions
   ): Promise<Result<AuthenticateResult, TryMellonError>> {
+    if (this.sandbox) {
+      const externalUserId =
+        options.externalUserId ??
+        (options as { external_user_id?: string }).external_user_id ??
+        'sandbox';
+      return Promise.resolve(
+        ok({
+          authenticated: true,
+          sessionToken: this.sandboxToken,
+          user: {
+            userId: 'sandbox-user',
+            externalUserId: typeof externalUserId === 'string' ? externalUserId : 'sandbox',
+          },
+        })
+      );
+    }
     const start = Date.now();
     const result = await authenticatePasskey(options, this.apiClient, this.eventEmitter);
     if (result.ok && this.telemetrySender) {
@@ -172,6 +215,17 @@ export class TryMellon {
   async validateSession(
     sessionToken: string
   ): Promise<Result<SessionValidateResponse, TryMellonError>> {
+    if (this.sandbox && sessionToken === this.sandboxToken) {
+      return Promise.resolve(
+        ok({
+          valid: true,
+          user_id: 'sandbox-user',
+          external_user_id: 'sandbox',
+          tenant_id: 'sandbox-tenant',
+          app_id: 'sandbox-app',
+        })
+      );
+    }
     return this.apiClient.validateSession(sessionToken);
   }
 

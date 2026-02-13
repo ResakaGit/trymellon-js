@@ -247,6 +247,41 @@ const client = new TryMellon({
 
 ---
 
+## Sandbox / development mode
+
+For local development or testing the integration flow without a real backend or WebAuthn (e.g. no passkey hardware), enable **sandbox mode**. With `sandbox: true`, `register()` and `authenticate()` return immediately with a fixed session token and a demo user—no API or WebAuthn calls.
+
+**Configuration:**
+
+- `sandbox` (optional): Set to `true` to enable sandbox mode.
+- `sandboxToken` (optional): Custom token to return. If not set, the exported constant `SANDBOX_SESSION_TOKEN` is used.
+
+**Exported constant:** Import `SANDBOX_SESSION_TOKEN` from `@trymellon/js` so your backend can recognize the sandbox token in development. **Your backend MUST NOT accept this token in production**—only in development. See [Backend validation](https://trymellon.com/docs/backend-validation) for the hook contract.
+
+**Example:**
+
+```typescript
+import { TryMellon, SANDBOX_SESSION_TOKEN } from '@trymellon/js'
+
+const client = new TryMellon({
+  sandbox: true,
+  appId: 'sandbox',
+  publishableKey: 'sandbox',
+})
+
+const result = await client.authenticate({ externalUserId: 'dev_user_1' })
+if (result.ok) {
+  // result.value.sessionToken === SANDBOX_SESSION_TOKEN
+  await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
+  })
+}
+```
+
+---
+
 ## Basic usage
 
 ### Check WebAuthn support

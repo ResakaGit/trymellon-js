@@ -388,6 +388,10 @@ type TryMellonConfig = {
   enableTelemetry?: boolean;
   telemetrySender?: TelemetrySender;
   telemetryEndpoint?: string;
+  /** When true, register() and authenticate() return immediately with a sandbox token (no API/WebAuthn). */
+  sandbox?: boolean;
+  /** Custom token for sandbox mode. If not set, SANDBOX_SESSION_TOKEN is used. */
+  sandboxToken?: string;
 };
 ```
 
@@ -399,6 +403,17 @@ type TryMellonConfig = {
 - `timeoutMs`: Debe ser un número finito entre `1000` y `300000` milisegundos
 - `maxRetries`: Debe estar entre `0` y `10`
 - `retryDelayMs`: Debe estar entre `100` y `10000` milisegundos
+
+**Comportamiento con `sandbox === true`:** `register()` y `authenticate()` no realizan llamadas HTTP ni WebAuthn; devuelven de inmediato un `Result` exitoso con `sessionToken` igual a `config.sandboxToken` o a la constante `SANDBOX_SESSION_TOKEN`. `validateSession(sessionToken)` devuelve un mock válido si el token es el de sandbox.
+
+### `SANDBOX_SESSION_TOKEN` (constante exportada)
+
+Valor fijo del token de sesión que el SDK devuelve en modo sandbox. El backend del cliente puede importarla para reconocer el token en desarrollo y crear sesión sin llamar a TryMellon. **En producción el backend NO debe aceptar este token.**
+
+```typescript
+import { SANDBOX_SESSION_TOKEN } from '@trymellon/js';
+// Valor: 'trymellon_sandbox_session_token_v1'
+```
 
 ### `RegisterOptions`
 

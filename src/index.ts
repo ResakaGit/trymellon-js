@@ -1,4 +1,5 @@
 export { TryMellon } from './core/trymellon';
+export { SANDBOX_SESSION_TOKEN } from './core/constants';
 
 export type { Result } from './utils/result';
 export { ok, err } from './utils/result';

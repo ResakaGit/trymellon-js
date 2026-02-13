@@ -13,3 +13,9 @@ export const MIN_MAX_RETRIES = 0;
 export const MAX_MAX_RETRIES = 10;
 export const MIN_RETRY_DELAY_MS = 100;
 export const MAX_RETRY_DELAY_MS = 10000;
+
+/**
+ * Fixed session token returned by register() and authenticate() when sandbox mode is enabled.
+ * Backends MUST NOT accept this token in production; only in development for testing the integration flow.
+ */
+export const SANDBOX_SESSION_TOKEN = 'trymellon_sandbox_session_token_v1';
