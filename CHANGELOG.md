@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/ResakaGit/trymellon-js/compare/v1.3.0...v1.3.1) (2026-02-14)
+
+
+### Bug Fixes
+
+* **sdk:** email fallback requires userId + email; docs use publishableKey ([b16c718](https://github.com/ResakaGit/trymellon-js/commit/b16c718b8679621b982718447902db15251e40fc))
+
 # Unreleased
 
 ### Breaking
