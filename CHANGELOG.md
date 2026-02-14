@@ -1,3 +1,5 @@
+## [1.3.2](https://github.com/ResakaGit/trymellon-js/compare/v1.3.1...v1.3.2) (2026-02-14)
+
 ## [1.3.2] - 2026-02-14
 
 ### Maintenance
