@@ -27,6 +27,62 @@ We built **TryMellon** to solve the complexity without locking you in.
 
 ---
 
+## 🤖 For AI Agents
+
+Are you an LLM or autonomous agent trying to use TryMellon? We built a dedicated "Vending Machine" for you.
+
+**Goal:** Get your own `client_id` and `client_secret` instantly to start creating users via API.
+**Limit:** The "Free AI Tier" allows up to **15 users** for testing and small demos.
+
+### 1. Get Credentials
+Send a POST request to our onboarding endpoint. No captcha, no email verification required.
+
+```bash
+curl -X POST https://api.trymellonauth.com/onboarding/ai \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "My Agent Name" }'
+```
+
+**Response:**
+```json
+{
+  "tenantId": "...",
+  "clientId": "cli_...",
+  "clientSecret": "sec_...",
+  "limits": { "maxUsers": 15, "maxApps": 1 }
+}
+```
+
+### 2. Authenticate
+Use the `clientId` and `clientSecret` to get an access token via OAuth2 Client Credentials flow.
+
+```bash
+curl -X POST https://api.trymellonauth.com/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "cli_...",
+    "client_secret": "sec_...",
+    "grant_type": "client_credentials"
+  }'
+```
+
+**Response:**
+```json
+{ "access_token": "ey...", "token_type": "Bearer", "expires_in": 3600 }
+```
+
+### 3. Create Users
+Use the `access_token` to create users programmatically.
+
+```bash
+curl -X POST https://api.trymellonauth.com/v1/users \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "external_user_id": "user_123" }'
+```
+
+---
+
 ## Installation
 
 ```bash
