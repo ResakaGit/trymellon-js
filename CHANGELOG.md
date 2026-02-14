@@ -1,9 +1,16 @@
-## [1.3.1](https://github.com/ResakaGit/trymellon-js/compare/v1.3.0...v1.3.1) (2026-02-14)
+## [1.3.2] - 2026-02-14
 
+### Maintenance
+
+- Changelog and version bump for release alignment.
+
+---
+
+## [1.3.1](https://github.com/ResakaGit/trymellon-js/compare/v1.3.0...v1.3.1) (2026-02-14)
 
 ### Bug Fixes
 
-* **sdk:** email fallback requires userId + email; docs use publishableKey ([b16c718](https://github.com/ResakaGit/trymellon-js/commit/b16c718b8679621b982718447902db15251e40fc))
+- **sdk:** email fallback requires userId + email; docs use publishableKey ([b16c718](https://github.com/ResakaGit/trymellon-js/commit/b16c718b8679621b982718447902db15251e40fc))
 
 # Unreleased
 
@@ -24,10 +31,9 @@
 
 # [1.3.0](https://github.com/ResakaGit/trymellon-js/compare/v1.2.1...v1.3.0) (2026-02-13)
 
-
 ### Features
 
-* **sandbox:** add sandbox mode and SANDBOX_SESSION_TOKEN (v1.3.0) ([e2f42bd](https://github.com/ResakaGit/trymellon-js/commit/e2f42bdfecb763e8da484c3e8bd839a7a3de51fb))
+- **sandbox:** add sandbox mode and SANDBOX_SESSION_TOKEN (v1.3.0) ([e2f42bd](https://github.com/ResakaGit/trymellon-js/commit/e2f42bdfecb763e8da484c3e8bd839a7a3de51fb))
 
 ## [1.3.0] - 2026-02-13
 
