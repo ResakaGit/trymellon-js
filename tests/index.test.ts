@@ -54,7 +54,7 @@ describe('Public API Exports', () => {
 
   it('should export RegisterOptions type', () => {
     expectTypeOf<RegisterOptions>().toMatchTypeOf<{
-      external_user_id: string;
+      externalUserId?: string;
       authenticatorType?: 'platform' | 'cross-platform';
       signal?: AbortSignal;
     }>();
@@ -63,12 +63,12 @@ describe('Public API Exports', () => {
   it('should export RegisterResult type', () => {
     expectTypeOf<RegisterResult>().toMatchTypeOf<{
       success: true;
-      credential_id: string;
+      credentialId: string;
       status: string;
-      session_token: string;
+      sessionToken: string;
       user: {
-        user_id: string;
-        external_user_id: string;
+        userId: string;
+        externalUserId?: string;
         email?: string;
         metadata?: Record<string, unknown>;
       };
@@ -77,7 +77,7 @@ describe('Public API Exports', () => {
 
   it('should export AuthenticateOptions type', () => {
     expectTypeOf<AuthenticateOptions>().toMatchTypeOf<{
-      external_user_id: string;
+      externalUserId?: string;
       hint?: string;
       signal?: AbortSignal;
     }>();
@@ -86,14 +86,14 @@ describe('Public API Exports', () => {
   it('should export AuthenticateResult type', () => {
     expectTypeOf<AuthenticateResult>().toMatchTypeOf<{
       authenticated: boolean;
-      session_token: string;
+      sessionToken: string;
       user: {
-        user_id: string;
-        external_user_id: string;
+        userId: string;
+        externalUserId?: string;
         email?: string;
         metadata?: Record<string, unknown>;
       };
-      signals: {
+      signals?: {
         userVerification?: boolean;
         backupEligible?: boolean;
         backupStatus?: boolean;
@@ -161,6 +161,7 @@ describe('Public API Exports', () => {
       | 'INVALID_ARGUMENT'
       | 'TIMEOUT'
       | 'ABORTED'
+      | 'ABORT_ERROR'
       | 'UNKNOWN_ERROR'
     >();
   });

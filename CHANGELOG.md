@@ -16,6 +16,10 @@
 - **EXAMPLES.md:** All examples now use `publishableKey` (replaced previous `apiKey`); email fallback examples updated to `start({ userId, email })`.
 - **API.md, README.MD:** Email fallback documented with `userId` and `email`; types and examples aligned.
 
+### Tests
+
+- **index.test.ts:** Type expectations aligned to public API (camelCase: RegisterOptions, RegisterResult, AuthenticateOptions, AuthenticateResult). TryMellonErrorCode assertion includes `ABORT_ERROR`.
+
 ---
 
 # [1.3.0](https://github.com/ResakaGit/trymellon-js/compare/v1.2.1...v1.3.0) (2026-02-13)
