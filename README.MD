@@ -1,35 +1,29 @@
 # @trymellon/js
 
-[![npm version](https://img.shields.io/npm/v/@trymellon/js)](https://www.npmjs.com/package/@trymellon/js)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/ResakaGit/trymellon-js/ci.yml)](https://github.com/ResakaGit/trymellon-js/actions)
-[![Coverage](https://img.shields.io/codecov/c/github/ResakaGit/trymellon-js)](https://codecov.io/gh/ResakaGit/trymellon-js)
+Official **TryMellon** SDK. Add **Passkeys / WebAuthn** to your app in minutes.
 
-Official **TryMellon** SDK for integrating **passwordless authentication** with **Passkeys / WebAuthn** in web applications.
-
-This SDK fully abstracts WebAuthn and lets you authenticate users without passwords, returning a result your backend can use to create your own session.
-
----
-
-## What does this SDK do?
-
-* ✅ Handles the full Passkeys flow in the browser
-* ✅ Communicates directly with the TryMellon API
-* ✅ Returns a `session_token` your backend can verify
-* ✅ Handles Base64URL ↔ ArrayBuffer conversion automatically
-* ✅ Event system for better UX (spinners, analytics)
-* ✅ Email (OTP) fallback when WebAuthn is not available
-* ✅ Automatic retries with exponential backoff
-* ✅ Thorough validation of inputs and API responses
+[![npm version](https://img.shields.io/npm/v/@trymellon/js?style=flat-square)](https://www.npmjs.com/package/@trymellon/js)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ResakaGit/trymellon-js/ci.yml?style=flat-square)](https://github.com/ResakaGit/trymellon-js/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/ResakaGit/trymellon-js?style=flat-square)](https://codecov.io/gh/ResakaGit/trymellon-js)
+[![Size](https://img.shields.io/bundlephobia/minzip/@trymellon/js?label=minzipped&style=flat-square)](https://bundlephobia.com/package/@trymellon/js)
 
 ---
 
-## What does it NOT do?
+## Why TryMellon?
 
-* ❌ Does not create user sessions (your backend does)
-* ❌ Does not replace your auth system
-* ❌ Does not store end users
-* ❌ Does not expose raw WebAuthn APIs
-* ❌ Does not manage cookies or local storage
+Authentication is hard. WebAuthn (Passkeys) is even harder.
+We built **TryMellon** to solve the complexity without locking you in.
+
+*   **Zero Logic:** You don't handle cryptography, public keys, or challenges.
+*   **Zero Lock-in:** You own your users. We just verify them.
+*   **Zero Friction:** Drop-in SDK that "just works" (Cross-browser handling included).
+
+### What you get:
+*   ✅ **Passkeys First:** Biometric login (FaceID, TouchID, Windows Hello).
+*   ✅ **Email Fallback:** Magic OTPs when biometrics aren't available.
+*   ✅ **Cross-Device Auth:** Login on desktop by scanning a QR with mobile.
+*   ✅ **Framework Agnostic:** Works with React, Vue, Angular, Svelte, or Vanilla.
+*   ✅ **Type-Safe:** First-class TypeScript support (`Result` pattern).
 
 ---
 
@@ -38,6 +32,8 @@ This SDK fully abstracts WebAuthn and lets you authenticate users without passwo
 ```bash
 npm install @trymellon/js
 ```
+
+That's it. No peer dependencies. No bloat.
 
 ---
 
@@ -476,7 +472,10 @@ When WebAuthn is not available, you can use the email fallback. All methods retu
 
 ```typescript
 // 1. Send OTP code by email
-const startResult = await client.fallback.email.start({ userId: 'user_123' })
+const startResult = await client.fallback.email.start({
+  userId: 'user_123',
+  email: 'user@example.com'
+})
 if (!startResult.ok) { console.error(startResult.error); return }
 
 // 2. Ask user for the code
@@ -501,19 +500,19 @@ await fetch('/api/login', {
 ```typescript
 async function authenticateUser(userId: string) {
   if (!TryMellon.isSupported()) {
-    return await authenticateWithEmail(userId)
+    return await authenticateWithEmail(userId, userId)
   }
 
   const authResult = await client.authenticate({ externalUserId: userId })
   if (authResult.ok) return authResult
   if (authResult.error.code === 'PASSKEY_NOT_FOUND' || authResult.error.code === 'NOT_SUPPORTED') {
-    return await authenticateWithEmail(userId)
+    return await authenticateWithEmail(userId, userId)
   }
   return authResult
 }
 
-async function authenticateWithEmail(userId: string) {
-  const startRes = await client.fallback.email.start({ userId })
+async function authenticateWithEmail(userId: string, email: string) {
+  const startRes = await client.fallback.email.start({ userId, email })
   if (!startRes.ok) return startRes
   const code = prompt('Enter the code sent by email:')
   return await client.fallback.email.verify({ userId, code })
@@ -607,7 +606,10 @@ if (!result.ok) {
       console.log('User cancelled the operation')
       break
     case 'NOT_SUPPORTED':
-      await client.fallback.email.start({ userId: 'user_123' })
+      await client.fallback.email.start({
+        userId: 'user_123',
+        email: 'user@example.com'
+      })
       break
     case 'PASSKEY_NOT_FOUND':
       await client.register({ externalUserId: 'user_123' })
@@ -739,7 +741,7 @@ If `TryMellon.isSupported()` returns `false`:
 
 - Ensure you are on HTTPS (required except on `localhost`)
 - Ensure your browser supports WebAuthn (Chrome, Safari, Firefox, Edge)
-- Use the email fallback: `client.fallback.email.start({ userId })`
+- Use the email fallback: `client.fallback.email.start({ userId, email })`
 
 ### User cancelled the operation
 
@@ -754,7 +756,7 @@ If you get `PASSKEY_NOT_FOUND`:
 
 - The user has no registered passkey
 - Offer to register: `client.register()`
-- Or use email fallback: `client.fallback.email.start()`
+- Or use email fallback: `client.fallback.email.start({ userId, email })`
 
 ### Network errors
 

@@ -308,13 +308,17 @@ fallback.email.start(options: EmailFallbackStartOptions): Promise<void>
 
 **Parámetros:**
 
-- `options.userId` (string, requerido): ID del usuario
+- `options.userId` (string, requerido): Identificador externo del usuario
+- `options.email` (string, requerido): Email donde enviar el código OTP
 
 **Ejemplo:**
 
 ```typescript
 try {
-  await client.fallback.email.start({ userId: 'user_123' });
+  await client.fallback.email.start({
+    userId: 'user_123',
+    email: 'user@example.com',
+  });
   console.log('Código OTP enviado por email');
 } catch (error) {
   console.error('Error al enviar OTP:', error);
@@ -323,7 +327,7 @@ try {
 
 **Errores:**
 
-- `INVALID_ARGUMENT`: `userId` inválido
+- `INVALID_ARGUMENT`: `userId` o `email` inválidos
 - `NETWORK_FAILURE`: Error de red
 
 ---
@@ -498,6 +502,7 @@ type EventHandler = (payload: EventPayload) => void;
 ```typescript
 type EmailFallbackStartOptions = {
   userId: string;
+  email: string;
 };
 ```
 

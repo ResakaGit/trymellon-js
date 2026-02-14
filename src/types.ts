@@ -108,6 +108,7 @@ export type EventHandler = (payload: EventPayload) => void;
 
 export type EmailFallbackStartOptions = {
   userId: string;
+  email: string;
 };
 
 export type EmailFallbackVerifyOptions = {

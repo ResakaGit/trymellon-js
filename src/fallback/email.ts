@@ -3,19 +3,27 @@ import type { Result } from '../utils/result';
 import { err } from '../utils/result';
 import { validateNonEmptyString, createInvalidArgumentError, isTryMellonError } from '../errors';
 import type { TryMellonError } from '../errors';
+import type { EmailFallbackStartOptions } from '../types';
 
 export async function startEmailFallback(
-  userId: string,
+  options: EmailFallbackStartOptions,
   apiClient: ApiClient
 ): Promise<Result<void, TryMellonError>> {
   try {
-    validateNonEmptyString(userId, 'userId');
+    validateNonEmptyString(options.userId, 'userId');
   } catch (e) {
     return err(
       isTryMellonError(e) ? e : createInvalidArgumentError('userId', 'must be a non-empty string')
     );
   }
-  return apiClient.startEmailFallback(userId);
+  try {
+    validateNonEmptyString(options.email, 'email');
+  } catch (e) {
+    return err(
+      isTryMellonError(e) ? e : createInvalidArgumentError('email', 'must be a non-empty string')
+    );
+  }
+  return apiClient.startEmailFallback(options);
 }
 
 export async function verifyEmailCode(

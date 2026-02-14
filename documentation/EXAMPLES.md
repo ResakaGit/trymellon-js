@@ -11,7 +11,7 @@ import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
   appId: 'app_123',
-  apiKey: 'key_123',
+  publishableKey: 'key_123',
 });
 
 async function registerUser(externalUserId: string) {
@@ -44,7 +44,7 @@ import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
   appId: 'app_123',
-  apiKey: 'key_123',
+  publishableKey: 'key_123',
 });
 
 async function loginUser(externalUserId: string) {
@@ -79,7 +79,7 @@ import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
   appId: 'app_123',
-  apiKey: 'key_123',
+  publishableKey: 'key_123',
 });
 
 // Suscribirse a eventos
@@ -117,25 +117,25 @@ import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
   appId: 'app_123',
-  apiKey: 'key_123',
+  publishableKey: 'key_123',
 });
 
 async function authenticateWithFallback(userId: string) {
   if (!TryMellon.isSupported()) {
-    return await authenticateWithEmail(userId);
+    return await authenticateWithEmail(userId, userId);
   }
 
   const result = await client.authenticate({ externalUserId: userId });
   if (result.ok) return await sendToBackend(result.value.sessionToken);
 
   if (result.error.code === 'NOT_SUPPORTED' || result.error.code === 'USER_CANCELLED') {
-    return await authenticateWithEmail(userId);
+    return await authenticateWithEmail(userId, userId);
   }
   throw new Error(result.error.message);
 }
 
-async function authenticateWithEmail(userId: string) {
-  const startResult = await client.fallback.email.start({ userId });
+async function authenticateWithEmail(userId: string, email: string) {
+  const startResult = await client.fallback.email.start({ userId, email });
   if (!startResult.ok) throw new Error(startResult.error.message);
 
   const code = prompt('Ingresa el código enviado por email:');
@@ -167,7 +167,7 @@ import { useState, useEffect } from 'react';
 import { TryMellon } from '@trymellon/js';
 
 function PasskeyAuth() {
-  const [client] = useState(() => new TryMellon({ appId: 'app_123', apiKey: 'key_123' }));
+  const [client] = useState(() => new TryMellon({ appId: 'app_123', publishableKey: 'key_123' }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -245,7 +245,7 @@ function PasskeyAuth() {
 import { ref, onMounted, onUnmounted } from 'vue';
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', apiKey: 'key_123' });
+const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -315,7 +315,7 @@ const handleLogin = async () => {
     <script type="module">
       import { TryMellon } from '@trymellon/js';
 
-      const client = new TryMellon({ appId: 'app_123', apiKey: 'key_123' });
+      const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
       const statusDiv = document.getElementById('status');
 
       function showStatus(message, isError = false) {
@@ -359,7 +359,7 @@ const handleLogin = async () => {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', apiKey: 'key_123' });
+const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
 
 const controller = new AbortController();
 
@@ -384,7 +384,7 @@ if (!result.ok && result.error.code === 'USER_CANCELLED') {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', apiKey: 'key_123' });
+const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
 
 async function checkSupport() {
   const status = await client.getStatus();
@@ -415,7 +415,7 @@ async function checkSupport() {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', apiKey: 'key_123' });
+const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
 
 async function completeFlow() {
   // Verificar soporte
@@ -457,7 +457,10 @@ async function completeFlow() {
 }
 
 async function useEmailFallback() {
-  const startResult = await client.fallback.email.start({ userId: 'user_123' });
+  const startResult = await client.fallback.email.start({
+    userId: 'user_123',
+    email: 'user@example.com',
+  });
   if (!startResult.ok) throw new Error(startResult.error.message);
   const code = prompt('Ingresa el código:');
   const verifyResult = await client.fallback.email.verify({

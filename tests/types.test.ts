@@ -259,14 +259,17 @@ describe('Types - EventHandler', () => {
 });
 
 describe('Types - EmailFallbackStartOptions', () => {
-  it('should require userId', () => {
+  it('should require userId and email', () => {
     const options: EmailFallbackStartOptions = {
       userId: 'user_123',
+      email: 'user@example.com',
     };
 
     expect(options.userId).toBe('user_123');
+    expect(options.email).toBe('user@example.com');
     expectTypeOf(options).toMatchTypeOf<EmailFallbackStartOptions>();
     expectTypeOf(options.userId).toBeString();
+    expectTypeOf(options.email).toBeString();
   });
 });
 

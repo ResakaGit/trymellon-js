@@ -78,7 +78,9 @@ describe('Examples Syntax Validation', () => {
     expect(typeof client.fallback.email.start).toBe('function');
     // Note: This will throw because API is not available in test environment
     // but we're just checking the method exists
-    expect(() => client.fallback.email.start({ userId: 'user_123' })).not.toThrow();
+    expect(() =>
+      client.fallback.email.start({ userId: 'user_123', email: 'user@example.com' })
+    ).not.toThrow();
   });
 
   it('should allow using fallback.email.verify', async () => {

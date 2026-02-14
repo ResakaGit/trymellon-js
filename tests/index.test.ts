@@ -129,6 +129,7 @@ describe('Public API Exports', () => {
   it('should export EmailFallbackStartOptions type', () => {
     expectTypeOf<EmailFallbackStartOptions>().toMatchTypeOf<{
       userId: string;
+      email: string;
     }>();
   });
 

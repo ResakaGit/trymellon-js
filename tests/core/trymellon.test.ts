@@ -316,14 +316,20 @@ describe('TryMellon', () => {
   });
 
   describe('fallback.email', () => {
-    it('should call startEmailFallback with userId', async () => {
+    it('should call startEmailFallback with userId and email', async () => {
       const mockInstance = (
         tryMellon as { apiClient: { startEmailFallback: ReturnType<typeof vi.fn> } }
       ).apiClient;
       mockInstance.startEmailFallback.mockResolvedValue(ok(undefined));
 
-      const result = await tryMellon.fallback.email.start({ userId: 'u_123' });
-      expect(mockInstance.startEmailFallback).toHaveBeenCalledWith('u_123');
+      const result = await tryMellon.fallback.email.start({
+        userId: 'u_123',
+        email: 'u@example.com',
+      });
+      expect(mockInstance.startEmailFallback).toHaveBeenCalledWith({
+        userId: 'u_123',
+        email: 'u@example.com',
+      });
       expect(result.ok).toBe(true);
     });
 

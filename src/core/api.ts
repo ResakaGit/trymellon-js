@@ -113,9 +113,16 @@ export class ApiClient {
     });
   }
 
-  async startEmailFallback(userId: string): Promise<Result<void, TryMellonError>> {
+  async startEmailFallback(options: {
+    userId: string;
+    email: string;
+  }): Promise<Result<void, TryMellonError>> {
     const url = `${this.baseUrl}/v1/fallback/email/start`;
-    const result = await this.httpClient.post<unknown>(url, { userId }, this.mergeHeaders());
+    const result = await this.httpClient.post<unknown>(
+      url,
+      { userId: options.userId, email: options.email },
+      this.mergeHeaders()
+    );
     if (!result.ok) return err(result.error);
     return ok(undefined);
   }

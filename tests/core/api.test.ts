@@ -316,11 +316,14 @@ describe('ApiClient', () => {
         mockHttpClient as unknown as HttpClient,
         'https://api.example.com'
       );
-      const result = await client.startEmailFallback('user_123');
+      const result = await client.startEmailFallback({
+        userId: 'user_123',
+        email: 'user@example.com',
+      });
       expect(result.ok).toBe(true);
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         'https://api.example.com/v1/fallback/email/start',
-        { userId: 'user_123' },
+        { userId: 'user_123', email: 'user@example.com' },
         expect.any(Object)
       );
     });

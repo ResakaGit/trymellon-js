@@ -244,7 +244,7 @@ export class TryMellon {
   fallback = {
     email: {
       start: async (options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>> => {
-        return this.apiClient.startEmailFallback(options.userId);
+        return this.apiClient.startEmailFallback(options);
       },
       verify: async (
         options: EmailFallbackVerifyOptions
