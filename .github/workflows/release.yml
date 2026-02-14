@@ -46,6 +46,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      # semantic-release publica a npm cuando hay commits que generan release (feat:, fix:, etc.).
+      # También con chore(release): o release: (patch). Requiere NPM_TOKEN en Secrets.
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
