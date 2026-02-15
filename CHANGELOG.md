@@ -1,9 +1,8 @@
 ## [1.3.4](https://github.com/ResakaGit/trymellon-js/compare/v1.3.3...v1.3.4) (2026-02-15)
 
-
 ### Bug Fixes
 
-* release 1.3.4 - approve refactor and getCrossDeviceContext contract ([ed2ad3a](https://github.com/ResakaGit/trymellon-js/commit/ed2ad3aab431a030e632a4762342ff3992a35003))
+- release 1.3.4 - approve refactor and getCrossDeviceContext contract ([ed2ad3a](https://github.com/ResakaGit/trymellon-js/commit/ed2ad3aab431a030e632a4762342ff3992a35003))
 
 ## [1.3.4] - 2026-02-15
 
@@ -11,6 +10,10 @@
 
 - **cross-device-manager.ts:** `approve()` delega en `executeRegistrationApproval()` y `executeAuthApproval()`; ramas de registro y auth separadas para mejor testabilidad.
 - **types.ts / api.ts:** Documentado contrato de `getCrossDeviceContext`: `result.value.type` es la fuente de verdad para el branching (auth vs registration).
+
+### Maintenance
+
+- **CHANGELOG.md:** Format with Prettier (format:check compliance).
 
 ---
 
