@@ -1,3 +1,10 @@
+## [1.3.4](https://github.com/ResakaGit/trymellon-js/compare/v1.3.3...v1.3.4) (2026-02-15)
+
+
+### Bug Fixes
+
+* release 1.3.4 - approve refactor and getCrossDeviceContext contract ([ed2ad3a](https://github.com/ResakaGit/trymellon-js/commit/ed2ad3aab431a030e632a4762342ff3992a35003))
+
 ## [1.3.4] - 2026-02-15
 
 ### Changed
