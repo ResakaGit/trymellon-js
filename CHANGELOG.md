@@ -1,3 +1,10 @@
+## [1.3.5](https://github.com/ResakaGit/trymellon-js/compare/v1.3.4...v1.3.5) (2026-02-15)
+
+
+### Bug Fixes
+
+* format CHANGELOG with Prettier (format:check compliance) ([ebcf37d](https://github.com/ResakaGit/trymellon-js/commit/ebcf37d689876ee6c3a1635551b4338006821605))
+
 ## [1.3.4](https://github.com/ResakaGit/trymellon-js/compare/v1.3.3...v1.3.4) (2026-02-15)
 
 ### Bug Fixes
