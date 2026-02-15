@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TryMellon } from '../../src/core/trymellon';
-import '../../src/core/api';
+import { ApiClient } from '../../src/core/api';
 import * as webauthnUtils from '../../src/core/webauthn';
 import { ok, err } from '../../src/utils/result';
 import type { Result } from '../../src/utils/result';
@@ -285,6 +285,19 @@ describe('TryMellon', () => {
         publishableKey: '',
       });
       expect(result.ok).toBe(false);
+    });
+
+    it('should pass Origin in defaultHeaders when config.origin is set (WebAuthn protocol)', () => {
+      TryMellon.create({ ...config, origin: 'https://app.example.com' });
+      expect(vi.mocked(ApiClient)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.any(String),
+        expect.objectContaining({
+          'X-App-Id': config.appId,
+          Authorization: `Bearer ${config.publishableKey}`,
+          Origin: 'https://app.example.com',
+        })
+      );
     });
   });
 

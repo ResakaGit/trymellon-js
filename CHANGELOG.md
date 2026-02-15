@@ -1,3 +1,20 @@
+## [1.3.3] - 2026-02-15
+
+### Added
+
+- **TryMellonConfig.origin:** Opción para enviar el header `Origin` en todas las peticiones passkey y cross-device. En browser se usa `window.location.origin` si no se indica. En Node/SSR hay que pasar `origin` explícitamente (protocolo WebAuthn).
+
+### Changed
+
+- **trymellon.ts:** defaultHeaders incluyen `Origin` cuando `config.origin` está definido o cuando hay `window.location.origin` (browser).
+- **webauthn.ts:** Comentarios en createRegistrationOptions y createAuthenticationOptions: challenge y rp/rpId vienen del servidor; no sobrescribir (protocolo WebAuthn).
+
+### Tests
+
+- **trymellon.test.ts:** Test "should pass Origin in defaultHeaders when config.origin is set (WebAuthn protocol)".
+
+---
+
 ## [1.3.2](https://github.com/ResakaGit/trymellon-js/compare/v1.3.1...v1.3.2) (2026-02-14)
 
 ## [1.3.2] - 2026-02-14

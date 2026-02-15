@@ -56,6 +56,12 @@ export type TryMellonConfig = {
    * Only used when sandbox is true.
    */
   sandboxToken?: string;
+  /**
+   * Origin to send in the Origin header for WebAuthn and cross-device API calls.
+   * If not set, the SDK uses window.location.origin in browser environments.
+   * Set this in Node or when the document origin is not the correct one (e.g. SSR).
+   */
+  origin?: string;
 };
 
 // ============================================================================

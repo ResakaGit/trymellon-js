@@ -133,9 +133,16 @@ export class TryMellon {
     const retryDelayMs = config.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
     const httpClient = new FetchHttpClient(timeoutMs, maxRetries, retryDelayMs, config.logger);
 
+    const originHeader =
+      config.origin ??
+      (typeof window !== 'undefined' && window?.location?.origin
+        ? window.location.origin
+        : undefined);
+
     const defaultHeaders: Record<string, string> = {
       'X-App-Id': appId.trim(),
       Authorization: `Bearer ${publishableKey.trim()}`,
+      ...(originHeader && { Origin: originHeader }),
     };
 
     this.apiClient = new ApiClient(httpClient, apiBaseUrl, defaultHeaders);

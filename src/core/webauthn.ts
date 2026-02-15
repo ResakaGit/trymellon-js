@@ -25,6 +25,7 @@ import { serializeCredentialForAuth, serializeCredentialForRegister } from './we
 /**
  * Crea las opciones de creación de credencial para WebAuthn.
  * Convierte la respuesta del servidor en formato WebAuthn API.
+ * WebAuthn protocol: challenge and rp.id are taken from the server only; do not override.
  * Exported for use by OnboardingManager (same-device passkey registration).
  */
 export function createRegistrationOptions(
@@ -93,6 +94,7 @@ export function createRegistrationOptions(
 /**
  * Crea las opciones de autenticación para WebAuthn.
  * Convierte la respuesta del servidor en formato WebAuthn API.
+ * WebAuthn protocol: challenge and rpId are taken from the server only; do not override.
  */
 export function createAuthenticationOptions(
   challenge: AuthStartResponse['challenge'],
