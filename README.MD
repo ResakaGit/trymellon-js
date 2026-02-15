@@ -907,6 +907,17 @@ See [CHANGELOG.md](./CHANGELOG.md) for the change history.
 
 ---
 
+## Release (maintainers)
+
+Releases are published to npm automatically by **semantic-release** in CI. The version is derived from commit messages (Conventional Commits), not from `package.json`.
+
+- **Triggers a release:** `fix:` (patch), `feat:` (minor), `BREAKING CHANGE:` / `feat!:` (major).
+- **Does not trigger a release:** `chore:`, `refactor:`, `docs:`, `style:`, `test:`.
+
+If changes must be published, ensure at least one commit since the last tag uses `fix:` or `feat:`. See monorepo [docs/ai_context_leePrimero.md](../docs/ai_context_leePrimero.md) §4.D.
+
+---
+
 ## License
 
 MIT
