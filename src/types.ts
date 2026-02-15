@@ -203,13 +203,35 @@ export type CrossDeviceStatusResult = {
   session_token?: string;
 };
 
-export type CrossDeviceContextResult = {
+/** Context for auth: request options (get). */
+export type CrossDeviceContextAuth = {
+  type: 'auth';
   options: AuthStartResponse['challenge'];
 };
+
+/** Context for registration: creation options (create). */
+export type CrossDeviceContextRegistration = {
+  type: 'registration';
+  options: RegisterStartResponse['challenge'];
+};
+
+/**
+ * Contract: response of getCrossDeviceContext.
+ * Single source of truth for branching in approve(): use context.type to decide
+ * whether to run credentials.get (auth) or credentials.create (registration).
+ * Validators must return only CrossDeviceContextAuth | CrossDeviceContextRegistration.
+ */
+export type CrossDeviceContextResult = CrossDeviceContextAuth | CrossDeviceContextRegistration;
 
 export type CrossDeviceVerifyRequest = {
   session_id: string;
   credential: AuthFinishRequest['credential'];
+};
+
+/** Same shape as RegisterFinishRequest; used for POST verify-registration. */
+export type CrossDeviceVerifyRegistrationRequest = {
+  session_id: string;
+  credential: RegisterFinishRequest['credential'];
 };
 
 // ============================================================================

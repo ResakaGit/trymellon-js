@@ -148,16 +148,42 @@ describe('validateCrossDeviceStatusResponse', () => {
 });
 
 describe('validateCrossDeviceContextResponse', () => {
-  const validOptions = {
-    challenge: { rp: { id: 'example.com' }, challenge: 'c', pubKeyCredParams: [] },
+  const validAuthOptions = { challenge: 'Y2hhbGxlbmdl', rpId: 'example.com' };
+  const validRegistrationOptions = {
+    challenge: 'c',
+    rp: { id: 'example.com', name: 'Test' },
+    user: { id: 'u1', name: 'u', displayName: 'U' },
+    pubKeyCredParams: [],
   };
 
-  it('should return ok for valid payload with options', () => {
-    const result = validateCrossDeviceContextResponse({ options: validOptions });
+  it('should return ok for valid payload with type auth and options', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'auth',
+      options: validAuthOptions,
+    });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.options).toEqual(validOptions);
+      expect(result.value.type).toBe('auth');
+      expect(result.value.options).toEqual(validAuthOptions);
     }
+  });
+
+  it('should return ok for valid payload with type registration and options', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'registration',
+      options: validRegistrationOptions,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.type).toBe('registration');
+      expect(result.value.options).toEqual(validRegistrationOptions);
+    }
+  });
+
+  it('should return ok for payload without type (defaults to auth) when options are auth shape', () => {
+    const result = validateCrossDeviceContextResponse({ options: validAuthOptions });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.type).toBe('auth');
   });
 
   it('should return err for null', () => {
@@ -184,5 +210,23 @@ describe('validateCrossDeviceContextResponse', () => {
   it('should return err when options is null', () => {
     const result = validateCrossDeviceContextResponse({ options: null });
     expect(result.ok).toBe(false);
+  });
+
+  it('should return err when type is registration but options lack creation shape', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'registration',
+      options: { challenge: 'c', rpId: 'x.com' },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('registration options');
+  });
+
+  it('should return err when type is auth but options lack request shape', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'auth',
+      options: { rp: {}, user: {} },
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('auth options');
   });
 });

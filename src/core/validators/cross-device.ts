@@ -8,6 +8,25 @@ import type {
   CrossDeviceContextResult,
 } from '../../types';
 
+function isCreationOptionsShape(opts: unknown): opts is Record<string, unknown> {
+  if (!opts || typeof opts !== 'object') return false;
+  const o = opts as Record<string, unknown>;
+  return (
+    typeof o.challenge === 'string' &&
+    o.rp != null &&
+    typeof o.rp === 'object' &&
+    o.user != null &&
+    typeof o.user === 'object' &&
+    Array.isArray((o as { pubKeyCredParams?: unknown }).pubKeyCredParams)
+  );
+}
+
+function isRequestOptionsShape(opts: unknown): opts is Record<string, unknown> {
+  if (!opts || typeof opts !== 'object') return false;
+  const o = opts as Record<string, unknown>;
+  return typeof o.challenge === 'string' && typeof o.rpId === 'string';
+}
+
 export function validateCrossDeviceInitResponse(
   data: unknown
 ): Result<CrossDeviceInitResult, TryMellonError> {
@@ -56,12 +75,32 @@ export function validateCrossDeviceContextResponse(
     return validationError('Invalid API response: expected object', { originalData: data });
   }
 
+  const rawType = data.type;
+  const type =
+    rawType === 'registration' ? 'registration' : rawType === 'auth' ? 'auth' : ('auth' as const);
+
   const options = data.options;
   if (!isObject(options)) {
     return validationError('Invalid API response: options are required', { originalData: data });
   }
 
-  return ok({
-    options: options as CrossDeviceContextResult['options'],
-  });
+  if (type === 'registration') {
+    if (!isCreationOptionsShape(options)) {
+      return validationError(
+        'Invalid API response: registration options must have challenge, rp, user, pubKeyCredParams',
+        { originalData: data }
+      );
+    }
+    return ok({
+      type: 'registration',
+      options,
+    } as CrossDeviceContextResult);
+  }
+
+  if (!isRequestOptionsShape(options)) {
+    return validationError('Invalid API response: auth options must have challenge and rpId', {
+      originalData: data,
+    });
+  }
+  return ok({ type: 'auth', options } as CrossDeviceContextResult);
 }

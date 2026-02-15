@@ -535,16 +535,19 @@ describe('ApiClient', () => {
   });
 
   describe('getCrossDeviceContext', () => {
-    it('should request context for session and return options', async () => {
-      const options = { challenge: { rp: { id: 'x.com' }, challenge: 'c', pubKeyCredParams: [] } };
-      mockHttpClient.get.mockResolvedValue(ok({ options }));
+    it('should request context for session and return type and options', async () => {
+      const options = { challenge: 'c', rpId: 'x.com' };
+      mockHttpClient.get.mockResolvedValue(ok({ type: 'auth', options }));
       const client = new ApiClient(
         mockHttpClient as unknown as HttpClient,
         'https://api.example.com'
       );
       const result = await client.getCrossDeviceContext('sess_cd_789');
       expect(result.ok).toBe(true);
-      if (result.ok) expect(result.value.options).toEqual(options);
+      if (result.ok) {
+        expect(result.value.type).toBe('auth');
+        expect(result.value.options).toEqual(options);
+      }
       expect(mockHttpClient.get).toHaveBeenCalledWith(
         'https://api.example.com/v1/auth/cross-device/context/sess_cd_789',
         expect.any(Object)
@@ -603,6 +606,59 @@ describe('ApiClient', () => {
         },
       });
       expect(result.ok).toBe(false);
+    });
+  });
+
+  describe('initCrossDeviceRegistration', () => {
+    it('should post init-registration with external_user_id and return session payload', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          session_id: 'sess_reg_1',
+          qr_url: 'https://example.com/qr',
+          expires_at: '2026-02-12T12:00:00Z',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.initCrossDeviceRegistration({ externalUserId: 'ext_user_1' });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.session_id).toBe('sess_reg_1');
+        expect(result.value.qr_url).toBe('https://example.com/qr');
+      }
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/init-registration',
+        { external_user_id: 'ext_user_1' },
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('verifyCrossDeviceRegistration', () => {
+    it('should post verify-registration with session_id and credential', async () => {
+      mockHttpClient.post.mockResolvedValue(ok(undefined));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const request = {
+        session_id: 'sess_reg_verify',
+        credential: {
+          type: 'public-key' as const,
+          id: 'cred_id',
+          rawId: 'raw_id',
+          response: { clientDataJSON: 'cdj', attestationObject: 'ao' },
+        },
+      };
+      const result = await client.verifyCrossDeviceRegistration(request);
+      expect(result.ok).toBe(true);
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/verify-registration',
+        request,
+        expect.any(Object)
+      );
     });
   });
 });

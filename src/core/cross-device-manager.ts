@@ -3,9 +3,13 @@ import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import { createError, mapWebAuthnError } from '../errors';
 import type { TryMellonError } from '../errors';
-import type { CrossDeviceInitResult } from '../types';
-import { createAuthenticationOptions } from './webauthn';
-import { serializeCredentialForAuth } from './webauthn-utils';
+import type {
+  CrossDeviceInitResult,
+  CrossDeviceContextAuth,
+  CrossDeviceContextRegistration,
+} from '../types';
+import { createAuthenticationOptions, createRegistrationOptions } from './webauthn';
+import { serializeCredentialForAuth, serializeCredentialForRegister } from './webauthn-utils';
 import { validateCredentialStructure } from '../utils/validation';
 
 const POLL_INTERVAL_MS = 2000;
@@ -20,6 +24,16 @@ export class CrossDeviceManager {
    */
   async init(): Promise<Result<CrossDeviceInitResult, TryMellonError>> {
     return this.apiClient.initCrossDeviceAuth();
+  }
+
+  /**
+   * Initializes a cross-device registration session (create account via QR).
+   * Typically called by the desktop side to get a QR code URL for new users.
+   */
+  async initRegistration(options: {
+    externalUserId: string;
+  }): Promise<Result<CrossDeviceInitResult, TryMellonError>> {
+    return this.apiClient.initCrossDeviceRegistration(options);
   }
 
   /**
@@ -76,20 +90,67 @@ export class CrossDeviceManager {
   /**
    * Approves a cross-device session.
    * Typically called by the mobile side after scanning a QR code.
-   * 1. Fetches WebAuthn options for the session.
-   * 2. Triggers navigator.credentials.get().
-   * 3. Sends the signature to the server to verify and transition the session.
+   * Branches by context type: registration → credentials.create + verify-registration;
+   * auth → credentials.get + verify.
    */
   async approve(sessionId: string): Promise<Result<void, TryMellonError>> {
-    // 1. Get WebAuthn options
     const contextResult = await this.apiClient.getCrossDeviceContext(sessionId);
     if (!contextResult.ok) return err(contextResult.error);
 
-    // 2. Create WebAuthn request options
-    const requestOptionsResult = createAuthenticationOptions(contextResult.value.options);
+    const context = contextResult.value;
+
+    if (context.type === 'registration') {
+      return this.executeRegistrationApproval(sessionId, context);
+    }
+    return this.executeAuthApproval(sessionId, context);
+  }
+
+  /**
+   * Executes the registration branch: create credential and verify-registration.
+   */
+  private async executeRegistrationApproval(
+    sessionId: string,
+    context: CrossDeviceContextRegistration
+  ): Promise<Result<void, TryMellonError>> {
+    const creationOptionsResult = createRegistrationOptions(context.options);
+    if (!creationOptionsResult.ok) return err(creationOptionsResult.error);
+
+    let credential: Credential | null;
+    try {
+      credential = await navigator.credentials.create(creationOptionsResult.value);
+    } catch (e) {
+      return err(mapWebAuthnError(e));
+    }
+
+    try {
+      validateCredentialStructure(credential, 'create');
+    } catch (e) {
+      return err(mapWebAuthnError(e));
+    }
+
+    let serializedCredential;
+    try {
+      serializedCredential = serializeCredentialForRegister(credential as PublicKeyCredential);
+    } catch (e) {
+      return err(mapWebAuthnError(e));
+    }
+
+    return this.apiClient.verifyCrossDeviceRegistration({
+      session_id: sessionId,
+      credential: serializedCredential,
+    });
+  }
+
+  /**
+   * Executes the auth branch: get credential and verify.
+   */
+  private async executeAuthApproval(
+    sessionId: string,
+    context: CrossDeviceContextAuth
+  ): Promise<Result<void, TryMellonError>> {
+    const requestOptionsResult = createAuthenticationOptions(context.options);
     if (!requestOptionsResult.ok) return err(requestOptionsResult.error);
 
-    // 3. Trigger WebAuthn API
     let credential: Credential | null;
     try {
       credential = await navigator.credentials.get(requestOptionsResult.value);
@@ -103,7 +164,6 @@ export class CrossDeviceManager {
       return err(mapWebAuthnError(e));
     }
 
-    // 4. Serialize and verify
     let serializedCredential;
     try {
       serializedCredential = serializeCredentialForAuth(credential as PublicKeyCredential);

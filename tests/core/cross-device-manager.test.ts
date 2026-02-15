@@ -7,9 +7,11 @@ import { createError } from '../../src/errors';
 describe('CrossDeviceManager', () => {
   const mockApiClient = {
     initCrossDeviceAuth: vi.fn(),
+    initCrossDeviceRegistration: vi.fn(),
     getCrossDeviceStatus: vi.fn(),
     getCrossDeviceContext: vi.fn(),
     verifyCrossDeviceAuth: vi.fn(),
+    verifyCrossDeviceRegistration: vi.fn(),
   };
 
   let manager: CrossDeviceManager;
@@ -44,6 +46,36 @@ describe('CrossDeviceManager', () => {
       const result = await manager.init();
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.code).toBe('NETWORK_FAILURE');
+    });
+  });
+
+  describe('initRegistration', () => {
+    it('should delegate to apiClient.initCrossDeviceRegistration with externalUserId', async () => {
+      mockApiClient.initCrossDeviceRegistration.mockResolvedValue(
+        ok({
+          session_id: 'sess_reg_1',
+          qr_url: 'https://example.com/qr/reg',
+          expires_at: '2026-02-12T12:00:00Z',
+        })
+      );
+      const result = await manager.initRegistration({ externalUserId: 'ext_123' });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.session_id).toBe('sess_reg_1');
+        expect(result.value.qr_url).toBe('https://example.com/qr/reg');
+      }
+      expect(mockApiClient.initCrossDeviceRegistration).toHaveBeenCalledTimes(1);
+      expect(mockApiClient.initCrossDeviceRegistration).toHaveBeenCalledWith({
+        externalUserId: 'ext_123',
+      });
+    });
+
+    it('should return err when apiClient.initCrossDeviceRegistration fails', async () => {
+      mockApiClient.initCrossDeviceRegistration.mockResolvedValue(
+        err(createError('NETWORK_FAILURE', 'API error'))
+      );
+      const result = await manager.initRegistration({ externalUserId: 'ext_1' });
+      expect(result.ok).toBe(false);
     });
   });
 
@@ -208,6 +240,49 @@ describe('CrossDeviceManager', () => {
         expect(mockApiClient.verifyCrossDeviceAuth).not.toHaveBeenCalled();
       } finally {
         navigator.credentials.get = originalGet;
+      }
+    });
+
+    it('should use credentials.create and verifyCrossDeviceRegistration when context type is registration', async () => {
+      const registrationOptions = {
+        challenge: 'Y2hhbGxlbmdl',
+        rp: { id: 'example.com', name: 'Example' },
+        user: { id: 'dXNlcl9pZA', name: 'user', displayName: 'User' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+      };
+      mockApiClient.getCrossDeviceContext.mockResolvedValue(
+        ok({ type: 'registration', options: registrationOptions })
+      );
+      mockApiClient.verifyCrossDeviceRegistration.mockResolvedValue(ok(undefined));
+      const originalCreate = navigator.credentials.create;
+      navigator.credentials.create = vi.fn().mockResolvedValue({
+        id: 'cred_id',
+        rawId: new ArrayBuffer(8),
+        type: 'public-key',
+        response: {
+          clientDataJSON: new ArrayBuffer(8),
+          attestationObject: new ArrayBuffer(8),
+        },
+      });
+      try {
+        const result = await manager.approve('sess_reg');
+        expect(result.ok).toBe(true);
+        expect(mockApiClient.getCrossDeviceContext).toHaveBeenCalledWith('sess_reg');
+        expect(mockApiClient.verifyCrossDeviceRegistration).toHaveBeenCalledWith(
+          expect.objectContaining({
+            session_id: 'sess_reg',
+            credential: expect.objectContaining({
+              type: 'public-key',
+              response: expect.objectContaining({
+                clientDataJSON: expect.any(String),
+                attestationObject: expect.any(String),
+              }),
+            }),
+          })
+        );
+        expect(mockApiClient.verifyCrossDeviceAuth).not.toHaveBeenCalled();
+      } finally {
+        navigator.credentials.create = originalCreate;
       }
     });
   });

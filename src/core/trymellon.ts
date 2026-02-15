@@ -264,6 +264,8 @@ export class TryMellon {
   auth = {
     crossDevice: {
       init: () => this.crossDeviceManager.init(),
+      initRegistration: (options: { externalUserId: string }) =>
+        this.crossDeviceManager.initRegistration(options),
       waitForSession: (sessionId: string, signal?: AbortSignal) =>
         this.crossDeviceManager.waitForSession(sessionId, signal),
       approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),

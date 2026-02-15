@@ -39,6 +39,7 @@ import type {
   CrossDeviceStatusResult,
   CrossDeviceContextResult,
   CrossDeviceVerifyRequest,
+  CrossDeviceVerifyRegistrationRequest,
 } from '../types';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
 
@@ -178,12 +179,28 @@ export class ApiClient {
     return this.post('/v1/auth/cross-device/init', {}, validateCrossDeviceInitResponse);
   }
 
+  async initCrossDeviceRegistration(options: {
+    externalUserId: string;
+  }): Promise<Result<CrossDeviceInitResult, TryMellonError>> {
+    return this.post(
+      '/v1/auth/cross-device/init-registration',
+      { external_user_id: options.externalUserId },
+      validateCrossDeviceInitResponse
+    );
+  }
+
   async getCrossDeviceStatus(
     sessionId: string
   ): Promise<Result<CrossDeviceStatusResult, TryMellonError>> {
     return this.get(`/v1/auth/cross-device/status/${sessionId}`, validateCrossDeviceStatusResponse);
   }
 
+  /**
+   * Fetches WebAuthn options for the cross-device session.
+   * Contract: response is CrossDeviceContextResult (auth | registration).
+   * Use result.value.type to branch: 'auth' → credentials.get + verify;
+   * 'registration' → credentials.create + verify-registration.
+   */
   async getCrossDeviceContext(
     sessionId: string
   ): Promise<Result<CrossDeviceContextResult, TryMellonError>> {
@@ -197,6 +214,15 @@ export class ApiClient {
     request: CrossDeviceVerifyRequest
   ): Promise<Result<void, TryMellonError>> {
     const url = `${this.baseUrl}/v1/auth/cross-device/verify`;
+    const result = await this.httpClient.post<unknown>(url, request, this.mergeHeaders());
+    if (!result.ok) return err(result.error);
+    return ok(undefined);
+  }
+
+  async verifyCrossDeviceRegistration(
+    request: CrossDeviceVerifyRegistrationRequest
+  ): Promise<Result<void, TryMellonError>> {
+    const url = `${this.baseUrl}/v1/auth/cross-device/verify-registration`;
     const result = await this.httpClient.post<unknown>(url, request, this.mergeHeaders());
     if (!result.ok) return err(result.error);
     return ok(undefined);
