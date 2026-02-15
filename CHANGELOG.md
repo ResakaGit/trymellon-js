@@ -1,3 +1,12 @@
+## [1.3.4] - 2026-02-15
+
+### Changed
+
+- **cross-device-manager.ts:** `approve()` delega en `executeRegistrationApproval()` y `executeAuthApproval()`; ramas de registro y auth separadas para mejor testabilidad.
+- **types.ts / api.ts:** Documentado contrato de `getCrossDeviceContext`: `result.value.type` es la fuente de verdad para el branching (auth vs registration).
+
+---
+
 ## [1.3.3](https://github.com/ResakaGit/trymellon-js/compare/v1.3.2...v1.3.3) (2026-02-15)
 
 ## [1.3.3] - 2026-02-15
