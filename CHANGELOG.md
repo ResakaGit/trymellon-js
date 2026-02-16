@@ -1,3 +1,5 @@
+## [1.4.1](https://github.com/ResakaGit/trymellon-js/compare/v1.4.0...v1.4.1) (2026-02-16)
+
 # [1.4.0](https://github.com/ResakaGit/trymellon-js/compare/v1.3.5...v1.4.0) (2026-02-16)
 
 ### Features
