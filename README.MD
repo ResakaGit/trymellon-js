@@ -697,6 +697,7 @@ if (!result.ok) {
 | `INVALID_ARGUMENT` | Invalid argument in config or method call |
 | `TIMEOUT` | Operation timed out |
 | `ABORTED` | Operation aborted via AbortSignal |
+| `CHALLENGE_MISMATCH` | Cross-device: link already used or expired; ask user to scan QR again from computer |
 | `UNKNOWN_ERROR` | Unknown error |
 
 ---

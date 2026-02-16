@@ -68,6 +68,10 @@
 
 # Unreleased
 
+### Added
+
+- **CHALLENGE_MISMATCH:** Nuevo código de error cuando la API devuelve `challenge_mismatch` (p. ej. verify-registration cross-device falla por challenge ya usado o expirado). El fetch-client normaliza `body.error === 'challenge_mismatch'` a `CHALLENGE_MISMATCH`. Usar para mostrar copy tipo "This link was already used or expired. Please scan the QR again from your computer."
+
 ### Breaking
 
 - **Email fallback:** `fallback.email.start()` now requires both `userId` and `email` in the options object (`StartEmailFallbackOptions`). The backend requires `email` to send the OTP. Use `client.fallback.email.start({ userId, email })`.

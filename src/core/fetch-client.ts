@@ -89,7 +89,7 @@ export class FetchHttpClient implements HttpClient {
             const code: TryMellonErrorCode =
               rawCode === 'challenge_mismatch'
                 ? 'CHALLENGE_MISMATCH'
-                : (rawCode as TryMellonErrorCode | undefined) ?? 'NETWORK_FAILURE';
+                : ((rawCode as TryMellonErrorCode | undefined) ?? 'NETWORK_FAILURE');
             const errResult = createError(code, message, {
               requestId,
               status: response.status,
