@@ -1,16 +1,14 @@
 # [1.4.0](https://github.com/ResakaGit/trymellon-js/compare/v1.3.5...v1.4.0) (2026-02-16)
 
-
 ### Features
 
-* **errors:** CHALLENGE_MISMATCH code + map API challenge_mismatch ([8924ee1](https://github.com/ResakaGit/trymellon-js/commit/8924ee1aa0af48d2bf8d8c8eb8f351df3211db21))
+- **errors:** CHALLENGE_MISMATCH code + map API challenge_mismatch ([8924ee1](https://github.com/ResakaGit/trymellon-js/commit/8924ee1aa0af48d2bf8d8c8eb8f351df3211db21))
 
 ## [1.3.5](https://github.com/ResakaGit/trymellon-js/compare/v1.3.4...v1.3.5) (2026-02-15)
 
-
 ### Bug Fixes
 
-* format CHANGELOG with Prettier (format:check compliance) ([ebcf37d](https://github.com/ResakaGit/trymellon-js/commit/ebcf37d689876ee6c3a1635551b4338006821605))
+- format CHANGELOG with Prettier (format:check compliance) ([ebcf37d](https://github.com/ResakaGit/trymellon-js/commit/ebcf37d689876ee6c3a1635551b4338006821605))
 
 ## [1.3.4](https://github.com/ResakaGit/trymellon-js/compare/v1.3.3...v1.3.4) (2026-02-15)
 
