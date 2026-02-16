@@ -8,6 +8,7 @@ export type TryMellonErrorCode =
   | 'TIMEOUT'
   | 'ABORTED'
   | 'ABORT_ERROR'
+  | 'CHALLENGE_MISMATCH'
   | 'UNKNOWN_ERROR';
 
 export class TryMellonError extends Error {
@@ -37,6 +38,7 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   TIMEOUT: 'Operation timed out',
   ABORTED: 'Operation was aborted',
   ABORT_ERROR: 'Operation aborted by user or timeout',
+  CHALLENGE_MISMATCH: 'This link was already used or expired. Please try again from your computer.',
   UNKNOWN_ERROR: 'An unknown error occurred',
 };
 
