@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/ResakaGit/trymellon-js/compare/v1.3.5...v1.4.0) (2026-02-16)
+
+
+### Features
+
+* **errors:** CHALLENGE_MISMATCH code + map API challenge_mismatch ([8924ee1](https://github.com/ResakaGit/trymellon-js/commit/8924ee1aa0af48d2bf8d8c8eb8f351df3211db21))
+
 ## [1.3.5](https://github.com/ResakaGit/trymellon-js/compare/v1.3.4...v1.3.5) (2026-02-15)
 
 
