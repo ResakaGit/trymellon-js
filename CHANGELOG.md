@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/ResakaGit/trymellon-js/compare/v1.4.3...v1.4.4) (2026-02-17)
+
+
+### Bug Fixes
+
+* handle 204 No Content in fetch client (cross-device verify) ([9c73fdd](https://github.com/ResakaGit/trymellon-js/commit/9c73fddce2cf5d8ef243f9d07af4020e76f6862d))
+
 ## [Unreleased]
 
 ### Bug Fixes
