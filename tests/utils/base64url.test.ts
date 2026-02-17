@@ -1,9 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import {
+  base64ToBase64Url,
   base64UrlEncode,
   base64UrlDecode,
   base64UrlDecodeToArrayBuffer,
 } from '../../src/utils/base64url';
+
+describe('base64ToBase64Url', () => {
+  it('converts base64 with + and / to base64url', () => {
+    const base64 = '1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O/lVSSzjme4=';
+    const result = base64ToBase64Url(base64);
+    expect(result).not.toContain('+');
+    expect(result).not.toContain('/');
+    expect(result).not.toContain('=');
+    expect(result).toBe('1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O_lVSSzjme4');
+  });
+
+  it('leaves base64url string unchanged', () => {
+    const base64url = '1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O_lVSSzjme4';
+    expect(base64ToBase64Url(base64url)).toBe(base64url);
+  });
+});
 
 describe('base64UrlEncode', () => {
   it('should encode empty ArrayBuffer', () => {

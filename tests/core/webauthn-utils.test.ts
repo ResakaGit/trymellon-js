@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+  normalizeClientDataJSONChallengeForRegister,
   serializeCredentialForRegister,
   serializeCredentialForAuth,
 } from '../../src/core/webauthn-utils';
+import { base64UrlDecode } from '../../src/utils/base64url';
 import { isTryMellonError } from '../../src/errors';
 
 function makeArrayBuffer(): ArrayBuffer {
@@ -81,6 +83,73 @@ describe('serializeCredentialForRegister', () => {
     } catch (e) {
       expect((e as { message: string }).message).toContain('attestationObject is missing');
     }
+  });
+
+  it('should output clientDataJSON with base64url challenge when input has base64 challenge', () => {
+    const jsonStr = JSON.stringify({
+      type: 'webauthn.create',
+      challenge: '1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O/lVSSzjme4=',
+      origin: 'https://example.com',
+    });
+    const bytes = new TextEncoder().encode(jsonStr);
+    const clientDataJSONWithBase64 = new ArrayBuffer(bytes.length);
+    new Uint8Array(clientDataJSONWithBase64).set(bytes);
+    const credential = {
+      id: 'cred_123',
+      rawId: new ArrayBuffer(4),
+      type: 'public-key',
+      response: {
+        clientDataJSON: clientDataJSONWithBase64,
+        attestationObject: new ArrayBuffer(4),
+      },
+    } as unknown as PublicKeyCredential;
+
+    const result = serializeCredentialForRegister(credential);
+
+    const decoded = new TextDecoder().decode(
+      new Uint8Array(base64UrlDecode(result.response.clientDataJSON))
+    );
+    const parsed = JSON.parse(decoded) as { challenge: string };
+    expect(parsed.challenge).toBe('1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O_lVSSzjme4');
+    expect(parsed.challenge).not.toContain('+');
+    expect(parsed.challenge).not.toContain('/');
+    expect(parsed.challenge).not.toContain('=');
+  });
+});
+
+describe('normalizeClientDataJSONChallengeForRegister', () => {
+  it('converts challenge from base64 to base64url in clientDataJSON', () => {
+    const input = new TextEncoder().encode(
+      JSON.stringify({
+        type: 'webauthn.create',
+        challenge: 'MVdCa2xxaFo5MmZTT1lqcTQyWDZTVkk1bmZ3bDVwVDNPX2xWU1N6am1lNA=',
+        origin: 'https://example.com',
+      })
+    ).buffer;
+    const result = normalizeClientDataJSONChallengeForRegister(input);
+    const parsed = JSON.parse(new TextDecoder().decode(result)) as { challenge: string };
+    expect(parsed.challenge).not.toContain('+');
+    expect(parsed.challenge).not.toContain('/');
+    expect(parsed.challenge).not.toContain('=');
+  });
+
+  it('returns same buffer when challenge is already base64url', () => {
+    const json = JSON.stringify({
+      type: 'webauthn.create',
+      challenge: '1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O_lVSSzjme4',
+      origin: 'https://example.com',
+    });
+    const input = new TextEncoder().encode(json).buffer;
+    const result = normalizeClientDataJSONChallengeForRegister(input);
+    expect(new Uint8Array(result)).toEqual(new Uint8Array(input));
+  });
+
+  it('returns same buffer when JSON has no challenge', () => {
+    const input = new TextEncoder().encode(
+      JSON.stringify({ type: 'webauthn.create', origin: 'https://example.com' })
+    ).buffer;
+    const result = normalizeClientDataJSONChallengeForRegister(input);
+    expect(new Uint8Array(result)).toEqual(new Uint8Array(input));
   });
 });
 

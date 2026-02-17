@@ -1,6 +1,37 @@
 import { createError } from '../errors';
-import { base64UrlEncode } from '../utils/base64url';
+import { base64UrlEncode, base64ToBase64Url } from '../utils/base64url';
 import type { RegisterFinishRequest, AuthFinishRequest } from '../types';
+
+function looksLikeBase64(challenge: string): boolean {
+  return (
+    challenge.includes('+') ||
+    challenge.includes('/') ||
+    (challenge.length > 0 && challenge.endsWith('='))
+  );
+}
+
+/**
+ * Normalizes clientDataJSON so the challenge field is base64url.
+ * If the browser sent challenge in standard base64, converts it for wire consistency.
+ * Exported for tests.
+ */
+export function normalizeClientDataJSONChallengeForRegister(
+  clientDataJSON: ArrayBuffer
+): ArrayBuffer {
+  const json = new TextDecoder().decode(clientDataJSON);
+  let obj: Record<string, unknown>;
+  try {
+    obj = JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return clientDataJSON;
+  }
+  const challenge = obj.challenge;
+  if (typeof challenge !== 'string' || !looksLikeBase64(challenge)) {
+    return clientDataJSON;
+  }
+  obj = { ...obj, challenge: base64ToBase64Url(challenge) };
+  return new TextEncoder().encode(JSON.stringify(obj)).buffer;
+}
 
 type SerializedCredentialForRegister = RegisterFinishRequest['credential'];
 type SerializedCredentialForAuth = AuthFinishRequest['credential'];
@@ -50,12 +81,13 @@ export function serializeCredentialForRegister(
 
   const clientDataJSON = response.clientDataJSON;
   const attestationObject = (response as AuthenticatorAttestationResponse).attestationObject;
+  const normalizedClientDataJSON = normalizeClientDataJSONChallengeForRegister(clientDataJSON);
 
   return {
     id: credential.id,
     rawId: base64UrlEncode(credential.rawId),
     response: {
-      clientDataJSON: base64UrlEncode(clientDataJSON),
+      clientDataJSON: base64UrlEncode(normalizedClientDataJSON),
       attestationObject: base64UrlEncode(attestationObject),
     },
     type: 'public-key',
