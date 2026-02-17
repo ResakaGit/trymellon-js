@@ -131,6 +131,11 @@ describe('isTryMellonError', () => {
     expect(isTryMellonError({})).toBe(false);
   });
 
+  it('should return true for duck-typed object with isTryMellonError: true', () => {
+    const duckTyped = { isTryMellonError: true, code: 'TIMEOUT', message: 'Test' };
+    expect(isTryMellonError(duckTyped)).toBe(true);
+  });
+
   it('should work as type guard', () => {
     const error: unknown = new TryMellonError('TIMEOUT', 'Timeout');
 
@@ -380,5 +385,11 @@ describe('validateRange', () => {
   });
   it('should throw when value above max', () => {
     expect(() => validateRange(11, 'field', 0, 10)).toThrow(TryMellonError);
+  });
+  it('should throw for NaN', () => {
+    expect(() => validateRange(Number.NaN, 'field', 0, 10)).toThrow(TryMellonError);
+  });
+  it('should throw for Infinity', () => {
+    expect(() => validateRange(Number.POSITIVE_INFINITY, 'field', 0, 10)).toThrow(TryMellonError);
   });
 });

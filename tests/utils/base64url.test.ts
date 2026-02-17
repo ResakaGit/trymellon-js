@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   base64UrlEncode,
   base64UrlDecode,
   base64UrlDecodeToArrayBuffer,
 } from '../../src/utils/base64url';
+import { TryMellonError } from '../../src/errors';
 
 describe('base64UrlEncode', () => {
   it('should encode empty ArrayBuffer', () => {
@@ -167,5 +168,29 @@ describe('base64url edge cases', () => {
     const encoded = base64UrlEncode(bytes.buffer);
     const decoded = base64UrlDecode(encoded);
     expect(decoded).toEqual(bytes);
+  });
+});
+
+describe('base64url when btoa/atob and Buffer unavailable', () => {
+  const originalBtoa = globalThis.btoa;
+  const originalAtob = globalThis.atob;
+  const originalBuffer = globalThis.Buffer;
+
+  afterEach(() => {
+    vi.stubGlobal('btoa', originalBtoa);
+    vi.stubGlobal('atob', originalAtob);
+    vi.stubGlobal('Buffer', originalBuffer);
+  });
+
+  it('base64UrlEncode throws createEncodingError when no btoa nor Buffer', () => {
+    vi.stubGlobal('btoa', undefined);
+    vi.stubGlobal('Buffer', undefined);
+    expect(() => base64UrlEncode(new ArrayBuffer(1))).toThrow(TryMellonError);
+  });
+
+  it('base64UrlDecode throws createEncodingError when no atob nor Buffer', () => {
+    vi.stubGlobal('atob', undefined);
+    vi.stubGlobal('Buffer', undefined);
+    expect(() => base64UrlDecode('YQ')).toThrow(TryMellonError);
   });
 });

@@ -80,6 +80,10 @@
 
 # Unreleased
 
+### Tests
+
+- **errors.test.ts, base64url.test.ts:** Additional coverage for error codes and base64url normalization.
+
 ### Added
 
 - **CHALLENGE_MISMATCH:** Nuevo código de error cuando la API devuelve `challenge_mismatch` (p. ej. verify-registration cross-device falla por challenge ya usado o expirado). El fetch-client normaliza `body.error === 'challenge_mismatch'` a `CHALLENGE_MISMATCH`. Usar para mostrar copy tipo "This link was already used or expired. Please scan the QR again from your computer."
