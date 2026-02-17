@@ -2,6 +2,8 @@
 
 Ejemplos prácticos de integración del SDK `@trymellon/js` en diferentes escenarios.
 
+**Credenciales:** En todos los ejemplos, `appId` es tu **App ID** (UUID) y `publishableKey` es tu **Client ID** (valor `cli_xxx`). Obtén ambos en Dashboard → Tu aplicación → App ID y Client ID.
+
 ---
 
 ## Ejemplo Básico: Registro
@@ -10,8 +12,8 @@ Ejemplos prácticos de integración del SDK `@trymellon/js` en diferentes escena
 import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
-  appId: 'app_123',
-  publishableKey: 'key_123',
+  appId: 'your-app-id-uuid', // Dashboard → Your app → App ID
+  publishableKey: 'cli_xxxx', // Dashboard → Your app → Client ID
 });
 
 async function registerUser(externalUserId: string) {
@@ -43,8 +45,8 @@ async function registerUser(externalUserId: string) {
 import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
-  appId: 'app_123',
-  publishableKey: 'key_123',
+  appId: 'your-app-id-uuid',
+  publishableKey: 'cli_xxxx',
 });
 
 async function loginUser(externalUserId: string) {
@@ -78,8 +80,8 @@ async function loginUser(externalUserId: string) {
 import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
-  appId: 'app_123',
-  publishableKey: 'key_123',
+  appId: 'your-app-id-uuid',
+  publishableKey: 'cli_xxxx',
 });
 
 // Suscribirse a eventos
@@ -116,8 +118,8 @@ if (result.ok) console.log('Registro OK:', result.value.sessionToken);
 import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
-  appId: 'app_123',
-  publishableKey: 'key_123',
+  appId: 'your-app-id-uuid',
+  publishableKey: 'cli_xxxx',
 });
 
 async function authenticateWithFallback(userId: string) {
@@ -167,7 +169,9 @@ import { useState, useEffect } from 'react';
 import { TryMellon } from '@trymellon/js';
 
 function PasskeyAuth() {
-  const [client] = useState(() => new TryMellon({ appId: 'app_123', publishableKey: 'key_123' }));
+  const [client] = useState(
+    () => new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' })
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -245,7 +249,7 @@ function PasskeyAuth() {
 import { ref, onMounted, onUnmounted } from 'vue';
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
+const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -315,7 +319,7 @@ const handleLogin = async () => {
     <script type="module">
       import { TryMellon } from '@trymellon/js';
 
-      const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
+      const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
       const statusDiv = document.getElementById('status');
 
       function showStatus(message, isError = false) {
@@ -359,7 +363,7 @@ const handleLogin = async () => {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
+const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 
 const controller = new AbortController();
 
@@ -384,7 +388,7 @@ if (!result.ok && result.error.code === 'USER_CANCELLED') {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
+const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 
 async function checkSupport() {
   const status = await client.getStatus();
@@ -415,7 +419,7 @@ async function checkSupport() {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'app_123', publishableKey: 'key_123' });
+const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 
 async function completeFlow() {
   // Verificar soporte

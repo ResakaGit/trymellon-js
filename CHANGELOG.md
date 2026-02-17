@@ -1,9 +1,14 @@
 ## [1.4.2](https://github.com/ResakaGit/trymellon-js/compare/v1.4.1...v1.4.2) (2026-02-17)
 
-
 ### Bug Fixes
 
-* **webauthn:** add base64url normalization for registration clientDataJSON challenge ([a535c84](https://github.com/ResakaGit/trymellon-js/commit/a535c84e4eea647266ca02a4064e22c1e55263bf))
+- **webauthn:** add base64url normalization for registration clientDataJSON challenge ([a535c84](https://github.com/ResakaGit/trymellon-js/commit/a535c84e4eea647266ca02a4064e22c1e55263bf))
+
+### Documentation
+
+- **Credentials:** README y docs: sección "Where to get credentials" (appId = Application ID UUID, publishableKey = Client ID `cli_xxx`). Placeholders en ejemplos: `your-app-id-uuid` / `cli_xxxx`. API.md y EXAMPLES.md alineados; nota de que la API identifica la app por publishableKey + Origin.
+- **Cross-device:** Formato de `qr_url` (`{baseUrl}/mobile-auth?session_id={uuid}`) y requisito de app móvil desplegada con origen permitido en el dashboard.
+- **Format:** Prettier en documentation/API.md y documentation/EXAMPLES.md.
 
 ## [1.4.1](https://github.com/ResakaGit/trymellon-js/compare/v1.4.0...v1.4.1) (2026-02-16)
 

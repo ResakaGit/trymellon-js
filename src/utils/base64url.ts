@@ -1,13 +1,5 @@
 import { createEncodingError } from '../errors';
 
-/**
- * Converts a standard base64 string to base64url (removes padding, replaces + and /).
- * Idempotent: if the string is already base64url, it is returned unchanged.
- */
-export function base64ToBase64Url(base64Str: string): string {
-  return base64Str.replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-}
-
 export function base64UrlEncode(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
   let binary = '';

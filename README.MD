@@ -49,9 +49,13 @@ curl -X POST https://api.trymellonauth.com/onboarding/ai \
   "tenantId": "...",
   "clientId": "cli_...",
   "clientSecret": "sec_...",
+  "publishableKey": "cli_...",
+  "applicationId": "...",
   "limits": { "maxUsers": 15, "maxApps": 1 }
 }
 ```
+
+Use `publishableKey` (same as `clientId`) in the SDK: `TryMellon.create({ appId: '...', publishableKey: response.publishableKey })`. Use `applicationId` to update allowed origins (step 4) if you use passkeys or cross-device from your agent's domain.
 
 ### 2. Authenticate
 Use the `clientId` and `clientSecret` to get an access token via OAuth2 Client Credentials flow.
@@ -81,6 +85,18 @@ curl -X POST https://api.trymellonauth.com/v1/users \
   -d '{ "external_user_id": "user_123" }'
 ```
 
+### 4. Update allowed origins (required for passkeys / cross-device)
+If your agent uses passkeys or cross-device auth from a real domain, the API must allow that origin. Call PATCH with the `applicationId` from step 1:
+
+```bash
+curl -X PATCH https://api.trymellonauth.com/v1/applications/<applicationId> \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{ "allowed_origins": ["https://your-agent-domain.com"] }'
+```
+
+Without this, requests from your agent's origin will get 404 when resolving the application. You can keep `https://agent.local` in the list for local testing.
+
 ---
 
 ## Installation
@@ -98,6 +114,19 @@ That's it. No peer dependencies. No bloat.
 * Browser with WebAuthn support (Chrome, Safari, Firefox, Edge)
 * HTTPS (required except on `localhost`)
 * A TryMellon Application with the correct origin configured
+
+---
+
+## Where to get credentials
+
+You need two values to initialize the SDK. Get both from the [TryMellon dashboard](https://trymellon-landing.pages.dev/dashboard) after creating an application and adding your app's origin.
+
+| SDK parameter    | What it is              | Where to find it                          |
+|------------------|-------------------------|-------------------------------------------|
+| `appId`          | **Application ID** (UUID) | Dashboard → Your app → **App ID**        |
+| `publishableKey` | **Client ID** (starts with `cli_`) | Dashboard → Your app → **Client ID** (same value is your publishable key) |
+
+The API identifies your app by `publishableKey` (sent as `Authorization: Bearer <publishableKey>`) and the request **Origin**. Ensure your app's origin is allowed in the dashboard for that application.
 
 ---
 
@@ -124,7 +153,9 @@ npm install @trymellon/js
 import { TryMellon } from '@trymellon/js'
 import { TryMellonProvider, useTryMellon, useRegister, useAuthenticate } from '@trymellon/js/react'
 
-const client = new TryMellon({ appId: 'app_live_xxxx', publishableKey: 'key_live_xxxx' })
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' }) // Get these from Dashboard → Your app → App ID and Client ID
+if (!clientResult.ok) throw clientResult.error
+const client = clientResult.value
 
 function App() {
   return (
@@ -163,7 +194,9 @@ npm install @trymellon/js
 import { TryMellon } from '@trymellon/js'
 import { provideTryMellon, useTryMellon, useRegister, useAuthenticate } from '@trymellon/js/vue'
 
-const client = new TryMellon({ appId: 'app_live_xxxx', publishableKey: 'key_live_xxxx' })
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' }) // Get these from Dashboard → Your app → App ID and Client ID
+if (!clientResult.ok) throw clientResult.error
+const client = clientResult.value
 provideTryMellon(client)
 
 const { execute: register, loading } = useRegister()
@@ -195,8 +228,8 @@ import { provideTryMellonConfig } from '@trymellon/js/angular'
 export const appConfig = {
   providers: [
     provideTryMellonConfig({
-      appId: 'app_live_xxxx',
-      publishableKey: 'key_live_xxxx',
+      appId: 'your-app-id-uuid',
+      publishableKey: 'cli_xxxx',
     }),
   ],
 }
@@ -244,8 +277,8 @@ import { TryMellon } from '@trymellon/js'
 
 // 1. Initialize safely (Factory Pattern)
 const clientResult = TryMellon.create({
-  appId: 'app_live_xxxx',   // From your TryMellon dashboard
-  publishableKey: 'key_live_xxxx', // Application API key
+  appId: 'your-app-id-uuid',   // App ID (UUID) from Dashboard → Your app
+  publishableKey: 'cli_xxxx',  // Client ID from Dashboard → Your app
 })
 
 if (!clientResult.ok) {
@@ -272,23 +305,34 @@ if (authResult.ok) {
 
 ## Initialization
 
+Prefer **TryMellon.create()** so invalid config returns a Result instead of throwing:
+
 ```typescript
 import { TryMellon } from '@trymellon/js'
 
-const client = new TryMellon({
-  appId: 'app_live_xxxx',     // Required: application (tenant) identifier
-  publishableKey: 'key_live_xxxx',   // Required: API key for authentication
+const clientResult = TryMellon.create({
+  appId: 'your-app-id-uuid',
+  publishableKey: 'cli_xxxx',
   apiBaseUrl: 'https://api.trymellonauth.com', // optional
-  timeoutMs: 30000,          // optional, default: 30000
-  maxRetries: 3,             // optional
-  retryDelayMs: 1000,        // optional
+  timeoutMs: 30000,
+  maxRetries: 3,
+  retryDelayMs: 1000,
 })
+
+if (!clientResult.ok) {
+  console.error('Invalid config:', clientResult.error.message)
+  throw clientResult.error
+}
+const client = clientResult.value
 ```
+
+> [!TIP]
+> For static, validated config you can use `new TryMellon(config)`; it throws on invalid config. Prefer `TryMellon.create()` for user- or env-driven config so you can handle errors without try/catch.
 
 **Configuration options:**
 
-- `appId` (required): Your application identifier in TryMellon. Sent in header `X-App-Id`.
-- `publishableKey` (required): Public API key for authentication. Sent in header `Authorization: Bearer <publishableKey>`.
+- `appId` (required): Your Application ID (UUID). Get it from Dashboard → Your app → App ID. Sent in header `X-App-Id`. The API identifies your app by `publishableKey` and Origin; `appId` is sent for consistency and future use.
+- `publishableKey` (required): Your Client ID (value starting with `cli_`). Get it from Dashboard → Your app → Client ID. Sent in header `Authorization: Bearer <publishableKey>`. The API uses this plus the request Origin to resolve your application.
 - `apiBaseUrl` (optional): API base URL. Default: `'https://api.trymellonauth.com'`
 - `timeoutMs` (optional): HTTP request timeout. Range: `1000` - `300000`. Default: `30000`
 - `maxRetries` (optional): Retries for network errors. Range: `0` - `10`. Default: `3`
@@ -315,11 +359,13 @@ For local development or testing the integration flow without a real backend or 
 ```typescript
 import { TryMellon, SANDBOX_SESSION_TOKEN } from '@trymellon/js'
 
-const client = new TryMellon({
+const clientResult = TryMellon.create({
   sandbox: true,
   appId: 'sandbox',
   publishableKey: 'sandbox',
 })
+if (!clientResult.ok) throw clientResult.error
+const client = clientResult.value
 
 const result = await client.authenticate({ externalUserId: 'dev_user_1' })
 if (result.ok) {
@@ -580,6 +626,8 @@ async function authenticateWithEmail(userId: string, email: string) {
 ## Cross-Device Authentication (QR Login)
 
 Enable users to sign in on a desktop device by scanning a QR code with their mobile phone (where their passkey is stored).
+
+**About `qr_url` and the mobile app:** The API returns `qr_url` in the form `{baseUrl}/mobile-auth?session_id={session_id}` (where `session_id` is a UUID). Your **mobile web app** must be deployed and its URL/origin **allowed in the TryMellon dashboard** for that application. The user scans the QR, opens that URL (which includes the `session_id`), and your mobile app must call `approve(session_id)` to complete the flow. If the mobile app’s origin is not allowed, the API will reject the request.
 
 ### 1. Desktop: Initialize and Show QR
 

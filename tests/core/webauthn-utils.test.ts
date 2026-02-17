@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  normalizeClientDataJSONChallengeForRegister,
   serializeCredentialForRegister,
   serializeCredentialForAuth,
 } from '../../src/core/webauthn-utils';
@@ -85,7 +84,7 @@ describe('serializeCredentialForRegister', () => {
     }
   });
 
-  it('should output clientDataJSON with base64url challenge when input has base64 challenge', () => {
+  it('should output clientDataJSON unchanged (original payload)', () => {
     const jsonStr = JSON.stringify({
       type: 'webauthn.create',
       challenge: '1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O/lVSSzjme4=',
@@ -110,46 +109,7 @@ describe('serializeCredentialForRegister', () => {
       new Uint8Array(base64UrlDecode(result.response.clientDataJSON))
     );
     const parsed = JSON.parse(decoded) as { challenge: string };
-    expect(parsed.challenge).toBe('1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O_lVSSzjme4');
-    expect(parsed.challenge).not.toContain('+');
-    expect(parsed.challenge).not.toContain('/');
-    expect(parsed.challenge).not.toContain('=');
-  });
-});
-
-describe('normalizeClientDataJSONChallengeForRegister', () => {
-  it('converts challenge from base64 to base64url in clientDataJSON', () => {
-    const input = new TextEncoder().encode(
-      JSON.stringify({
-        type: 'webauthn.create',
-        challenge: 'MVdCa2xxaFo5MmZTT1lqcTQyWDZTVkk1bmZ3bDVwVDNPX2xWU1N6am1lNA=',
-        origin: 'https://example.com',
-      })
-    ).buffer;
-    const result = normalizeClientDataJSONChallengeForRegister(input);
-    const parsed = JSON.parse(new TextDecoder().decode(result)) as { challenge: string };
-    expect(parsed.challenge).not.toContain('+');
-    expect(parsed.challenge).not.toContain('/');
-    expect(parsed.challenge).not.toContain('=');
-  });
-
-  it('returns same buffer when challenge is already base64url', () => {
-    const json = JSON.stringify({
-      type: 'webauthn.create',
-      challenge: '1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O_lVSSzjme4',
-      origin: 'https://example.com',
-    });
-    const input = new TextEncoder().encode(json).buffer;
-    const result = normalizeClientDataJSONChallengeForRegister(input);
-    expect(new Uint8Array(result)).toEqual(new Uint8Array(input));
-  });
-
-  it('returns same buffer when JSON has no challenge', () => {
-    const input = new TextEncoder().encode(
-      JSON.stringify({ type: 'webauthn.create', origin: 'https://example.com' })
-    ).buffer;
-    const result = normalizeClientDataJSONChallengeForRegister(input);
-    expect(new Uint8Array(result)).toEqual(new Uint8Array(input));
+    expect(parsed.challenge).toBe('1WBklqhZ92fSOYjq42X6SVI5nfwl5pT3O/lVSSzjme4=');
   });
 });
 

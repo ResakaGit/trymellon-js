@@ -16,8 +16,8 @@ new TryMellon(config: TryMellonConfig)
 
 **Parámetros:**
 
-- `config.appId` (string, requerido): ID de la aplicación en TryMellon
-- `config.publishableKey` (string, requerido): Clave pública para autenticación con la API
+- `config.appId` (string, requerido): Application ID (UUID) de tu aplicación. Se envía en el header `X-App-Id`. Obtén el valor en Dashboard → Tu aplicación → App ID. La API identifica tu app por `publishableKey` y Origin.
+- `config.publishableKey` (string, requerido): Client ID (valor que empieza por `cli_`). Se envía en `Authorization: Bearer <publishableKey>`. Obtén el valor en Dashboard → Tu aplicación → Client ID.
 - `config.apiBaseUrl` (string, opcional): URL base de la API. Por defecto: `'https://api.trymellonauth.com'`
   - Debe ser una URL válida
 - `config.timeoutMs` (number, opcional): Timeout en milisegundos para requests HTTP. Por defecto: `30000`
@@ -35,8 +35,8 @@ new TryMellon(config: TryMellonConfig)
 import { TryMellon } from '@trymellon/js';
 
 const client = new TryMellon({
-  appId: 'app_123',
-  publishableKey: 'pk_xxx',
+  appId: 'your-app-id-uuid', // Dashboard → Your app → App ID
+  publishableKey: 'cli_xxxx', // Dashboard → Your app → Client ID
   apiBaseUrl: 'https://api.trymellonauth.com',
   timeoutMs: 30000,
   maxRetries: 3,
@@ -69,7 +69,7 @@ static create(config: TryMellonConfig): Result<TryMellon, TryMellonError>
 **Ejemplo:**
 
 ```typescript
-const result = TryMellon.create({ appId: 'app_123', publishableKey: 'pk_xxx' });
+const result = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 if (result.ok) {
   const client = result.value;
   // usar client
