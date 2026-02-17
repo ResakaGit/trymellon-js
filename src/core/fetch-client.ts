@@ -108,6 +108,13 @@ export class FetchHttpClient implements HttpClient {
             return err(errResult);
           }
 
+          if (response.status === 204) {
+            return ok(undefined as T);
+          }
+          const contentLength = response.headers.get('content-length');
+          if (contentLength === '0') {
+            return ok(undefined as T);
+          }
           const data = (await response.json()) as T;
           return ok(data);
         } finally {

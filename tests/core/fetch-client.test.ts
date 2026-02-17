@@ -231,4 +231,43 @@ describe('FetchHttpClient', () => {
       expect(delays).toContain(200);
     });
   });
+
+  describe('204 No Content and empty body', () => {
+    it('returns ok(undefined) for 204 without calling response.json()', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      const jsonSpy = vi.fn();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 204,
+        statusText: 'No Content',
+        headers: new Headers(),
+        json: jsonSpy,
+      });
+
+      const result = await client.post<void>('https://api.example.com/verify', {});
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeUndefined();
+      }
+      expect(jsonSpy).not.toHaveBeenCalled();
+    });
+
+    it('returns ok(undefined) when content-length is 0 and status 200', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response('', {
+          status: 200,
+          headers: new Headers({ 'Content-Length': '0' }),
+        })
+      );
+
+      const result = await client.post<void>('https://api.example.com/empty', {});
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeUndefined();
+      }
+    });
+  });
 });

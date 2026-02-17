@@ -1,5 +1,10 @@
-## [1.4.3](https://github.com/ResakaGit/trymellon-js/compare/v1.4.2...v1.4.3) (2026-02-17)
+## [Unreleased]
 
+### Bug Fixes
+
+- **fetch-client:** handle 204 No Content in fetch client (cross-device verify/verify-registration). Avoids "Unexpected end of JSON input" and "Approval error" on mobile when backend returns empty body.
+
+## [1.4.3](https://github.com/ResakaGit/trymellon-js/compare/v1.4.2...v1.4.3) (2026-02-17)
 
 ### Bug Fixes
 
