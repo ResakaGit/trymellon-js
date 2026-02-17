@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/ResakaGit/trymellon-js/compare/v1.4.1...v1.4.2) (2026-02-17)
+
+
+### Bug Fixes
+
+* **webauthn:** add base64url normalization for registration clientDataJSON challenge ([a535c84](https://github.com/ResakaGit/trymellon-js/commit/a535c84e4eea647266ca02a4064e22c1e55263bf))
+
 ## [1.4.1](https://github.com/ResakaGit/trymellon-js/compare/v1.4.0...v1.4.1) (2026-02-16)
 
 # [1.4.0](https://github.com/ResakaGit/trymellon-js/compare/v1.3.5...v1.4.0) (2026-02-16)
