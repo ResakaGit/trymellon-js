@@ -1,3 +1,10 @@
+## [1.4.8](https://github.com/ResakaGit/trymellon-js/compare/v1.4.7...v1.4.8) (2026-02-19)
+
+
+### Bug Fixes
+
+* Elite isomorphic hardening (Web Crypto required, edge tests, tsup browser) ([74c5d95](https://github.com/ResakaGit/trymellon-js/commit/74c5d959e6d545ff3d015bc51a138274be90962f))
+
 ## [1.4.7](https://github.com/ResakaGit/trymellon-js/compare/v1.4.6...v1.4.7) (2026-02-19)
 
 ## [1.4.6](https://github.com/ResakaGit/trymellon-js/compare/v1.4.5...v1.4.6) (2026-02-19)
