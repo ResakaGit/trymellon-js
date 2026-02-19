@@ -32,6 +32,7 @@
 - **fetch-client:** handle 204 No Content in fetch client (cross-device verify/verify-registration). Avoids "Unexpected end of JSON input" and "Approval error" on mobile when backend returns empty body.
 - **sdk:** remove Node Buffer and crypto module; use only globalThis.btoa, globalThis.atob, globalThis.crypto. SDK is now 100% compatible with Edge runtimes (Cloudflare Workers, Vercel Edge) and browsers without polyfills.
 - **Elite isomorphic hardening:** Web Crypto required (no fallback); tsup `platform: 'browser'` and `process.env.NODE_ENV` define; Edge tests (no Buffer) and dist bundle load test; README Isomorphic/Edge-safe note.
+- **tests:** increase timeout for examples API contract tests in CI (register, authenticate, fallback.email.verify) to avoid flakiness on slow runners.
 
 ## [1.4.3](https://github.com/ResakaGit/trymellon-js/compare/v1.4.2...v1.4.3) (2026-02-17)
 

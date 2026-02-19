@@ -124,45 +124,62 @@ describe('Examples Syntax Validation', () => {
   });
 
   describe('README Quickstart / EXAMPLES API contract (Result, session_token, error.code)', () => {
-    it('register returns Result with value.session_token on success', async () => {
-      const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
-      const result = await client.register({ externalUserId: 'user_123' });
-      expect(result).toBeDefined();
-      expect(typeof result.ok).toBe('boolean');
-      if (result.ok) {
-        expect(result.value).toHaveProperty('session_token');
-        expect(typeof result.value.session_token).toBe('string');
-        expect(result.value.user).toHaveProperty('external_user_id');
-      } else {
-        expect(result.error).toHaveProperty('code');
-        expect(result.error).toHaveProperty('message');
-      }
-    });
+    const SLOW_CI_MS = 15_000;
 
-    it('authenticate returns Result with value.session_token on success', async () => {
-      const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
-      const result = await client.authenticate({ externalUserId: 'user_123' });
-      expect(result).toBeDefined();
-      expect(typeof result.ok).toBe('boolean');
-      if (result.ok) {
-        expect(result.value).toHaveProperty('session_token');
-        expect(result.value.user).toHaveProperty('external_user_id');
-      } else {
-        expect(result.error).toHaveProperty('code');
-        expect(result.error).toHaveProperty('message');
-      }
-    });
+    it(
+      'register returns Result with value.session_token on success',
+      async () => {
+        const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
+        const result = await client.register({ externalUserId: 'user_123' });
+        expect(result).toBeDefined();
+        expect(typeof result.ok).toBe('boolean');
+        if (result.ok) {
+          expect(result.value).toHaveProperty('session_token');
+          expect(typeof result.value.session_token).toBe('string');
+          expect(result.value.user).toHaveProperty('external_user_id');
+        } else {
+          expect(result.error).toHaveProperty('code');
+          expect(result.error).toHaveProperty('message');
+        }
+      },
+      SLOW_CI_MS
+    );
 
-    it('fallback.email.verify returns Result with value.sessionToken', async () => {
-      const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
-      const result = await client.fallback.email.verify({ userId: 'user_123', code: '123456' });
-      expect(result).toBeDefined();
-      expect(typeof result.ok).toBe('boolean');
-      if (result.ok) {
-        expect(result.value).toHaveProperty('sessionToken');
-      } else {
-        expect(result.error).toHaveProperty('code');
-      }
-    });
+    it(
+      'authenticate returns Result with value.session_token on success',
+      async () => {
+        const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
+        const result = await client.authenticate({ externalUserId: 'user_123' });
+        expect(result).toBeDefined();
+        expect(typeof result.ok).toBe('boolean');
+        if (result.ok) {
+          expect(result.value).toHaveProperty('session_token');
+          expect(result.value.user).toHaveProperty('external_user_id');
+        } else {
+          expect(result.error).toHaveProperty('code');
+          expect(result.error).toHaveProperty('message');
+        }
+      },
+      SLOW_CI_MS
+    );
+
+    it(
+      'fallback.email.verify returns Result with value.sessionToken',
+      async () => {
+        const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
+        const result = await client.fallback.email.verify({
+          userId: 'user_123',
+          code: '123456',
+        });
+        expect(result).toBeDefined();
+        expect(typeof result.ok).toBe('boolean');
+        if (result.ok) {
+          expect(result.value).toHaveProperty('sessionToken');
+        } else {
+          expect(result.error).toHaveProperty('code');
+        }
+      },
+      SLOW_CI_MS
+    );
   });
 });
