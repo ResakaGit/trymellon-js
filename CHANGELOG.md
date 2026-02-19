@@ -2,10 +2,9 @@
 
 ## [1.4.6](https://github.com/ResakaGit/trymellon-js/compare/v1.4.5...v1.4.6) (2026-02-19)
 
-
 ### Bug Fixes
 
-* format CHANGELOG, allowlist GHSA-3ppc-4f35-3m26 and GHSA-83g3-92jg-28cx for audit:ci ([863d542](https://github.com/ResakaGit/trymellon-js/commit/863d542be48870d728ac4e20127d3288a43f54e1))
+- format CHANGELOG, allowlist GHSA-3ppc-4f35-3m26 and GHSA-83g3-92jg-28cx for audit:ci ([863d542](https://github.com/ResakaGit/trymellon-js/commit/863d542be48870d728ac4e20127d3288a43f54e1))
 
 ## [1.4.5](https://github.com/ResakaGit/trymellon-js/compare/v1.4.4...v1.4.5) (2026-02-19)
 
@@ -25,6 +24,7 @@
 
 - **fetch-client:** handle 204 No Content in fetch client (cross-device verify/verify-registration). Avoids "Unexpected end of JSON input" and "Approval error" on mobile when backend returns empty body.
 - **sdk:** remove Node Buffer and crypto module; use only globalThis.btoa, globalThis.atob, globalThis.crypto. SDK is now 100% compatible with Edge runtimes (Cloudflare Workers, Vercel Edge) and browsers without polyfills.
+- **Elite isomorphic hardening:** Web Crypto required (no fallback); tsup `platform: 'browser'` and `process.env.NODE_ENV` define; Edge tests (no Buffer) and dist bundle load test; README Isomorphic/Edge-safe note.
 
 ## [1.4.3](https://github.com/ResakaGit/trymellon-js/compare/v1.4.2...v1.4.3) (2026-02-17)
 

@@ -7,8 +7,8 @@ import { createError, type TryMellonError, type TryMellonErrorCode } from '../er
 const RETRY_DELAY_CAP_MS = 30_000;
 
 /**
- * Generates a unique request ID. Uses globalThis.crypto.randomUUID when available
- * (Edge/browser-safe; no Node crypto module). Falls back to time + random string.
+ * Generates a unique request ID. Uses globalThis.crypto.randomUUID only (Elite: no Node crypto).
+ * @throws Error when Web Crypto API is not available (Edge/browser must provide it).
  */
 function generateRequestId(): string {
   if (
@@ -17,7 +17,7 @@ function generateRequestId(): string {
   ) {
     return globalThis.crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  throw new Error('Web Crypto API is required but not available.');
 }
 
 /**

@@ -12,6 +12,23 @@ describe('getRetryDelayMs', () => {
   });
 });
 
+describe('FetchHttpClient (Web Crypto required)', () => {
+  it('should throw when Web Crypto is not available (Elite: no fallback)', async () => {
+    const originalCrypto = globalThis.crypto;
+    try {
+      vi.stubGlobal('crypto', undefined);
+
+      const client = new FetchHttpClient(5000, 0, 100);
+
+      await expect(client.get<unknown>('https://api.example.com/foo')).rejects.toThrow(
+        'Web Crypto API is required but not available.'
+      );
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto);
+    }
+  });
+});
+
 describe('FetchHttpClient', () => {
   const mockFetch = vi.fn();
   const baseDelayMs = 100;

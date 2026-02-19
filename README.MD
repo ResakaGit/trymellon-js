@@ -116,6 +116,8 @@ That's it. No peer dependencies. No bloat.
 * HTTPS (required except on `localhost`)
 * A TryMellon Application with the correct origin configured
 
+**Isomorphic / Edge-safe:** The runtime bundle uses only `globalThis.crypto`, `btoa`/`atob`, and `ArrayBuffer`/`Uint8Array` (no Node `Buffer` or `node:crypto`). Safe to import in SSR on Edge. Build-time scripts (e.g. `scripts/sri.js`) may use Node APIs; they do not affect the published bundle.
+
 ---
 
 ## Where to get credentials

@@ -7,11 +7,13 @@ const version = packageJson.version;
 const sharedOptions = {
   sourcemap: true,
   target: 'es2022',
+  platform: 'browser',
   esbuildOptions(options: { define?: Record<string, string> }) {
     options.legalComments = 'none';
     options.define = {
       ...options.define,
       __VERSION__: JSON.stringify(version),
+      'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'production'),
     };
     options.treeShaking = true;
     options.minifyIdentifiers = true;
@@ -41,6 +43,7 @@ export default defineConfig([
     ...sharedOptions,
     entry: ['src/index.ts'],
     format: ['esm', 'cjs', 'iife'],
+    external: ['buffer', 'node:buffer', 'crypto', 'node:crypto'],
     dts: true,
     clean: false,
     splitting: false,
