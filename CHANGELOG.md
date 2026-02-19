@@ -1,3 +1,10 @@
+## [1.4.6](https://github.com/ResakaGit/trymellon-js/compare/v1.4.5...v1.4.6) (2026-02-19)
+
+
+### Bug Fixes
+
+* format CHANGELOG, allowlist GHSA-3ppc-4f35-3m26 and GHSA-83g3-92jg-28cx for audit:ci ([863d542](https://github.com/ResakaGit/trymellon-js/commit/863d542be48870d728ac4e20127d3288a43f54e1))
+
 ## [1.4.5](https://github.com/ResakaGit/trymellon-js/compare/v1.4.4...v1.4.5) (2026-02-19)
 
 
