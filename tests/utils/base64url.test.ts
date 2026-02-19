@@ -171,26 +171,22 @@ describe('base64url edge cases', () => {
   });
 });
 
-describe('base64url when btoa/atob and Buffer unavailable', () => {
+describe('base64url when btoa/atob unavailable', () => {
   const originalBtoa = globalThis.btoa;
   const originalAtob = globalThis.atob;
-  const originalBuffer = globalThis.Buffer;
 
   afterEach(() => {
     vi.stubGlobal('btoa', originalBtoa);
     vi.stubGlobal('atob', originalAtob);
-    vi.stubGlobal('Buffer', originalBuffer);
   });
 
-  it('base64UrlEncode throws createEncodingError when no btoa nor Buffer', () => {
+  it('base64UrlEncode throws when btoa is unavailable', () => {
     vi.stubGlobal('btoa', undefined);
-    vi.stubGlobal('Buffer', undefined);
     expect(() => base64UrlEncode(new ArrayBuffer(1))).toThrow(TryMellonError);
   });
 
-  it('base64UrlDecode throws createEncodingError when no atob nor Buffer', () => {
+  it('base64UrlDecode throws when atob is unavailable', () => {
     vi.stubGlobal('atob', undefined);
-    vi.stubGlobal('Buffer', undefined);
     expect(() => base64UrlDecode('YQ')).toThrow(TryMellonError);
   });
 });

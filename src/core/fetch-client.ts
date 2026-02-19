@@ -6,9 +6,16 @@ import { createError, type TryMellonError, type TryMellonErrorCode } from '../er
 
 const RETRY_DELAY_CAP_MS = 30_000;
 
+/**
+ * Generates a unique request ID. Uses globalThis.crypto.randomUUID when available
+ * (Edge/browser-safe; no Node crypto module). Falls back to time + random string.
+ */
 function generateRequestId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
+  if (
+    typeof globalThis.crypto !== 'undefined' &&
+    typeof globalThis.crypto.randomUUID === 'function'
+  ) {
+    return globalThis.crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }

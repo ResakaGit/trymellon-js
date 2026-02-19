@@ -111,6 +111,7 @@ That's it. No peer dependencies. No bloat.
 
 ## Requirements
 
+* Node 18+, browsers, and Edge runtimes (Cloudflare Workers, Vercel Edge); no Node-specific APIs (Buffer/crypto module).
 * Browser with WebAuthn support (Chrome, Safari, Firefox, Edge)
 * HTTPS (required except on `localhost`)
 * A TryMellon Application with the correct origin configured

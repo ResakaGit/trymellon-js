@@ -10,12 +10,13 @@
 ### Bug Fixes
 
 - **fetch-client:** handle 204 No Content in fetch client (cross-device verify/verify-registration). Avoids "Unexpected end of JSON input" and "Approval error" on mobile when backend returns empty body.
+- **sdk:** remove Node Buffer and crypto module; use only globalThis.btoa, globalThis.atob, globalThis.crypto. SDK is now 100% compatible with Edge runtimes (Cloudflare Workers, Vercel Edge) and browsers without polyfills.
 
 ## [1.4.3](https://github.com/ResakaGit/trymellon-js/compare/v1.4.2...v1.4.3) (2026-02-17)
 
 ### Bug Fixes
 
-* add tests for errors and base64url coverage ([6b93824](https://github.com/ResakaGit/trymellon-js/commit/6b93824a4bcd1e722bfdce856ebf310f5e6cee48))
+- add tests for errors and base64url coverage ([6b93824](https://github.com/ResakaGit/trymellon-js/commit/6b93824a4bcd1e722bfdce856ebf310f5e6cee48))
 
 ## [1.4.2](https://github.com/ResakaGit/trymellon-js/compare/v1.4.1...v1.4.2) (2026-02-17)
 
