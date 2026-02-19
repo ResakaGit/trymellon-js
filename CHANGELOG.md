@@ -1,3 +1,10 @@
+## [1.4.5](https://github.com/ResakaGit/trymellon-js/compare/v1.4.4...v1.4.5) (2026-02-19)
+
+
+### Bug Fixes
+
+* isomorphic SDK for Edge runtimes (remove Buffer, use globalThis.btoa/atob/crypto) ([b2df232](https://github.com/ResakaGit/trymellon-js/commit/b2df2321f8d10cabf82b1a9101dffa94e889d58e))
+
 ## [1.4.4](https://github.com/ResakaGit/trymellon-js/compare/v1.4.3...v1.4.4) (2026-02-17)
 
 
