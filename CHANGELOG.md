@@ -1,3 +1,10 @@
+## [1.4.10](https://github.com/ResakaGit/trymellon-js/compare/v1.4.9...v1.4.10) (2026-02-20)
+
+
+### Bug Fixes
+
+* optional external_user_id for discoverable auth, lint webauthn ([823bcac](https://github.com/ResakaGit/trymellon-js/commit/823bcacc2ac285add7653a703e31f355cdc7817f))
+
 ## [1.4.9](https://github.com/ResakaGit/trymellon-js/compare/v1.4.8...v1.4.9) (2026-02-19)
 
 
