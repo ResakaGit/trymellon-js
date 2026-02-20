@@ -243,7 +243,8 @@ export type RegisterStartRequest = {
 };
 
 export type AuthStartRequest = {
-  external_user_id: string;
+  /** Omit for discoverable (resident) passkeys; server returns allowCredentials: [] */
+  external_user_id?: string;
 };
 
 export type RegisterFinishRequest = {

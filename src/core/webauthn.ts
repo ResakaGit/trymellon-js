@@ -249,17 +249,12 @@ export async function authenticatePasskey(
     }
 
     const extId = options.externalUserId ?? options.external_user_id;
+    const hasUserId = extId !== undefined && typeof extId === 'string' && extId.trim() !== '';
 
-    if (!extId || typeof extId !== 'string' || extId.trim() === '') {
-      const error = createInvalidArgumentError('externalUserId', 'must be a non-empty string');
-      eventEmitter.emit('error', { type: 'error', error });
-      return err(error);
-    }
-
-    // 1. Obtener challenge del servidor
-    const startResult = await apiClient.startAuth({
-      external_user_id: extId,
-    });
+    // 1. Obtener challenge del servidor (sin external_user_id = discoverable passkeys)
+    const startResult = await apiClient.startAuth(
+      hasUserId ? { external_user_id: (extId as string).trim() } : {}
+    );
 
     if (!startResult.ok) {
       eventEmitter.emit('error', { type: 'error', error: startResult.error });
