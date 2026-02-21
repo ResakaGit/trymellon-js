@@ -4,6 +4,7 @@ import { OnboardingManager } from './onboarding-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { EventEmitter } from './events';
 import { registerPasskey, authenticatePasskey } from './webauthn';
+import { recoverAccount } from './recover';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
 import { validateUrl, validateRange, createInvalidArgumentError } from '../errors';
 import {
@@ -35,6 +36,7 @@ import type {
   EmailFallbackVerifyOptions,
   EmailFallbackVerifyResult,
   SessionValidateResponse,
+  RecoverAccountOptions,
 } from '../types';
 import { ok, err, type Result } from '../utils/result';
 import { type TryMellonError, isTryMellonError } from '../errors';
@@ -269,6 +271,9 @@ export class TryMellon {
       waitForSession: (sessionId: string, signal?: AbortSignal) =>
         this.crossDeviceManager.waitForSession(sessionId, signal),
       approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
+    },
+    recoverAccount: async (options: RecoverAccountOptions) => {
+      return recoverAccount(options, this.apiClient, this.eventEmitter);
     },
   };
 }

@@ -18,4 +18,5 @@ export {
   validateCrossDeviceStatusResponse,
   validateCrossDeviceContextResponse,
 } from './cross-device';
+export { validateRecoveryVerifyResponse, validateRecoveryCompleteResponse } from './recovery';
 export type { OnboardingRegisterResponseWithChallenge } from './onboarding';

@@ -17,6 +17,8 @@ import {
   validateCrossDeviceInitResponse,
   validateCrossDeviceStatusResponse,
   validateCrossDeviceContextResponse,
+  validateRecoveryVerifyResponse,
+  validateRecoveryCompleteResponse,
 } from './validators';
 import type {
   RegisterStartRequest,
@@ -40,6 +42,8 @@ import type {
   CrossDeviceContextResult,
   CrossDeviceVerifyRequest,
   CrossDeviceVerifyRegistrationRequest,
+  RecoveryVerifyResponse,
+  RecoveryCompleteResponse,
 } from '../types';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
 
@@ -226,5 +230,27 @@ export class ApiClient {
     const result = await this.httpClient.post<unknown>(url, request, this.mergeHeaders());
     if (!result.ok) return err(result.error);
     return ok(undefined);
+  }
+
+  async verifyAccountRecoveryOtp(
+    externalUserId: string,
+    otp: string
+  ): Promise<Result<RecoveryVerifyResponse, TryMellonError>> {
+    return this.post(
+      '/v1/users/recovery/verify',
+      { external_id: externalUserId, otp },
+      validateRecoveryVerifyResponse
+    );
+  }
+
+  async completeAccountRecovery(
+    recoverySessionId: string,
+    credential: Record<string, unknown>
+  ): Promise<Result<RecoveryCompleteResponse, TryMellonError>> {
+    return this.post(
+      '/v1/users/recovery/complete',
+      { recovery_session_id: recoverySessionId, credential },
+      validateRecoveryCompleteResponse
+    );
   }
 }

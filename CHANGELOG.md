@@ -7,10 +7,9 @@
 
 ## [1.4.9](https://github.com/ResakaGit/trymellon-js/compare/v1.4.8...v1.4.9) (2026-02-19)
 
-
 ### Bug Fixes
 
-* increase examples test timeout for CI (register, authenticate, fallback.email.verify) ([a3d59ce](https://github.com/ResakaGit/trymellon-js/commit/a3d59ce54acf40de5b508bc82cd79248c6bde72a))
+- increase examples test timeout for CI (register, authenticate, fallback.email.verify) ([a3d59ce](https://github.com/ResakaGit/trymellon-js/commit/a3d59ce54acf40de5b508bc82cd79248c6bde72a))
 
 ## [1.4.8](https://github.com/ResakaGit/trymellon-js/compare/v1.4.7...v1.4.8) (2026-02-19)
 

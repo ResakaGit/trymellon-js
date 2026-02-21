@@ -127,6 +127,51 @@ export type EmailFallbackVerifyResult = {
 };
 
 // ============================================================================
+// Account Recovery Types
+// ============================================================================
+
+export type RecoveryVerifyResponse = {
+  challenge: Record<string, unknown>;
+  recovery_session_id: string;
+};
+
+export type RecoveryCompleteResponse = {
+  status: string;
+  session_token: string;
+  user: {
+    user_id: string;
+    external_user_id?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
+  credential_id: string;
+};
+
+export type RecoverAccountOptions = {
+  /** The external user ID of the account being recovered. */
+  externalUserId: string | ExternalUserId;
+  /**
+   * @deprecated Use `externalUserId` instead.
+   */
+  external_user_id?: string | ExternalUserId;
+  /** The 6-digit OTP sent via email. */
+  otp: string;
+};
+
+export interface RecoverAccountResult {
+  success: true;
+  credentialId: string;
+  status: string;
+  sessionToken: string;
+  user: {
+    userId: string;
+    externalUserId?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
+}
+
+// ============================================================================
 // Onboarding Types
 // ============================================================================
 

@@ -661,4 +661,66 @@ describe('ApiClient', () => {
       );
     });
   });
+
+  describe('verifyAccountRecoveryOtp', () => {
+    it('should post verify with external_id and otp', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          challenge: {
+            rp: { name: 'R', id: 'r.com' },
+            user: { id: 'dXNlcl8x' },
+            challenge: 'Y2hh',
+          },
+          recovery_session_id: 'rs_550e8400-e29b-41d4-a716-446655440000',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.verifyAccountRecoveryOtp('user_1', '123456');
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.recovery_session_id).toBe('rs_550e8400-e29b-41d4-a716-446655440000');
+      }
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/users/recovery/verify',
+        { external_id: 'user_1', otp: '123456' },
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('completeAccountRecovery', () => {
+    it('should post complete with recovery_session_id and credential', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          status: 'completed',
+          session_token: 'sess_tok',
+          credential_id: 'cred_1',
+          user: { user_id: 'u_1', external_user_id: 'ext_1' },
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const credential = {
+        id: 'c1',
+        rawId: 'r1',
+        response: { clientDataJSON: 'cdj', attestationObject: 'ao' },
+      };
+      const result = await client.completeAccountRecovery('rs_123', credential);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.credential_id).toBe('cred_1');
+        expect(result.value.session_token).toBe('sess_tok');
+      }
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/users/recovery/complete',
+        { recovery_session_id: 'rs_123', credential },
+        expect.any(Object)
+      );
+    });
+  });
 });
