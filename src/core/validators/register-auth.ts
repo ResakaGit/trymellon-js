@@ -15,6 +15,10 @@ import {
   isArray,
   validationError,
   required,
+  validateChallengeRP,
+  validateChallengeUser,
+  validatePubKeyCredParams,
+  validateUserEntity
 } from './helpers';
 
 export function validateRegisterStartResponse(
@@ -40,59 +44,19 @@ export function validateRegisterStartResponse(
     });
   }
 
-  const rp = required(challenge, 'rp');
-  if (
-    !isObject(rp) ||
-    !isString((rp as Record<string, unknown>).name) ||
-    !isString((rp as Record<string, unknown>).id)
-  ) {
-    return validationError('Invalid API response: challenge.rp must have name and id strings', {
-      originalData: data,
-    });
-  }
+  const rpResult = validateChallengeRP(required(challenge, 'rp'), data);
+  if (!rpResult.ok) return rpResult;
 
-  const user = required(challenge, 'user');
-  if (
-    !isObject(user) ||
-    !isString((user as Record<string, unknown>).id) ||
-    !isString((user as Record<string, unknown>).name) ||
-    !isString((user as Record<string, unknown>).displayName)
-  ) {
-    return validationError(
-      'Invalid API response: challenge.user must have id, name, displayName strings',
-      {
-        originalData: data,
-      }
-    );
-  }
+  const userResult = validateChallengeUser(required(challenge, 'user'), data);
+  if (!userResult.ok) return userResult;
 
   const challengeStr = required(challenge, 'challenge');
   if (!isString(challengeStr)) {
-    return validationError('Invalid API response: challenge.challenge must be string', {
-      originalData: data,
-    });
+    return validationError('Invalid API response: challenge.challenge must be string', { originalData: data });
   }
 
-  const pubKeyCredParams = required(challenge, 'pubKeyCredParams');
-  if (!isArray(pubKeyCredParams)) {
-    return validationError('Invalid API response: challenge.pubKeyCredParams must be array', {
-      originalData: data,
-    });
-  }
-  for (const item of pubKeyCredParams) {
-    if (
-      !isObject(item) ||
-      (item as Record<string, unknown>).type !== 'public-key' ||
-      !isNumber((item as Record<string, unknown>).alg)
-    ) {
-      return validationError(
-        'Invalid API response: pubKeyCredParams items must have type and alg',
-        {
-          originalData: data,
-        }
-      );
-    }
-  }
+  const pubKeyCredParamsResult = validatePubKeyCredParams(required(challenge, 'pubKeyCredParams'), data);
+  if (!pubKeyCredParamsResult.ok) return pubKeyCredParamsResult;
 
   const timeout = challenge.timeout;
   if (timeout !== undefined && !isNumber(timeout)) {
@@ -134,10 +98,10 @@ export function validateRegisterStartResponse(
   return ok({
     session_id,
     challenge: {
-      rp: rp as RegisterStartResponse['challenge']['rp'],
-      user: user as RegisterStartResponse['challenge']['user'],
+      rp: challenge.rp as RegisterStartResponse['challenge']['rp'],
+      user: challenge.user as RegisterStartResponse['challenge']['user'],
       challenge: challengeStr,
-      pubKeyCredParams: pubKeyCredParams as RegisterStartResponse['challenge']['pubKeyCredParams'],
+      pubKeyCredParams: challenge.pubKeyCredParams as RegisterStartResponse['challenge']['pubKeyCredParams'],
       ...(timeout !== undefined && { timeout }),
       ...(excludeCredentials !== undefined && {
         excludeCredentials:
@@ -274,47 +238,14 @@ export function validateRegisterFinishResponse(
       originalData: data,
     });
   }
-  if (!isObject(user)) {
-    return validationError('Invalid API response: user must be object', {
-      field: 'user',
-      originalData: data,
-    });
-  }
-
-  const userId = required(user, 'user_id');
-  const externalUserId = required(user, 'external_user_id');
-  if (!isString(userId) || !isString(externalUserId)) {
-    return validationError(
-      'Invalid API response: user must have user_id and external_user_id strings',
-      {
-        originalData: data,
-      }
-    );
-  }
-
-  const email = user.email;
-  const metadata = user.metadata;
-  if (email !== undefined && !isString(email)) {
-    return validationError('Invalid API response: user.email must be string', {
-      originalData: data,
-    });
-  }
-  if (metadata !== undefined && (typeof metadata !== 'object' || metadata === null)) {
-    return validationError('Invalid API response: user.metadata must be object', {
-      originalData: data,
-    });
-  }
+  const userResult = validateUserEntity(user, data);
+  if (!userResult.ok) return validationError(userResult.error.message, { originalData: data });
 
   return ok({
     credential_id,
     status,
     session_token,
-    user: {
-      user_id: userId,
-      external_user_id: externalUserId,
-      ...(email !== undefined && { email }),
-      ...(metadata !== undefined && { metadata: metadata as Record<string, unknown> }),
-    },
+    user: userResult.value,
   });
 }
 
@@ -342,23 +273,8 @@ export function validateAuthFinishResponse(
       originalData: data,
     });
   }
-  if (!isObject(user)) {
-    return validationError('Invalid API response: user must be object', {
-      field: 'user',
-      originalData: data,
-    });
-  }
-
-  const userId = required(user, 'user_id');
-  const externalUserId = required(user, 'external_user_id');
-  if (!isString(userId) || !isString(externalUserId)) {
-    return validationError(
-      'Invalid API response: user must have user_id and external_user_id strings',
-      {
-        originalData: data,
-      }
-    );
-  }
+  const userResult = validateUserEntity(user, data);
+  if (!userResult.ok) return validationError(userResult.error.message, { originalData: data });
 
   if (signals !== undefined && !isObject(signals)) {
     return validationError('Invalid API response: signals must be object', {
@@ -369,12 +285,7 @@ export function validateAuthFinishResponse(
   return ok({
     authenticated,
     session_token,
-    user: {
-      user_id: userId,
-      external_user_id: externalUserId,
-      ...(user.email !== undefined && { email: user.email as string }),
-      ...(user.metadata !== undefined && { metadata: user.metadata as Record<string, unknown> }),
-    },
+    user: userResult.value,
     signals: signals as AuthFinishResponse['signals'],
   });
 }

@@ -1,14 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useTryMellon } from './context';
+import { useTryMellonAction, type UseActionState } from './use-action';
 import type { RegisterOptions, RegisterResult } from '../types';
 import type { TryMellonError } from '../errors';
 import type { Result } from '../utils/result';
 
-export type UseRegisterState = {
-  result: Result<RegisterResult, TryMellonError> | null;
-  loading: boolean;
-  error: TryMellonError | null;
-};
+export type UseRegisterState = UseActionState<RegisterResult>;
 
 export function useRegister(): {
   result: Result<RegisterResult, TryMellonError> | null;
@@ -17,30 +14,9 @@ export function useRegister(): {
   execute: (options: RegisterOptions) => Promise<Result<RegisterResult, TryMellonError>>;
 } {
   const client = useTryMellon();
-  const [state, setState] = useState<UseRegisterState>({
-    result: null,
-    loading: false,
-    error: null,
-  });
-
-  const execute = useCallback(
-    async (options: RegisterOptions) => {
-      setState((s) => ({ ...s, loading: true, error: null, result: null }));
-      const result = await client.register(options);
-      setState({
-        result,
-        loading: false,
-        error: result.ok ? null : result.error,
-      });
-      return result;
-    },
+  const action = useCallback(
+    (options: RegisterOptions) => client.register(options),
     [client]
   );
-
-  return {
-    result: state.result,
-    loading: state.loading,
-    error: state.error,
-    execute,
-  };
+  return useTryMellonAction(action);
 }
