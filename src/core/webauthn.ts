@@ -141,7 +141,8 @@ export async function registerPasskey(
     operation: 'register',
     eventEmitter,
     start: () => apiClient.startRegister({ external_user_id: extId }),
-    createOptions: (startResult) => createRegistrationOptions(startResult.challenge, options.authenticatorType),
+    createOptions: (startResult) =>
+      createRegistrationOptions(startResult.challenge, options.authenticatorType),
     invoke: async (ceremonyOptions) => {
       const opts = { ...ceremonyOptions, ...(options.signal && { signal: options.signal }) };
       return navigator.credentials.create(opts);
@@ -167,7 +168,7 @@ export async function registerPasskey(
           metadata: finishResult.value.user.metadata,
         },
       });
-    }
+    },
   });
 }
 
@@ -186,8 +187,10 @@ export async function authenticatePasskey(
   return invokeCeremony<AuthStartResponse, AuthenticateResult, CredentialRequestOptions>({
     operation: 'authenticate',
     eventEmitter,
-    start: () => apiClient.startAuth(hasUserId ? { external_user_id: (extId as string).trim() } : {}),
-    createOptions: (startResult) => createAuthenticationOptions(startResult.challenge, options.mediation),
+    start: () =>
+      apiClient.startAuth(hasUserId ? { external_user_id: (extId as string).trim() } : {}),
+    createOptions: (startResult) =>
+      createAuthenticationOptions(startResult.challenge, options.mediation),
     invoke: async (ceremonyOptions) => {
       const opts = { ...ceremonyOptions, ...(options.signal && { signal: options.signal }) };
       return navigator.credentials.get(opts);
@@ -211,6 +214,6 @@ export async function authenticatePasskey(
         },
         signals: finishResult.value.signals,
       });
-    }
+    },
   });
 }

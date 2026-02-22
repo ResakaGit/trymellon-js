@@ -14,9 +14,6 @@ export function useRegister(): {
   execute: (options: RegisterOptions) => Promise<Result<RegisterResult, TryMellonError>>;
 } {
   const client = useTryMellon();
-  const action = useCallback(
-    (options: RegisterOptions) => client.register(options),
-    [client]
-  );
+  const action = useCallback((options: RegisterOptions) => client.register(options), [client]);
   return useTryMellonAction(action);
 }

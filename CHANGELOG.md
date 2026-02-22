@@ -7,17 +7,15 @@
 
 # [1.5.0](https://github.com/ResakaGit/trymellon-js/compare/v1.4.10...v1.5.0) (2026-02-21)
 
-
 ### Features
 
-* **recovery:** account recovery flow + validators and recoverAccount tests ([972d29c](https://github.com/ResakaGit/trymellon-js/commit/972d29ca0ceb413fb7e1a145b211568cf5882a64))
+- **recovery:** account recovery flow + validators and recoverAccount tests ([972d29c](https://github.com/ResakaGit/trymellon-js/commit/972d29ca0ceb413fb7e1a145b211568cf5882a64))
 
 ## [1.4.10](https://github.com/ResakaGit/trymellon-js/compare/v1.4.9...v1.4.10) (2026-02-20)
 
-
 ### Bug Fixes
 
-* optional external_user_id for discoverable auth, lint webauthn ([823bcac](https://github.com/ResakaGit/trymellon-js/commit/823bcacc2ac285add7653a703e31f355cdc7817f))
+- optional external_user_id for discoverable auth, lint webauthn ([823bcac](https://github.com/ResakaGit/trymellon-js/commit/823bcacc2ac285add7653a703e31f355cdc7817f))
 
 ## [1.4.9](https://github.com/ResakaGit/trymellon-js/compare/v1.4.8...v1.4.9) (2026-02-19)
 

@@ -18,7 +18,7 @@ import {
   validateChallengeRP,
   validateChallengeUser,
   validatePubKeyCredParams,
-  validateUserEntity
+  validateUserEntity,
 } from './helpers';
 
 export function validateRegisterStartResponse(
@@ -52,10 +52,15 @@ export function validateRegisterStartResponse(
 
   const challengeStr = required(challenge, 'challenge');
   if (!isString(challengeStr)) {
-    return validationError('Invalid API response: challenge.challenge must be string', { originalData: data });
+    return validationError('Invalid API response: challenge.challenge must be string', {
+      originalData: data,
+    });
   }
 
-  const pubKeyCredParamsResult = validatePubKeyCredParams(required(challenge, 'pubKeyCredParams'), data);
+  const pubKeyCredParamsResult = validatePubKeyCredParams(
+    required(challenge, 'pubKeyCredParams'),
+    data
+  );
   if (!pubKeyCredParamsResult.ok) return pubKeyCredParamsResult;
 
   const timeout = challenge.timeout;
@@ -101,7 +106,8 @@ export function validateRegisterStartResponse(
       rp: challenge.rp as RegisterStartResponse['challenge']['rp'],
       user: challenge.user as RegisterStartResponse['challenge']['user'],
       challenge: challengeStr,
-      pubKeyCredParams: challenge.pubKeyCredParams as RegisterStartResponse['challenge']['pubKeyCredParams'],
+      pubKeyCredParams:
+        challenge.pubKeyCredParams as RegisterStartResponse['challenge']['pubKeyCredParams'],
       ...(timeout !== undefined && { timeout }),
       ...(excludeCredentials !== undefined && {
         excludeCredentials:
