@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/ResakaGit/trymellon-js/compare/v1.5.0...v1.6.0) (2026-02-22)
+
+
+### Features
+
+* **react:** ceremony abstraction and use-action hook ([fab2960](https://github.com/ResakaGit/trymellon-js/commit/fab296028552a19261c7c95ee386bf03119787ee))
+
 # [1.5.0](https://github.com/ResakaGit/trymellon-js/compare/v1.4.10...v1.5.0) (2026-02-21)
 
 
