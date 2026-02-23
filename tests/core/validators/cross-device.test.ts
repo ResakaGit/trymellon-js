@@ -22,6 +22,19 @@ describe('validateCrossDeviceInitResponse', () => {
     }
   });
 
+  it('should return ok for fintech envelope { ok: true, resultado: payload }', () => {
+    const result = validateCrossDeviceInitResponse({
+      ok: true,
+      resultado: validPayload,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.session_id).toBe(validPayload.session_id);
+      expect(result.value.qr_url).toBe(validPayload.qr_url);
+      expect(result.value.expires_at).toBe(validPayload.expires_at);
+    }
+  });
+
   it('should return err for null', () => {
     const result = validateCrossDeviceInitResponse(null);
     expect(result.ok).toBe(false);

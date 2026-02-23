@@ -4,6 +4,12 @@
 
 - **Iteration cleanup:** Replace `forEach` with `for...of` in `src/core/events.ts` (emit), `tests/core/events.test.ts`, `scripts/run-actionlint.cjs`, and `documentation/EXAMPLES.md` (Vue onUnmounted) for consistency and Yanagi-style clarity.
 
+## [1.6.2](https://github.com/ResakaGit/trymellon-js/compare/v1.6.1...v1.6.2) (2026-02-23)
+
+### Bug Fixes
+
+- **cross-device:** Validator `validateCrossDeviceInitResponse` now accepts both unwrapped payload and fintech envelope `{ ok: true, resultado: { session_id, qr_url, expires_at } }`, fixing QR not showing when API returns envelope (e.g. init-registration 201).
+
 ## [1.6.1](https://github.com/ResakaGit/trymellon-js/compare/v1.6.0...v1.6.1) (2026-02-22)
 
 ### Bug Fixes

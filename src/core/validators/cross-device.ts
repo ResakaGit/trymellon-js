@@ -27,6 +27,11 @@ function isRequestOptionsShape(opts: unknown): opts is Record<string, unknown> {
   return typeof o.challenge === 'string' && typeof o.rpId === 'string';
 }
 
+/**
+ * Accepts either the unwrapped payload { session_id, qr_url, expires_at } or the fintech
+ * envelope { ok: true, resultado: { session_id, qr_url, expires_at } } so the flow works
+ * regardless of whether the fetch-client unwraps before calling this validator.
+ */
 export function validateCrossDeviceInitResponse(
   data: unknown
 ): Result<CrossDeviceInitResult, TryMellonError> {
@@ -34,9 +39,14 @@ export function validateCrossDeviceInitResponse(
     return validationError('Invalid API response: expected object', { originalData: data });
   }
 
-  const session_id = data.session_id;
-  const qr_url = data.qr_url;
-  const expires_at = data.expires_at;
+  const payload =
+    'resultado' in data && isObject((data as { resultado: unknown }).resultado)
+      ? (data as { resultado: Record<string, unknown> }).resultado
+      : data;
+
+  const session_id = payload.session_id;
+  const qr_url = payload.qr_url;
+  const expires_at = payload.expires_at;
 
   if (!isString(session_id) || !isString(qr_url) || !isString(expires_at)) {
     return validationError('Invalid API response: missing required fields', { originalData: data });
