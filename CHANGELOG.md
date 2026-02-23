@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/ResakaGit/trymellon-js/compare/v1.6.1...v1.6.2) (2026-02-23)
+
+
+### Bug Fixes
+
+* **cross-device:** accept envelope { ok, resultado } in init validator (v1.6.2) ([bb7fb20](https://github.com/ResakaGit/trymellon-js/commit/bb7fb207daea3c4198c7cad0b2d80f42e35c758f))
+
 # [Unreleased]
 
 ### Chore
