@@ -145,6 +145,26 @@ const DOM_EXCEPTION_ERROR_MAP: Record<string, TryMellonErrorCode> = {
   UnknownError: 'UNKNOWN_ERROR',
 };
 
+/**
+ * Maps backend API error codes (fintech envelope) to TryMellonErrorCode.
+ * Pure, testable. Unknown codes map to UNKNOWN_ERROR.
+ * Defensive: non-string input returns UNKNOWN_ERROR (no throw).
+ */
+export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonErrorCode {
+  if (typeof backendCode !== 'string') return 'UNKNOWN_ERROR';
+  const normalized = backendCode.toLowerCase().trim();
+  const map: Record<string, TryMellonErrorCode> = {
+    challenge_mismatch: 'CHALLENGE_MISMATCH',
+    session_expired: 'SESSION_EXPIRED',
+    unauthorized: 'SESSION_EXPIRED',
+    validation_error: 'INVALID_ARGUMENT',
+    invalid_argument: 'INVALID_ARGUMENT',
+    user_not_found: 'SESSION_EXPIRED',
+    passkey_not_found: 'PASSKEY_NOT_FOUND',
+  };
+  return map[normalized] ?? 'UNKNOWN_ERROR';
+}
+
 export function mapWebAuthnError(error: unknown): TryMellonError {
   if (error instanceof DOMException) {
     const name = error.name;

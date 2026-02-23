@@ -249,6 +249,185 @@ describe('FetchHttpClient', () => {
     });
   });
 
+  describe('fintech envelope (ok / resultado / error)', () => {
+    it('unwraps resultado on success when body is { ok: true, resultado }', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      const payload = {
+        session_id: 'sess_1',
+        challenge: { rp: { name: 'App', id: 'example.com' } },
+      };
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true, resultado: payload }), {
+          status: 200,
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+        })
+      );
+
+      const result = await client.get<typeof payload>(
+        'https://api.example.com/v1/passkeys/register/start'
+      );
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toEqual(payload);
+        expect(result.value.session_id).toBe('sess_1');
+      }
+    });
+
+    it('returns body as-is on success when body has no envelope (legacy)', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      const legacy = { data: 'ok' };
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify(legacy), {
+          status: 200,
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+        })
+      );
+
+      const result = await client.get<{ data: string }>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toEqual(legacy);
+      }
+    });
+
+    it('parses fintech error envelope and maps backend code to TryMellonErrorCode', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: { code: 'session_expired', message: 'Session has expired' },
+          }),
+          { status: 410, statusText: 'Gone' }
+        )
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/v1/sessions/validate');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('SESSION_EXPIRED');
+        expect(result.error.message).toBe('Session has expired');
+      }
+    });
+
+    it('parses fintech error envelope for challenge_mismatch', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: {
+              code: 'challenge_mismatch',
+              message: 'This link was already used or expired.',
+            },
+          }),
+          { status: 400, statusText: 'Bad Request' }
+        )
+      );
+
+      const result = await client.post<unknown>('https://api.example.com/verify', {});
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('CHALLENGE_MISMATCH');
+        expect(result.error.message).toBe('This link was already used or expired.');
+      }
+    });
+
+    it('falls back to legacy error shape when body is not envelope', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify({ message: 'Bad Request', error: 'challenge_mismatch' }), {
+          status: 400,
+          statusText: 'Bad Request',
+        })
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('CHALLENGE_MISMATCH');
+        expect(result.error.message).toBe('Bad Request');
+      }
+    });
+
+    it('treats 200 with { ok: true, resultado: undefined } as ok(undefined)', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true, resultado: undefined }), {
+          status: 200,
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+        })
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeUndefined();
+      }
+    });
+
+    it('treats 200 with { ok: true } without resultado as ok(undefined)', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+        })
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value).toBeUndefined();
+      }
+    });
+
+    it('uses statusText when 4xx response has non-JSON body', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response('not json', {
+          status: 400,
+          statusText: 'Bad Request',
+          headers: new Headers({ 'Content-Type': 'text/plain' }),
+        })
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toBe('Bad Request');
+      }
+    });
+
+    it('legacy error with body.error as object uses error.code and error.message', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: { code: 'session_expired', message: 'Session expired' },
+          }),
+          { status: 410, statusText: 'Gone' }
+        )
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('SESSION_EXPIRED');
+        expect(result.error.message).toBe('Session expired');
+      }
+    });
+  });
+
   describe('204 No Content and empty body', () => {
     it('returns ok(undefined) for 204 without calling response.json()', async () => {
       const client = new FetchHttpClient(5000, 0, baseDelayMs);

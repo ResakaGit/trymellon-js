@@ -286,19 +286,19 @@ describe('EventEmitter', () => {
       const emitter = new EventEmitter();
       const handlers = Array.from({ length: 10 }, () => vi.fn());
 
-      handlers.forEach((handler) => {
+      for (const handler of handlers) {
         emitter.on('start', handler);
-      });
+      }
 
-      handlers.forEach((handler) => {
+      for (const handler of handlers) {
         emitter.off('start', handler);
-      });
+      }
 
       emitter.emit('start', { type: 'start', operation: 'register' });
 
-      handlers.forEach((handler) => {
+      for (const handler of handlers) {
         expect(handler).not.toHaveBeenCalled();
-      });
+      }
     });
   });
 });

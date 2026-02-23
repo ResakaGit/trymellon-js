@@ -35,14 +35,14 @@ export class EventEmitter {
   emit(event: TryMellonEvent, payload: EventPayload): void {
     const handlersSet = this.handlers.get(event);
     if (handlersSet) {
-      handlersSet.forEach((handler) => {
+      for (const handler of handlersSet) {
         try {
           handler(payload);
         } catch {
           // Silently ignore handler errors to prevent one handler from breaking others
           // Handler errors are the responsibility of the handler implementation
         }
-      });
+      }
     }
   }
 

@@ -1,16 +1,20 @@
-## [1.6.1](https://github.com/ResakaGit/trymellon-js/compare/v1.6.0...v1.6.1) (2026-02-22)
+# [Unreleased]
 
+### Chore
+
+- **Iteration cleanup:** Replace `forEach` with `for...of` in `src/core/events.ts` (emit), `tests/core/events.test.ts`, `scripts/run-actionlint.cjs`, and `documentation/EXAMPLES.md` (Vue onUnmounted) for consistency and Yanagi-style clarity.
+
+## [1.6.1](https://github.com/ResakaGit/trymellon-js/compare/v1.6.0...v1.6.1) (2026-02-22)
 
 ### Bug Fixes
 
-* Result type import in validators/helpers, RecoveryVerifyResponse in recover, lint/format ([2262ed1](https://github.com/ResakaGit/trymellon-js/commit/2262ed17179786eed0bdf34e5d6980683bfb9904))
+- Result type import in validators/helpers, RecoveryVerifyResponse in recover, lint/format ([2262ed1](https://github.com/ResakaGit/trymellon-js/commit/2262ed17179786eed0bdf34e5d6980683bfb9904))
 
 # [1.6.0](https://github.com/ResakaGit/trymellon-js/compare/v1.5.0...v1.6.0) (2026-02-22)
 
-
 ### Features
 
-* **react:** ceremony abstraction and use-action hook ([fab2960](https://github.com/ResakaGit/trymellon-js/commit/fab296028552a19261c7c95ee386bf03119787ee))
+- **react:** ceremony abstraction and use-action hook ([fab2960](https://github.com/ResakaGit/trymellon-js/commit/fab296028552a19261c7c95ee386bf03119787ee))
 
 # [1.5.0](https://github.com/ResakaGit/trymellon-js/compare/v1.4.10...v1.5.0) (2026-02-21)
 

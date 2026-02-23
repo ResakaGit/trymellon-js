@@ -72,7 +72,7 @@ function extractZip(archivePath, outDir) {
       const full = path.isAbsolute(a) ? a : path.join(process.cwd(), a);
       if (fs.existsSync(full) && fs.statSync(full).isDirectory()) {
         const files = fs.readdirSync(full).filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
-        files.forEach((f) => args.push(path.join(a, f)));
+        for (const f of files) args.push(path.join(a, f));
       } else {
         args.push(a);
       }

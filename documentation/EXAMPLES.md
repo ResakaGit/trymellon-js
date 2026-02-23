@@ -274,7 +274,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
+  for (const unsubscribe of unsubscribeFunctions) unsubscribe();
 });
 
 const handleRegister = async () => {

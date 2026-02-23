@@ -16,6 +16,7 @@ import {
   validateBase64Url,
   validateRange,
   mapWebAuthnError,
+  mapBackendErrorCodeToTryMellon,
 } from '../src/errors';
 
 describe('TryMellonError', () => {
@@ -212,6 +213,34 @@ describe('createInvalidArgumentError', () => {
       field: 'appId',
       reason: 'required',
     });
+  });
+});
+
+describe('mapBackendErrorCodeToTryMellon', () => {
+  it('maps known backend codes to TryMellonErrorCode', () => {
+    expect(mapBackendErrorCodeToTryMellon('challenge_mismatch')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('session_expired')).toBe('SESSION_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('unauthorized')).toBe('SESSION_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('validation_error')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('user_not_found')).toBe('SESSION_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('passkey_not_found')).toBe('PASSKEY_NOT_FOUND');
+  });
+
+  it('returns UNKNOWN_ERROR for unknown backend codes', () => {
+    expect(mapBackendErrorCodeToTryMellon('internal_error')).toBe('UNKNOWN_ERROR');
+    expect(mapBackendErrorCodeToTryMellon('forbidden')).toBe('UNKNOWN_ERROR');
+    expect(mapBackendErrorCodeToTryMellon('')).toBe('UNKNOWN_ERROR');
+  });
+
+  it('normalizes case', () => {
+    expect(mapBackendErrorCodeToTryMellon('CHALLENGE_MISMATCH')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('Session_Expired')).toBe('SESSION_EXPIRED');
+  });
+
+  it('returns UNKNOWN_ERROR for non-string input (defensive)', () => {
+    expect(mapBackendErrorCodeToTryMellon(null as unknown as string)).toBe('UNKNOWN_ERROR');
+    expect(mapBackendErrorCodeToTryMellon(undefined as unknown as string)).toBe('UNKNOWN_ERROR');
+    expect(mapBackendErrorCodeToTryMellon(42 as unknown as string)).toBe('UNKNOWN_ERROR');
   });
 });
 
