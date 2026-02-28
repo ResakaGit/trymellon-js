@@ -20,28 +20,31 @@ import { invokeCeremony } from './ceremony';
  * Crea las opciones de creación de credencial para WebAuthn.
  * Convierte la respuesta del servidor en formato WebAuthn API.
  * WebAuthn protocol: challenge and rp.id are taken from the server only; do not override.
- * Exported for use by OnboardingManager (same-device passkey registration).
+ * Exported for use by OnboardingManager (same-device) and CrossDeviceManager (QR registration).
+ *
+ * @param serverChallengePayload - Value of the `.challenge` property from RegisterStartResponse
+ *   (the nested object with challenge, user, rp, pubKeyCredParams, etc.). Not the full API response.
  */
 export function createRegistrationOptions(
-  challenge: RegisterStartResponse['challenge'],
+  serverChallengePayload: RegisterStartResponse['challenge'],
   authenticatorType?: 'platform' | 'cross-platform'
 ): Result<CredentialCreationOptions, TryMellonError> {
   try {
-    validateBase64Url(challenge.challenge, 'challenge');
-    validateBase64Url(challenge.user.id, 'user.id');
+    validateBase64Url(serverChallengePayload.challenge, 'challenge');
+    validateBase64Url(serverChallengePayload.user.id, 'user.id');
 
-    const challengeBuffer = base64UrlDecodeToArrayBuffer(challenge.challenge);
-    const userIdBuffer = base64UrlDecodeToArrayBuffer(challenge.user.id);
+    const challengeBuffer = base64UrlDecodeToArrayBuffer(serverChallengePayload.challenge);
+    const userIdBuffer = base64UrlDecodeToArrayBuffer(serverChallengePayload.user.id);
 
     // Construir authenticatorSelection: priorizar servidor, permitir override de authenticatorType
     let authenticatorSelection: AuthenticatorSelectionCriteria = {
       userVerification: 'preferred',
     };
 
-    if (challenge.authenticatorSelection) {
+    if (serverChallengePayload.authenticatorSelection) {
       // Usar valores del servidor como base
       authenticatorSelection = {
-        ...challenge.authenticatorSelection,
+        ...serverChallengePayload.authenticatorSelection,
       };
     }
 
@@ -55,21 +58,23 @@ export function createRegistrationOptions(
 
     const publicKey: PublicKeyCredentialCreationOptions = {
       rp: {
-        id: challenge.rp.id,
-        name: challenge.rp.name,
+        id: serverChallengePayload.rp.id,
+        name: serverChallengePayload.rp.name,
       },
       user: {
         id: userIdBuffer,
-        name: challenge.user.name,
-        displayName: challenge.user.displayName,
+        name: serverChallengePayload.user.name,
+        displayName: serverChallengePayload.user.displayName,
       },
       challenge: challengeBuffer,
-      pubKeyCredParams: challenge.pubKeyCredParams,
-      ...(challenge.timeout !== undefined && { timeout: challenge.timeout }),
+      pubKeyCredParams: serverChallengePayload.pubKeyCredParams,
+      ...(serverChallengePayload.timeout !== undefined && {
+        timeout: serverChallengePayload.timeout,
+      }),
       attestation: 'none',
       authenticatorSelection,
-      ...(challenge.excludeCredentials && {
-        excludeCredentials: challenge.excludeCredentials.map((cred) => ({
+      ...(serverChallengePayload.excludeCredentials && {
+        excludeCredentials: serverChallengePayload.excludeCredentials.map((cred) => ({
           id: base64UrlDecodeToArrayBuffer(cred.id),
           type: cred.type,
           ...(cred.transports && {

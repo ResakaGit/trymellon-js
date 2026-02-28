@@ -163,24 +163,41 @@ export class TryMellon {
     return isWebAuthnSupported();
   }
 
-  async register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
-    if (this.sandbox) {
-      const externalUserId =
-        options.externalUserId ??
-        (options as { external_user_id?: string }).external_user_id ??
-        'sandbox';
+  /**
+   * Returns a successful Result for sandbox mode (register or authenticate).
+   * Single place for sandbox contract; used by register() and authenticate().
+   */
+  private sandboxAuthResult(
+    operation: 'register' | 'authenticate',
+    options: RegisterOptions | AuthenticateOptions
+  ): Promise<Result<RegisterResult | AuthenticateResult, TryMellonError>> {
+    const externalUserId = options.externalUserId ?? options.external_user_id ?? 'sandbox';
+    const externalId = typeof externalUserId === 'string' ? externalUserId : 'sandbox';
+    if (operation === 'register') {
       return Promise.resolve(
         ok({
           success: true,
           credentialId: '',
           status: 'sandbox',
           sessionToken: this.sandboxToken,
-          user: {
-            userId: 'sandbox-user',
-            externalUserId: typeof externalUserId === 'string' ? externalUserId : 'sandbox',
-          },
+          user: { userId: 'sandbox-user', externalUserId: externalId },
         })
       );
+    }
+    return Promise.resolve(
+      ok({
+        authenticated: true,
+        sessionToken: this.sandboxToken,
+        user: { userId: 'sandbox-user', externalUserId: externalId },
+      })
+    );
+  }
+
+  async register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
+    if (this.sandbox) {
+      return this.sandboxAuthResult('register', options) as Promise<
+        Result<RegisterResult, TryMellonError>
+      >;
     }
     const start = Date.now();
     const result = await registerPasskey(options, this.apiClient, this.eventEmitter);
@@ -196,20 +213,9 @@ export class TryMellon {
     options: AuthenticateOptions
   ): Promise<Result<AuthenticateResult, TryMellonError>> {
     if (this.sandbox) {
-      const externalUserId =
-        options.externalUserId ??
-        (options as { external_user_id?: string }).external_user_id ??
-        'sandbox';
-      return Promise.resolve(
-        ok({
-          authenticated: true,
-          sessionToken: this.sandboxToken,
-          user: {
-            userId: 'sandbox-user',
-            externalUserId: typeof externalUserId === 'string' ? externalUserId : 'sandbox',
-          },
-        })
-      );
+      return this.sandboxAuthResult('authenticate', options) as Promise<
+        Result<AuthenticateResult, TryMellonError>
+      >;
     }
     const start = Date.now();
     const result = await authenticatePasskey(options, this.apiClient, this.eventEmitter);

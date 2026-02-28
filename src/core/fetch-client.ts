@@ -30,6 +30,46 @@ function isEnvelopeError(
   return typeof err.code === 'string' && typeof err.message === 'string';
 }
 
+/**
+ * Pure function: parses HTTP error body (fintech envelope or fallbacks) into message and code.
+ * Concentrates all error-body parsing in one place for testability and single responsibility.
+ */
+export function parseHttpErrorBody(
+  errorData: unknown,
+  statusText: string
+): { message: string; code: TryMellonErrorCode } {
+  if (isEnvelopeError(errorData)) {
+    return {
+      message: errorData.error.message,
+      code: mapBackendErrorCodeToTryMellon(errorData.error.code),
+    };
+  }
+  const body = errorData as
+    | { message?: string; error?: string | { code?: string; message?: string } }
+    | undefined;
+  const errObj = body?.error;
+  if (
+    typeof errObj === 'object' &&
+    errObj !== null &&
+    'code' in errObj &&
+    typeof (errObj as { code: string }).code === 'string'
+  ) {
+    return {
+      message: (errObj as { message?: string }).message ?? body?.message ?? statusText,
+      code: mapBackendErrorCodeToTryMellon((errObj as { code: string }).code),
+    };
+  }
+  const message = body?.message ?? statusText;
+  const rawCode = body?.error;
+  const code =
+    typeof rawCode === 'string'
+      ? mapBackendErrorCodeToTryMellon(rawCode)
+      : rawCode === undefined
+        ? 'NETWORK_FAILURE'
+        : mapBackendErrorCodeToTryMellon(String(rawCode));
+  return { message, code };
+}
+
 const RETRY_DELAY_CAP_MS = 30_000;
 
 /**
@@ -116,41 +156,7 @@ export class FetchHttpClient implements HttpClient {
               // Ignore JSON parse error
             }
 
-            let message: string;
-            let code: TryMellonErrorCode;
-
-            if (isEnvelopeError(errorData)) {
-              message = errorData.error.message;
-              code = mapBackendErrorCodeToTryMellon(errorData.error.code);
-            } else {
-              const body = errorData as
-                | {
-                    message?: string;
-                    error?: string | { code?: string; message?: string };
-                  }
-                | undefined;
-              const errObj = body?.error;
-              if (
-                typeof errObj === 'object' &&
-                errObj !== null &&
-                'code' in errObj &&
-                typeof (errObj as { code: string }).code === 'string'
-              ) {
-                message =
-                  (errObj as { message?: string }).message ?? body?.message ?? response.statusText;
-                code = mapBackendErrorCodeToTryMellon((errObj as { code: string }).code);
-              } else {
-                message = body?.message ?? response.statusText;
-                const rawCode = body?.error;
-                code =
-                  typeof rawCode === 'string'
-                    ? mapBackendErrorCodeToTryMellon(rawCode)
-                    : rawCode === undefined
-                      ? 'NETWORK_FAILURE'
-                      : mapBackendErrorCodeToTryMellon(String(rawCode));
-              }
-            }
-
+            const { message, code } = parseHttpErrorBody(errorData, response.statusText);
             const errResult = createError(code, message, {
               requestId,
               status: response.status,
@@ -160,6 +166,7 @@ export class FetchHttpClient implements HttpClient {
 
             if (shouldRetryOnStatus(method, response.status) && attempt < this.maxRetries) {
               lastError = errResult;
+              clearTimeout(timeoutId);
               await new Promise((resolve) =>
                 setTimeout(resolve, getRetryDelayMs(attempt, this.retryDelayMs))
               );
