@@ -21,6 +21,10 @@
 
 # [Unreleased]
 
+### Docs
+
+- **Backend:** Init cross-device admite JWT con scope `auth_link` (sin Origin) para flujos IA/backend; ver guía en monorepo `docs/epic-auth-ia-link/guia-auth-link-ia.md`. El SDK sigue usando publishable key + Origin en desktop; para init desde backend usar la API directamente con token obtenido de `POST /oauth/token` con `scope=auth_link`.
+
 ### Chore
 
 - **Iteration cleanup:** Replace `forEach` with `for...of` in `src/core/events.ts` (emit), `tests/core/events.test.ts`, `scripts/run-actionlint.cjs`, and `documentation/EXAMPLES.md` (Vue onUnmounted) for consistency and Yanagi-style clarity.
