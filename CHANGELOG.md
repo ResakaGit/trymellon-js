@@ -1,23 +1,20 @@
 ## [1.7.1](https://github.com/ResakaGit/trymellon-js/compare/v1.7.0...v1.7.1) (2026-02-28)
 
-
 ### Bug Fixes
 
-* prettier in cross-device validator, bump 1.6.3 ([3fdbe8a](https://github.com/ResakaGit/trymellon-js/commit/3fdbe8a0140004b6e0899da0fcb1dc8a69e1ab8b))
+- prettier in cross-device validator, bump 1.6.3 ([3fdbe8a](https://github.com/ResakaGit/trymellon-js/commit/3fdbe8a0140004b6e0899da0fcb1dc8a69e1ab8b))
 
 # [1.7.0](https://github.com/ResakaGit/trymellon-js/compare/v1.6.2...v1.7.0) (2026-02-28)
 
-
 ### Features
 
-* **cross-device:** approval_context y application_name en context; getContext() público ([ee98243](https://github.com/ResakaGit/trymellon-js/commit/ee982435e59f07396ba7b7df7528731e3615c5d4))
+- **cross-device:** approval_context y application_name en context; getContext() público ([ee98243](https://github.com/ResakaGit/trymellon-js/commit/ee982435e59f07396ba7b7df7528731e3615c5d4))
 
 ## [1.6.2](https://github.com/ResakaGit/trymellon-js/compare/v1.6.1...v1.6.2) (2026-02-23)
 
-
 ### Bug Fixes
 
-* **cross-device:** accept envelope { ok, resultado } in init validator (v1.6.2) ([bb7fb20](https://github.com/ResakaGit/trymellon-js/commit/bb7fb207daea3c4198c7cad0b2d80f42e35c758f))
+- **cross-device:** accept envelope { ok, resultado } in init validator (v1.6.2) ([bb7fb20](https://github.com/ResakaGit/trymellon-js/commit/bb7fb207daea3c4198c7cad0b2d80f42e35c758f))
 
 # [Unreleased]
 
