@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/ResakaGit/trymellon-js/compare/v1.7.0...v1.7.1) (2026-02-28)
+
+
+### Bug Fixes
+
+* prettier in cross-device validator, bump 1.6.3 ([3fdbe8a](https://github.com/ResakaGit/trymellon-js/commit/3fdbe8a0140004b6e0899da0fcb1dc8a69e1ab8b))
+
 # [1.7.0](https://github.com/ResakaGit/trymellon-js/compare/v1.6.2...v1.7.0) (2026-02-28)
 
 
