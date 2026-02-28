@@ -242,4 +242,40 @@ describe('validateCrossDeviceContextResponse', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain('auth options');
   });
+
+  it('should return ok and include approval_context and application_name when present', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'auth',
+      options: validAuthOptions,
+      approval_context: 'Access to orders',
+      application_name: 'Acme Corp',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.approval_context).toBe('Access to orders');
+      expect(result.value.application_name).toBe('Acme Corp');
+    }
+  });
+
+  it('should return ok without approval_context/application_name when omitted', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'auth',
+      options: validAuthOptions,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).not.toHaveProperty('approval_context');
+      expect(result.value).not.toHaveProperty('application_name');
+    }
+  });
+
+  it('should return err when approval_context exceeds 200 chars', () => {
+    const result = validateCrossDeviceContextResponse({
+      type: 'auth',
+      options: validAuthOptions,
+      approval_context: 'x'.repeat(201),
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('approval_context');
+  });
 });

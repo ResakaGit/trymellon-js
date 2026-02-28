@@ -252,12 +252,16 @@ export type CrossDeviceStatusResult = {
 export type CrossDeviceContextAuth = {
   type: 'auth';
   options: AuthStartResponse['challenge'];
+  approval_context?: string;
+  application_name?: string;
 };
 
 /** Context for registration: creation options (create). */
 export type CrossDeviceContextRegistration = {
   type: 'registration';
   options: RegisterStartResponse['challenge'];
+  approval_context?: string;
+  application_name?: string;
 };
 
 /**

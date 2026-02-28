@@ -94,6 +94,19 @@ export function validateCrossDeviceContextResponse(
     return validationError('Invalid API response: options are required', { originalData: data });
   }
 
+  const MAX_CONTEXT_LENGTH = 200;
+  const approval_context = optionalContextString(data.approval_context, MAX_CONTEXT_LENGTH);
+  const application_name = optionalContextString(data.application_name, MAX_CONTEXT_LENGTH);
+  if (approval_context === false || application_name === false) {
+    return validationError('Invalid API response: approval_context/application_name must be string max 200 chars', {
+      originalData: data,
+    });
+  }
+
+  const extra: { approval_context?: string; application_name?: string } = {};
+  if (typeof approval_context === 'string') extra.approval_context = approval_context;
+  if (typeof application_name === 'string') extra.application_name = application_name;
+
   if (type === 'registration') {
     if (!isCreationOptionsShape(options)) {
       return validationError(
@@ -104,6 +117,7 @@ export function validateCrossDeviceContextResponse(
     return ok({
       type: 'registration',
       options,
+      ...extra,
     } as CrossDeviceContextResult);
   }
 
@@ -112,5 +126,16 @@ export function validateCrossDeviceContextResponse(
       originalData: data,
     });
   }
-  return ok({ type: 'auth', options } as CrossDeviceContextResult);
+  return ok({ type: 'auth', options, ...extra } as CrossDeviceContextResult);
+}
+
+/** Returns string if valid (optional, max len), undefined if missing, false if invalid. */
+function optionalContextString(
+  value: unknown,
+  maxLength: number
+): string | undefined | false {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'string') return false;
+  if (value.length > maxLength) return false;
+  return value;
 }

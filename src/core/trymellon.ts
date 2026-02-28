@@ -270,6 +270,7 @@ export class TryMellon {
         this.crossDeviceManager.initRegistration(options),
       waitForSession: (sessionId: string, signal?: AbortSignal) =>
         this.crossDeviceManager.waitForSession(sessionId, signal),
+      getContext: (sessionId: string) => this.apiClient.getCrossDeviceContext(sessionId),
       approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
     },
     recoverAccount: async (options: RecoverAccountOptions) => {
