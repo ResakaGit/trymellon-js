@@ -98,9 +98,12 @@ export function validateCrossDeviceContextResponse(
   const approval_context = optionalContextString(data.approval_context, MAX_CONTEXT_LENGTH);
   const application_name = optionalContextString(data.application_name, MAX_CONTEXT_LENGTH);
   if (approval_context === false || application_name === false) {
-    return validationError('Invalid API response: approval_context/application_name must be string max 200 chars', {
-      originalData: data,
-    });
+    return validationError(
+      'Invalid API response: approval_context/application_name must be string max 200 chars',
+      {
+        originalData: data,
+      }
+    );
   }
 
   const extra: { approval_context?: string; application_name?: string } = {};
@@ -130,10 +133,7 @@ export function validateCrossDeviceContextResponse(
 }
 
 /** Returns string if valid (optional, max len), undefined if missing, false if invalid. */
-function optionalContextString(
-  value: unknown,
-  maxLength: number
-): string | undefined | false {
+function optionalContextString(value: unknown, maxLength: number): string | undefined | false {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== 'string') return false;
   if (value.length > maxLength) return false;
