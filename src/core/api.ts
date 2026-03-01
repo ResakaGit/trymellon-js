@@ -132,11 +132,14 @@ export class ApiClient {
     return ok(undefined);
   }
 
-  async verifyEmailCode(
-    userId: string,
-    code: string
-  ): Promise<Result<{ sessionToken: string }, TryMellonError>> {
-    return this.post('/v1/fallback/email/verify', { userId, code }, validateEmailVerifyResponse);
+  async verifyEmailCode(options: {
+    userId: string;
+    code: string;
+    successUrl?: string;
+  }): Promise<Result<{ sessionToken: string; redirectUrl?: string }, TryMellonError>> {
+    const body: Record<string, unknown> = { userId: options.userId, code: options.code };
+    if (options.successUrl) body.success_url = options.successUrl;
+    return this.post('/v1/fallback/email/verify', body, validateEmailVerifyResponse);
   }
 
   async startOnboarding(
@@ -194,9 +197,18 @@ export class ApiClient {
   }
 
   async getCrossDeviceStatus(
-    sessionId: string
+    sessionId: string,
+    pollingToken?: string | null
   ): Promise<Result<CrossDeviceStatusResult, TryMellonError>> {
-    return this.get(`/v1/auth/cross-device/status/${sessionId}`, validateCrossDeviceStatusResponse);
+    const headers: Record<string, string> = {};
+    if (typeof pollingToken === 'string' && pollingToken.length > 0) {
+      headers['X-Polling-Token'] = pollingToken;
+    }
+    return this.get(
+      `/v1/auth/cross-device/status/${sessionId}`,
+      validateCrossDeviceStatusResponse,
+      Object.keys(headers).length > 0 ? headers : undefined
+    );
   }
 
   /**

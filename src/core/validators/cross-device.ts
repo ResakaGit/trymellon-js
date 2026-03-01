@@ -47,8 +47,14 @@ export function validateCrossDeviceInitResponse(
   const session_id = payload.session_id;
   const qr_url = payload.qr_url;
   const expires_at = payload.expires_at;
+  const polling_token = payload.polling_token;
 
-  if (!isString(session_id) || !isString(qr_url) || !isString(expires_at)) {
+  if (
+    !isString(session_id) ||
+    !isString(qr_url) ||
+    !isString(expires_at) ||
+    !isString(polling_token)
+  ) {
     return validationError('Invalid API response: missing required fields', { originalData: data });
   }
 
@@ -56,6 +62,7 @@ export function validateCrossDeviceInitResponse(
     session_id,
     qr_url,
     expires_at,
+    polling_token,
   });
 }
 

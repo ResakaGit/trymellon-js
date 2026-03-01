@@ -78,6 +78,8 @@ export interface RegisterOptions {
    */
   external_user_id?: string | ExternalUserId;
   authenticatorType?: 'platform' | 'cross-platform';
+  /** Optional URL to redirect to after success; validated against application allowlist. API returns it as redirect_url when allowed. */
+  successUrl?: string;
   signal?: AbortSignal;
 }
 
@@ -91,6 +93,8 @@ export interface AuthenticateOptions {
    */
   external_user_id?: string | ExternalUserId;
   hint?: string;
+  /** Optional URL to redirect to after success; validated against application allowlist. API returns it as redirect_url when allowed. */
+  successUrl?: string;
   signal?: AbortSignal;
   /** Conditional UI mediation for passkey autofill / conditional UI. */
   mediation?: 'optional' | 'conditional' | 'required';
@@ -120,10 +124,14 @@ export type EmailFallbackStartOptions = {
 export type EmailFallbackVerifyOptions = {
   userId: string;
   code: string;
+  /** Optional URL to redirect to after success; validated against application allowlist. */
+  successUrl?: string;
 };
 
 export type EmailFallbackVerifyResult = {
   sessionToken: string;
+  /** Set when successUrl was passed and allowed by application allowlist */
+  redirectUrl?: string;
 };
 
 // ============================================================================
@@ -240,6 +248,8 @@ export type CrossDeviceInitResult = {
   session_id: string;
   qr_url: string;
   expires_at: string;
+  /** Opaque token; send in X-Polling-Token header when calling GET status. Not included in qr_url. */
+  polling_token: string;
 };
 
 export type CrossDeviceStatusResult = {
@@ -307,6 +317,7 @@ export type RegisterFinishRequest = {
     };
     type: 'public-key';
   };
+  success_url?: string;
 };
 
 export type AuthFinishRequest = {
@@ -322,6 +333,7 @@ export type AuthFinishRequest = {
     };
     type: 'public-key';
   };
+  success_url?: string;
 };
 
 // ============================================================================
@@ -384,6 +396,8 @@ export interface RegisterFinishResponse {
     email?: string;
     metadata?: Record<string, unknown>;
   };
+  /** Present when success_url was sent and allowed by application allowlist */
+  redirect_url?: string;
 }
 
 export interface AuthFinishResponse {
@@ -400,6 +414,8 @@ export interface AuthFinishResponse {
     backupStatus?: boolean;
   };
   session_token: string;
+  /** Present when success_url was sent and allowed by application allowlist */
+  redirect_url?: string;
 }
 
 export interface RegisterResult {
@@ -418,6 +434,8 @@ export interface RegisterResult {
     email?: string;
     metadata?: Record<string, unknown>;
   };
+  /** Set when successUrl was passed and allowed by application allowlist */
+  redirectUrl?: string;
 }
 
 export interface AuthenticateResult {
@@ -434,6 +452,8 @@ export interface AuthenticateResult {
     backupEligible?: boolean;
     backupStatus?: boolean;
   };
+  /** Set when successUrl was passed and allowed by application allowlist */
+  redirectUrl?: string;
 }
 
 export type SessionValidateResponse = {

@@ -94,7 +94,7 @@ describe('CrossDeviceManager', () => {
         expect(result.value.session_token).toBe('st_1');
         expect(result.value.user_id).toBe('user_1');
       }
-      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledWith('sess_1');
+      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledWith('sess_1', undefined);
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledTimes(1);
     });
 

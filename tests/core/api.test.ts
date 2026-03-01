@@ -336,7 +336,7 @@ describe('ApiClient', () => {
         mockHttpClient as unknown as HttpClient,
         'https://api.example.com'
       );
-      const result = await client.verifyEmailCode('user_123', '123456');
+      const result = await client.verifyEmailCode({ userId: 'user_123', code: '123456' });
 
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -348,6 +348,30 @@ describe('ApiClient', () => {
         { userId: 'user_123', code: '123456' },
         expect.any(Object)
       );
+    });
+
+    it('should map redirect_url to redirectUrl when API returns it', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          session_token: 'session_123',
+          redirect_url: 'https://app.example.com/dashboard',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.verifyEmailCode({
+        userId: 'user_123',
+        code: '123456',
+        successUrl: 'https://app.example.com/dashboard',
+      });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.sessionToken).toBe('session_123');
+        expect(result.value.redirectUrl).toBe('https://app.example.com/dashboard');
+      }
     });
   });
 
@@ -464,12 +488,13 @@ describe('ApiClient', () => {
   });
 
   describe('initCrossDeviceAuth', () => {
-    it('should request cross-device init and return session_id, qr_url, expires_at', async () => {
+    it('should request cross-device init and return session_id, qr_url, expires_at, polling_token', async () => {
       mockHttpClient.post.mockResolvedValue(
         ok({
           session_id: 'sess_cd_123',
           qr_url: 'https://example.com/qr/abc',
           expires_at: '2026-02-12T12:00:00Z',
+          polling_token: 'opaque_poll_tok_123',
         })
       );
       const client = new ApiClient(
@@ -482,6 +507,7 @@ describe('ApiClient', () => {
         expect(result.value.session_id).toBe('sess_cd_123');
         expect(result.value.qr_url).toBe('https://example.com/qr/abc');
         expect(result.value.expires_at).toBe('2026-02-12T12:00:00Z');
+        expect(result.value.polling_token).toBe('opaque_poll_tok_123');
       }
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         'https://api.example.com/v1/auth/cross-device/init',
@@ -616,6 +642,7 @@ describe('ApiClient', () => {
           session_id: 'sess_reg_1',
           qr_url: 'https://example.com/qr',
           expires_at: '2026-02-12T12:00:00Z',
+          polling_token: 'opaque_poll_reg_1',
         })
       );
       const client = new ApiClient(

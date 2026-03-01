@@ -156,6 +156,7 @@ export async function registerPasskey(
       const finishResult = await apiClient.finishRegister({
         session_id: startResult.session_id,
         credential: serializeCredentialForRegister(credential),
+        ...(options.successUrl && { success_url: options.successUrl }),
       });
 
       if (!finishResult.ok) return err(finishResult.error);
@@ -172,6 +173,7 @@ export async function registerPasskey(
           email: finishResult.value.user.email,
           metadata: finishResult.value.user.metadata,
         },
+        ...(finishResult.value.redirect_url && { redirectUrl: finishResult.value.redirect_url }),
       });
     },
   });
@@ -204,6 +206,7 @@ export async function authenticatePasskey(
       const finishResult = await apiClient.finishAuthentication({
         session_id: startResult.session_id,
         credential: serializeCredentialForAuth(credential),
+        ...(options.successUrl && { success_url: options.successUrl }),
       });
 
       if (!finishResult.ok) return err(finishResult.error);
@@ -218,6 +221,7 @@ export async function authenticatePasskey(
           metadata: finishResult.value.user.metadata,
         },
         signals: finishResult.value.signals,
+        ...(finishResult.value.redirect_url && { redirectUrl: finishResult.value.redirect_url }),
       });
     },
   });

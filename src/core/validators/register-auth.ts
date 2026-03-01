@@ -247,11 +247,19 @@ export function validateRegisterFinishResponse(
   const userResult = validateUserEntity(user, data);
   if (!userResult.ok) return validationError(userResult.error.message, { originalData: data });
 
+  const redirect_url = data.redirect_url;
+  if (redirect_url !== undefined && !isString(redirect_url)) {
+    return validationError('Invalid API response: redirect_url must be string', {
+      originalData: data,
+    });
+  }
+
   return ok({
     credential_id,
     status,
     session_token,
     user: userResult.value,
+    ...(redirect_url !== undefined && { redirect_url }),
   });
 }
 
@@ -288,10 +296,18 @@ export function validateAuthFinishResponse(
     });
   }
 
+  const redirect_url = data.redirect_url;
+  if (redirect_url !== undefined && !isString(redirect_url)) {
+    return validationError('Invalid API response: redirect_url must be string', {
+      originalData: data,
+    });
+  }
+
   return ok({
     authenticated,
     session_token,
     user: userResult.value,
     signals: signals as AuthFinishResponse['signals'],
+    ...(redirect_url !== undefined && { redirect_url }),
   });
 }

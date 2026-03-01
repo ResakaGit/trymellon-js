@@ -39,17 +39,19 @@ export class CrossDeviceManager {
   /**
    * High-level helper to poll for session status until it is completed.
    * Typically called by the desktop side after showing the QR code.
+   * Pass pollingToken from init() result so the backend can verify the poller is the initiator.
    */
   async waitForSession(
     sessionId: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    pollingToken?: string | null
   ): Promise<Result<{ session_token: string; user_id: string }, TryMellonError>> {
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       if (signal?.aborted) {
         return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
       }
 
-      const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId);
+      const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId, pollingToken);
       if (!statusResult.ok) return err(statusResult.error);
 
       if (statusResult.value.status === 'completed') {

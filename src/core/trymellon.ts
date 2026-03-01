@@ -264,7 +264,16 @@ export class TryMellon {
       verify: async (
         options: EmailFallbackVerifyOptions
       ): Promise<Result<EmailFallbackVerifyResult, TryMellonError>> => {
-        return this.apiClient.verifyEmailCode(options.userId, options.code);
+        const result = await this.apiClient.verifyEmailCode({
+          userId: options.userId,
+          code: options.code,
+          ...(options.successUrl && { successUrl: options.successUrl }),
+        });
+        if (!result.ok) return result;
+        return ok({
+          sessionToken: result.value.sessionToken,
+          ...(result.value.redirectUrl && { redirectUrl: result.value.redirectUrl }),
+        });
       },
     },
   };
@@ -274,8 +283,8 @@ export class TryMellon {
       init: () => this.crossDeviceManager.init(),
       initRegistration: (options: { externalUserId: string }) =>
         this.crossDeviceManager.initRegistration(options),
-      waitForSession: (sessionId: string, signal?: AbortSignal) =>
-        this.crossDeviceManager.waitForSession(sessionId, signal),
+      waitForSession: (sessionId: string, signal?: AbortSignal, pollingToken?: string | null) =>
+        this.crossDeviceManager.waitForSession(sessionId, signal, pollingToken),
       getContext: (sessionId: string) => this.apiClient.getCrossDeviceContext(sessionId),
       approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
     },

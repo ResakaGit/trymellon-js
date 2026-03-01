@@ -29,8 +29,9 @@ export async function startEmailFallback(
 export async function verifyEmailCode(
   userId: string,
   code: string,
-  apiClient: ApiClient
-): Promise<Result<{ sessionToken: string }, TryMellonError>> {
+  apiClient: ApiClient,
+  options?: { successUrl?: string }
+): Promise<Result<{ sessionToken: string; redirectUrl?: string }, TryMellonError>> {
   try {
     validateNonEmptyString(userId, 'userId');
   } catch (e) {
@@ -45,5 +46,5 @@ export async function verifyEmailCode(
       isTryMellonError(e) ? e : createInvalidArgumentError('code', 'must be a non-empty string')
     );
   }
-  return apiClient.verifyEmailCode(userId, code);
+  return apiClient.verifyEmailCode({ userId, code, successUrl: options?.successUrl });
 }

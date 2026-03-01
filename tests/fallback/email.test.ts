@@ -173,6 +173,27 @@ describe('verifyEmailCode', () => {
     );
   });
 
+  it('should return redirectUrl when API returns redirect_url', async () => {
+    mockHttpClient.post.mockResolvedValue(
+      ok({
+        session_token: 'session_token_123',
+        redirect_url: 'https://app.example.com/welcome',
+      })
+    );
+    const apiClient = new ApiClient(
+      mockHttpClient as unknown as HttpClient,
+      'https://api.example.com'
+    );
+
+    const result = await verifyEmailCode('user_123', '123456', apiClient);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.sessionToken).toBe('session_token_123');
+      expect(result.value.redirectUrl).toBe('https://app.example.com/welcome');
+    }
+  });
+
   it('should return err when userId is empty', async () => {
     const apiClient = new ApiClient(
       mockHttpClient as unknown as HttpClient,

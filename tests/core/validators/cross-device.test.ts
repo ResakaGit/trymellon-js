@@ -10,6 +10,7 @@ describe('validateCrossDeviceInitResponse', () => {
     session_id: 'sess_cd_123',
     qr_url: 'https://example.com/qr/abc',
     expires_at: '2026-02-12T12:00:00Z',
+    polling_token: 'opaque_polling_token_abc',
   };
 
   it('should return ok for valid payload', () => {
@@ -19,6 +20,7 @@ describe('validateCrossDeviceInitResponse', () => {
       expect(result.value.session_id).toBe('sess_cd_123');
       expect(result.value.qr_url).toBe('https://example.com/qr/abc');
       expect(result.value.expires_at).toBe('2026-02-12T12:00:00Z');
+      expect(result.value.polling_token).toBe('opaque_polling_token_abc');
     }
   });
 
@@ -32,6 +34,7 @@ describe('validateCrossDeviceInitResponse', () => {
       expect(result.value.session_id).toBe(validPayload.session_id);
       expect(result.value.qr_url).toBe(validPayload.qr_url);
       expect(result.value.expires_at).toBe(validPayload.expires_at);
+      expect(result.value.polling_token).toBe(validPayload.polling_token);
     }
   });
 
@@ -51,10 +54,21 @@ describe('validateCrossDeviceInitResponse', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('should return err when polling_token is missing', () => {
+    const result = validateCrossDeviceInitResponse({
+      session_id: validPayload.session_id,
+      qr_url: validPayload.qr_url,
+      expires_at: validPayload.expires_at,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('required fields');
+  });
+
   it('should return err when session_id is missing', () => {
     const result = validateCrossDeviceInitResponse({
       qr_url: validPayload.qr_url,
       expires_at: validPayload.expires_at,
+      polling_token: validPayload.polling_token,
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain('required fields');

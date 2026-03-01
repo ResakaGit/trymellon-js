@@ -356,9 +356,31 @@ describe('TryMellon', () => {
         userId: 'u_123',
         code: '123456',
       });
-      expect(mockInstance.verifyEmailCode).toHaveBeenCalledWith('u_123', '123456');
+      expect(mockInstance.verifyEmailCode).toHaveBeenCalledWith({
+        userId: 'u_123',
+        code: '123456',
+      });
       expect(result.ok).toBe(true);
       if (result.ok) expect(result.value.sessionToken).toBe('st_abc');
+    });
+
+    it('should return redirectUrl from fallback.email.verify when API returns it', async () => {
+      const mockInstance = (
+        tryMellon as { apiClient: { verifyEmailCode: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.verifyEmailCode.mockResolvedValue(
+        ok({ sessionToken: 'st_abc', redirectUrl: 'https://app.example.com/dash' })
+      );
+
+      const result = await tryMellon.fallback.email.verify({
+        userId: 'u_123',
+        code: '123456',
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.sessionToken).toBe('st_abc');
+        expect(result.value.redirectUrl).toBe('https://app.example.com/dash');
+      }
     });
   });
 
@@ -370,7 +392,12 @@ describe('TryMellon', () => {
         }
       ).apiClient;
       mockInstance.initCrossDeviceAuth?.mockResolvedValue?.(
-        ok({ session_id: 's1', qr_url: 'https://q.r', expires_at: '2026-01-01T00:00:00Z' })
+        ok({
+          session_id: 's1',
+          qr_url: 'https://q.r',
+          expires_at: '2026-01-01T00:00:00Z',
+          polling_token: 'mock_poll_tok',
+        })
       );
 
       const result = await tryMellon.auth.crossDevice.init();

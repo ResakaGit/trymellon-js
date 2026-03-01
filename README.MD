@@ -97,6 +97,8 @@ curl -X PATCH https://api.trymellonauth.com/v1/applications/<applicationId> \
 
 Without this, requests from your agent's origin will get 404 when resolving the application. You can keep `https://agent.local` in the list for local testing.
 
+**Cursor / agent roles (Corsaria, Paladin):** When working in the TryMellon monorepo, orchestration roles are defined in `.cursor/skills/agent-orchestrator/` (agents.json, AGENTS.md).
+
 ---
 
 ## Installation
