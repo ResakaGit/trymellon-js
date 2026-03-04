@@ -22,6 +22,10 @@
 
 # [Unreleased]
 
+### Changed
+
+- **API paths (onboarding):** All onboarding endpoints now use base path `/v1/onboarding/*`. The SDK calls `POST /v1/onboarding/start`, `GET /v1/onboarding/:session_id/status`, etc. If you integrate against the API directly, use `/v1/onboarding/*` (breaking for custom clients using old paths).
+
 ### Docs
 
 - **Backend:** Init cross-device admite JWT con scope `auth_link` (sin Origin) para flujos IA/backend; ver guía en monorepo `docs/epic-auth-ia-link/guia-auth-link-ia.md`. El SDK sigue usando publishable key + Origin en desktop; para init desde backend usar la API directamente con token obtenido de `POST /oauth/token` con `scope=auth_link`.

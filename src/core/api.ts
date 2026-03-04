@@ -145,19 +145,19 @@ export class ApiClient {
   async startOnboarding(
     request: OnboardingStartRequest
   ): Promise<Result<OnboardingStartResponse, TryMellonError>> {
-    return this.post('/onboarding/start', request, validateOnboardingStartResponse);
+    return this.post('/v1/onboarding/start', request, validateOnboardingStartResponse);
   }
 
   async getOnboardingStatus(
     sessionId: string
   ): Promise<Result<OnboardingStatusResponse, TryMellonError>> {
-    return this.get(`/onboarding/${sessionId}/status`, validateOnboardingStatusResponse);
+    return this.get(`/v1/onboarding/${sessionId}/status`, validateOnboardingStatusResponse);
   }
 
   async getOnboardingRegister(
     sessionId: string
   ): Promise<Result<OnboardingRegisterResponseWithChallenge, TryMellonError>> {
-    return this.get(`/onboarding/${sessionId}/register`, validateOnboardingRegisterResponse);
+    return this.get(`/v1/onboarding/${sessionId}/register`, validateOnboardingRegisterResponse);
   }
 
   async registerOnboardingPasskey(
@@ -165,7 +165,7 @@ export class ApiClient {
     request: OnboardingRegisterPasskeyRequest
   ): Promise<Result<OnboardingRegisterPasskeyResponse, TryMellonError>> {
     return this.post(
-      `/onboarding/${sessionId}/register-passkey`,
+      `/v1/onboarding/${sessionId}/register-passkey`,
       request,
       validateOnboardingRegisterPasskeyResponse
     );
@@ -176,7 +176,7 @@ export class ApiClient {
     request: OnboardingCompleteRequest
   ): Promise<Result<OnboardingCompleteResponse, TryMellonError>> {
     return this.post(
-      `/onboarding/${sessionId}/complete`,
+      `/v1/onboarding/${sessionId}/complete`,
       request,
       validateOnboardingCompleteResponse
     );

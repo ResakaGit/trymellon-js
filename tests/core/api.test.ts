@@ -390,6 +390,11 @@ describe('ApiClient', () => {
       );
       const result = await client.startOnboarding({ user_role: 'maintainer' });
       expect(result.ok).toBe(true);
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/onboarding/start',
+        { user_role: 'maintainer' },
+        expect.any(Object)
+      );
     });
 
     it('should get onboarding status', async () => {
@@ -407,7 +412,7 @@ describe('ApiClient', () => {
       const result = await client.getOnboardingStatus('sess_1');
       expect(result.ok).toBe(true);
       expect(mockHttpClient.get).toHaveBeenCalledWith(
-        'https://api.example.com/onboarding/sess_1/status',
+        'https://api.example.com/v1/onboarding/sess_1/status',
         expect.any(Object)
       );
     });
@@ -427,7 +432,7 @@ describe('ApiClient', () => {
       const result = await client.getOnboardingRegister('sess_1');
       expect(result.ok).toBe(true);
       expect(mockHttpClient.get).toHaveBeenCalledWith(
-        'https://api.example.com/onboarding/sess_1/register',
+        'https://api.example.com/v1/onboarding/sess_1/register',
         expect.any(Object)
       );
     });
@@ -457,7 +462,7 @@ describe('ApiClient', () => {
       const result = await client.registerOnboardingPasskey('sess_1', request);
       expect(result.ok).toBe(true);
       expect(mockHttpClient.post).toHaveBeenCalledWith(
-        'https://api.example.com/onboarding/sess_1/register-passkey',
+        'https://api.example.com/v1/onboarding/sess_1/register-passkey',
         request,
         expect.any(Object)
       );
@@ -480,7 +485,7 @@ describe('ApiClient', () => {
       const result = await client.completeOnboarding('sess_1', { company_name: 'acme' });
       expect(result.ok).toBe(true);
       expect(mockHttpClient.post).toHaveBeenCalledWith(
-        'https://api.example.com/onboarding/sess_1/complete',
+        'https://api.example.com/v1/onboarding/sess_1/complete',
         { company_name: 'acme' },
         expect.any(Object)
       );
