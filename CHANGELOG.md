@@ -1,5 +1,7 @@
 ## [1.7.5](https://github.com/ResakaGit/trymellon-js/compare/v1.7.4...v1.7.5) (2026-03-05)
 
+## [1.7.5](https://github.com/ResakaGit/trymellon-js/compare/v1.7.4...v1.7.5) (2026-03-05)
+
 ### Docs
 
 - **Cursor skill (SDK):** Documenta en el monorepo que el SDK `@trymellon/js` expone la skill `trymellon-js-sdk` directamente desde el repo del SDK, para que agentes/LLMs puedan usarla sin depender de la Landing.
