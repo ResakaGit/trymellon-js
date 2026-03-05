@@ -258,6 +258,13 @@ const result = await client.register({ externalUserId: 'user_123', signal: contr
 
 ---
 
+## Maintainers / Release
+
+- Before publishing a new version of `@trymellon/js`, run the `pushprotocol` command at the monorepo root to ensure lint, tests with coverage and build are all green for `LandingPage`, `tryMellonJs` and `WebAuthSaas`.
+- The SDK repo (`tryMellonJs`) ships a GitHub Actions workflow `Release` that runs on every push to `main` and uses `semantic-release` to cut versions and publish to npm when there are `fix:`, `feat:` or `chore(release): ...` commits since the last tag.
+
+---
+
 ## Detailed reference
 
 Full types, config options and extended API: [reference.md](reference.md).
