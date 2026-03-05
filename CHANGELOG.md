@@ -1,5 +1,7 @@
 ## [1.7.6](https://github.com/ResakaGit/trymellon-js/compare/v1.7.5...v1.7.6) (2026-03-05)
 
+## [1.7.6](https://github.com/ResakaGit/trymellon-js/compare/v1.7.5...v1.7.6) (2026-03-05)
+
 ### Chore
 
 - **CI Security audit:** Allowlisted advisory `GHSA-qffp-2rhf-9h96` (`tar` en la CLI de `npm`) en `audit-ci.jsonc` para que el job `audit:ci` pase. El impacto se limita a herramientas de desarrollo (npm CLI, audit) y no afecta el bundle publicado del SDK.
