@@ -107,7 +107,7 @@ security-audit:
 
 - [x] Añadir `audit-ci` y config; script `audit:ci`. **Implementado:** `audit-ci.jsonc` (high/critical true, moderate false), script `audit:ci`.
 - [x] Añadir job (o step) `security-audit` en CI que ejecute `audit-ci`. **Implementado:** job independiente `security-audit` en `ci.yml`.
-- [ ] Decidir política: fallar en high/critical; documentar allowlist si se usa. Si el job falla por vulnerabilidades high, resolver con `npm audit fix` / upgrades o añadir IDs a `allowlist` en `audit-ci.jsonc`.
+- [x] Decidir política: fallar en high/critical; documentar allowlist si se usa. **Implementado:** el job falla en vulnerabilidades `high`/`critical` no allowlisted; `audit-ci.jsonc` incluye un `allowlist` explícito solo para vulnerabilidades en herramientas de CI/dev (`semantic-release`, `vitest`, `npm` CLI, `tar`, `Angular` dev deps), sin impacto en el bundle publicado.
 
 ---
 
