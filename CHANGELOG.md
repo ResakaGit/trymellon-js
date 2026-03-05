@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.7.5](https://github.com/ResakaGit/trymellon-js/compare/v1.7.4...v1.7.5) (2026-03-05)
 
 ### Docs
 
