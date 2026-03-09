@@ -276,6 +276,26 @@ describe('recoverAccount', () => {
     );
   });
 
+  it('exposes redirectUrl when API returns redirect_url', async () => {
+    const support = await import('../../src/utils/support');
+    vi.spyOn(support, 'isWebAuthnSupported').mockReturnValue(true);
+    mockApiClient.verifyAccountRecoveryOtp.mockResolvedValue(ok(validVerifyResponse));
+    mockApiClient.completeAccountRecovery.mockResolvedValue(
+      ok({ ...validCompleteResponse, redirect_url: 'https://app.example.com/welcome' })
+    );
+
+    const result = await recoverAccount(
+      { externalUserId: 'user_1', otp: '123456' },
+      mockApiClient as unknown as ApiClient,
+      mockEventEmitter
+    );
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.redirectUrl).toBe('https://app.example.com/welcome');
+    }
+  });
+
   it('returns err when verifyAccountRecoveryOtp throws (generic catch)', async () => {
     const support = await import('../../src/utils/support');
     vi.spyOn(support, 'isWebAuthnSupported').mockReturnValue(true);

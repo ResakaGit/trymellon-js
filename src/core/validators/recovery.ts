@@ -82,6 +82,15 @@ export function validateRecoveryCompleteResponse(
     });
   }
 
+  const dataObj = data as Record<string, unknown>;
+  const redirect_url = dataObj.redirect_url;
+  if (redirect_url !== undefined && !isString(redirect_url)) {
+    return validationError('Invalid API response: redirect_url must be string', {
+      field: 'redirect_url',
+      originalData: data,
+    });
+  }
+
   const userObj = user as Record<string, unknown>;
   return ok({
     status,
@@ -95,5 +104,6 @@ export function validateRecoveryCompleteResponse(
         ? (userObj.metadata as Record<string, unknown>)
         : undefined,
     },
+    ...(redirect_url !== undefined && { redirect_url }),
   });
 }

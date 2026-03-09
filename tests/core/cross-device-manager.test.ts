@@ -93,9 +93,28 @@ describe('CrossDeviceManager', () => {
       if (result.ok) {
         expect(result.value.session_token).toBe('st_1');
         expect(result.value.user_id).toBe('user_1');
+        expect(result.value.redirectUrl).toBeUndefined();
       }
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledWith('sess_1', undefined);
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return redirectUrl when status completed includes redirect_url from API', async () => {
+      mockApiClient.getCrossDeviceStatus.mockResolvedValue(
+        ok({
+          status: 'completed',
+          session_token: 'st_redir',
+          user_id: 'user_redir',
+          redirect_url: 'https://app.example.com/landing',
+        })
+      );
+      const result = await manager.waitForSession('sess_1');
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.session_token).toBe('st_redir');
+        expect(result.value.user_id).toBe('user_redir');
+        expect(result.value.redirectUrl).toBe('https://app.example.com/landing');
+      }
     });
 
     it('should return err when status is completed but session_token is missing', async () => {

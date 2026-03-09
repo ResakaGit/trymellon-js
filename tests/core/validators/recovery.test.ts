@@ -116,6 +116,35 @@ describe('validateRecoveryCompleteResponse', () => {
     }
   });
 
+  it('returns ok with redirect_url when present and string', () => {
+    const payload = {
+      ...validCompletePayload,
+      redirect_url: 'https://app.example.com/dashboard',
+    };
+    const result = validateRecoveryCompleteResponse(payload);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.redirect_url).toBe('https://app.example.com/dashboard');
+    }
+  });
+
+  it('omits redirect_url when absent', () => {
+    const result = validateRecoveryCompleteResponse(validCompletePayload);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).not.toHaveProperty('redirect_url');
+    }
+  });
+
+  it('returns err when redirect_url is present but not string', () => {
+    const result = validateRecoveryCompleteResponse({
+      ...validCompletePayload,
+      redirect_url: 123,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toMatch(/redirect_url|string/i);
+  });
+
   it('returns err for null', () => {
     const result = validateRecoveryCompleteResponse(null);
     expect(result.ok).toBe(false);

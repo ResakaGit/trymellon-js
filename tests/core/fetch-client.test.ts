@@ -389,6 +389,31 @@ describe('FetchHttpClient', () => {
       }
     });
 
+    it('returns err when 200 body is envelope error { ok: false, error }', async () => {
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: { code: 'session_expired', message: 'Session has expired' },
+          }),
+          {
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers({ 'Content-Type': 'application/json' }),
+          }
+        )
+      );
+
+      const result = await client.post<unknown>('https://api.example.com/v1/fallback/verify', {});
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe('SESSION_EXPIRED');
+        expect(result.error.message).toBe('Session has expired');
+      }
+    });
+
     it('uses statusText when 4xx response has non-JSON body', async () => {
       const client = new FetchHttpClient(5000, 0, baseDelayMs);
       mockFetch.mockResolvedValue(

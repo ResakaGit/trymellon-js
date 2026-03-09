@@ -45,7 +45,9 @@ export class CrossDeviceManager {
     sessionId: string,
     signal?: AbortSignal,
     pollingToken?: string | null
-  ): Promise<Result<{ session_token: string; user_id: string }, TryMellonError>> {
+  ): Promise<
+    Result<{ session_token: string; user_id: string; redirectUrl?: string }, TryMellonError>
+  > {
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       if (signal?.aborted) {
         return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
@@ -58,9 +60,14 @@ export class CrossDeviceManager {
         if (!statusResult.value.session_token || !statusResult.value.user_id) {
           return err(createError('UNKNOWN_ERROR', 'Missing data in completed session'));
         }
+        const redirectUrl =
+          statusResult.value.redirect_url != null && statusResult.value.redirect_url !== ''
+            ? statusResult.value.redirect_url
+            : undefined;
         return ok({
           session_token: statusResult.value.session_token,
           user_id: statusResult.value.user_id,
+          ...(redirectUrl !== undefined && { redirectUrl }),
         });
       }
 

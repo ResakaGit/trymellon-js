@@ -621,6 +621,25 @@ describe('ApiClient', () => {
       );
     });
 
+    it('should return ok when API returns empty object (204-style body)', async () => {
+      mockHttpClient.post.mockResolvedValue(ok({}));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const request = {
+        session_id: 'sess_cd_verify',
+        credential: {
+          type: 'public-key' as const,
+          id: 'cred_id',
+          rawId: 'raw_id',
+          response: { clientDataJSON: 'cdj', authenticatorData: 'ad', signature: 'sig' },
+        },
+      };
+      const result = await client.verifyCrossDeviceAuth(request);
+      expect(result.ok).toBe(true);
+    });
+
     it('should return err when API fails', async () => {
       mockHttpClient.post.mockResolvedValue(err(createError('NETWORK_FAILURE', 'fail')));
       const client = new ApiClient(
@@ -691,6 +710,25 @@ describe('ApiClient', () => {
         request,
         expect.any(Object)
       );
+    });
+
+    it('should return ok when API returns empty object (204-style body)', async () => {
+      mockHttpClient.post.mockResolvedValue(ok({}));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const request = {
+        session_id: 'sess_reg_verify',
+        credential: {
+          type: 'public-key' as const,
+          id: 'cred_id',
+          rawId: 'raw_id',
+          response: { clientDataJSON: 'cdj', attestationObject: 'ao' },
+        },
+      };
+      const result = await client.verifyCrossDeviceRegistration(request);
+      expect(result.ok).toBe(true);
     });
   });
 

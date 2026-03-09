@@ -17,6 +17,7 @@ import {
   validateCrossDeviceInitResponse,
   validateCrossDeviceStatusResponse,
   validateCrossDeviceContextResponse,
+  validateCrossDeviceVerifyResponse,
   validateRecoveryVerifyResponse,
   validateRecoveryCompleteResponse,
 } from './validators';
@@ -229,19 +230,17 @@ export class ApiClient {
   async verifyCrossDeviceAuth(
     request: CrossDeviceVerifyRequest
   ): Promise<Result<void, TryMellonError>> {
-    const url = `${this.baseUrl}/v1/auth/cross-device/verify`;
-    const result = await this.httpClient.post<unknown>(url, request, this.mergeHeaders());
-    if (!result.ok) return err(result.error);
-    return ok(undefined);
+    return this.post('/v1/auth/cross-device/verify', request, validateCrossDeviceVerifyResponse);
   }
 
   async verifyCrossDeviceRegistration(
     request: CrossDeviceVerifyRegistrationRequest
   ): Promise<Result<void, TryMellonError>> {
-    const url = `${this.baseUrl}/v1/auth/cross-device/verify-registration`;
-    const result = await this.httpClient.post<unknown>(url, request, this.mergeHeaders());
-    if (!result.ok) return err(result.error);
-    return ok(undefined);
+    return this.post(
+      '/v1/auth/cross-device/verify-registration',
+      request,
+      validateCrossDeviceVerifyResponse
+    );
   }
 
   async verifyAccountRecoveryOtp(

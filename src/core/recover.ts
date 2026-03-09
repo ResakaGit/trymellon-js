@@ -51,17 +51,25 @@ export async function recoverAccount(
 
       if (!finishResult.ok) return err(finishResult.error);
 
+      const {
+        credential_id,
+        status,
+        session_token,
+        user: userPayload,
+        redirect_url,
+      } = finishResult.value;
       return ok({
         success: true,
-        credentialId: finishResult.value.credential_id,
-        status: finishResult.value.status,
-        sessionToken: finishResult.value.session_token,
+        credentialId: credential_id,
+        status,
+        sessionToken: session_token,
         user: {
-          userId: finishResult.value.user.user_id,
-          externalUserId: finishResult.value.user.external_user_id,
-          email: finishResult.value.user.email,
-          metadata: finishResult.value.user.metadata,
+          userId: userPayload.user_id,
+          externalUserId: userPayload.external_user_id,
+          email: userPayload.email,
+          metadata: userPayload.metadata,
         },
+        ...(redirect_url !== undefined && { redirectUrl: redirect_url }),
       });
     },
   });

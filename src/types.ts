@@ -153,6 +153,8 @@ export type RecoveryCompleteResponse = {
     metadata?: Record<string, unknown>;
   };
   credential_id: string;
+  /** Set when successUrl was passed and allowed by application allowlist. */
+  redirect_url?: string;
 };
 
 export type RecoverAccountOptions = {
@@ -177,6 +179,8 @@ export interface RecoverAccountResult {
     email?: string;
     metadata?: Record<string, unknown>;
   };
+  /** Set when successUrl was passed and allowed by application allowlist. */
+  redirectUrl?: string;
 }
 
 // ============================================================================
@@ -256,6 +260,8 @@ export type CrossDeviceStatusResult = {
   status: 'pending' | 'authenticated' | 'completed';
   user_id?: string;
   session_token?: string;
+  /** Set when backend allows redirect; returned in GET cross-device/status when status=completed. */
+  redirect_url?: string;
 };
 
 /** Context for auth: request options (get). */
@@ -408,7 +414,7 @@ export interface AuthFinishResponse {
     email?: string;
     metadata?: Record<string, unknown>;
   };
-  signals: {
+  signals?: {
     userVerification?: boolean;
     backupEligible?: boolean;
     backupStatus?: boolean;

@@ -575,7 +575,7 @@ describe('authenticatePasskey', () => {
       expect(result.value.authenticated).toBe(true);
       expect(result.value.sessionToken).toBe('session_token_123');
       expect(result.value.user?.externalUserId).toBe('user_123');
-      expect(result.value.signals.userVerification).toBe(true);
+      expect(result.value.signals?.userVerification).toBe(true);
     }
     expect(apiClient.startAuth).toHaveBeenCalledWith({
       external_user_id: 'user_123',

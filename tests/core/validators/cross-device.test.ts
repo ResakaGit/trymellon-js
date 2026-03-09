@@ -3,6 +3,7 @@ import {
   validateCrossDeviceInitResponse,
   validateCrossDeviceStatusResponse,
   validateCrossDeviceContextResponse,
+  validateCrossDeviceVerifyResponse,
 } from '../../../src/core/validators/cross-device';
 
 describe('validateCrossDeviceInitResponse', () => {
@@ -172,6 +173,115 @@ describe('validateCrossDeviceStatusResponse', () => {
     const result = validateCrossDeviceStatusResponse({ status: '' });
     expect(result.ok).toBe(false);
   });
+
+  it('should return err when status is completed and user_id is not string (e.g. number)', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: 123,
+      session_token: 'st',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain('user_id');
+      expect(result.error.message).toContain('string');
+    }
+  });
+
+  it('should return err when status is completed and session_token is null', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: 'u',
+      session_token: null,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain('session_token');
+      expect(result.error.message).toContain('string');
+    }
+  });
+
+  it('should return ok for status completed with valid string user_id and session_token', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: 'u',
+      session_token: 'st',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.status).toBe('completed');
+      expect(result.value.user_id).toBe('u');
+      expect(result.value.session_token).toBe('st');
+    }
+  });
+
+  it('should return ok for status completed with user_id and session_token both undefined (caller must reject)', () => {
+    const result = validateCrossDeviceStatusResponse({ status: 'completed' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.status).toBe('completed');
+      expect(result.value.user_id).toBeUndefined();
+      expect(result.value.session_token).toBeUndefined();
+    }
+  });
+
+  it('should return ok when status is completed and user_id is empty string (present but string; caller treats as falsy)', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: '',
+      session_token: 'st',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.user_id).toBe('');
+      expect(result.value.session_token).toBe('st');
+    }
+  });
+
+  it('should return ok for status completed with optional redirect_url string', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: 'u',
+      session_token: 'st',
+      redirect_url: 'https://app.example.com/dashboard',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.redirect_url).toBe('https://app.example.com/dashboard');
+    }
+  });
+
+  it('should return err when redirect_url is present but not a string', () => {
+    const result = validateCrossDeviceStatusResponse({
+      status: 'completed',
+      user_id: 'u',
+      session_token: 'st',
+      redirect_url: 123,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain('redirect_url');
+      expect(result.error.message).toContain('string');
+    }
+  });
+
+  it('should return ok when envelope resultado contains status payload with redirect_url', () => {
+    const result = validateCrossDeviceStatusResponse({
+      ok: true,
+      resultado: {
+        status: 'completed',
+        user_id: 'u2',
+        session_token: 'st2',
+        redirect_url: '/dashboard',
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.status).toBe('completed');
+      expect(result.value.user_id).toBe('u2');
+      expect(result.value.session_token).toBe('st2');
+      expect(result.value.redirect_url).toBe('/dashboard');
+    }
+  });
 });
 
 describe('validateCrossDeviceContextResponse', () => {
@@ -291,5 +401,51 @@ describe('validateCrossDeviceContextResponse', () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain('approval_context');
+  });
+});
+
+describe('validateCrossDeviceVerifyResponse', () => {
+  it('should return ok(undefined) for undefined', () => {
+    const result = validateCrossDeviceVerifyResponse(undefined);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBeUndefined();
+  });
+
+  it('should return ok(undefined) for null', () => {
+    const result = validateCrossDeviceVerifyResponse(null);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBeUndefined();
+  });
+
+  it('should return ok(undefined) for empty object', () => {
+    const result = validateCrossDeviceVerifyResponse({});
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value).toBeUndefined();
+  });
+
+  it('should return err for object with properties', () => {
+    const result = validateCrossDeviceVerifyResponse({ foo: 1 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('UNKNOWN_ERROR');
+      expect(result.error.message).toContain('empty body');
+    }
+  });
+
+  it('should return err for string', () => {
+    const result = validateCrossDeviceVerifyResponse('body');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('empty body');
+  });
+
+  it('should return err for number', () => {
+    const result = validateCrossDeviceVerifyResponse(0);
+    expect(result.ok).toBe(false);
+  });
+
+  it('should return err for array', () => {
+    const result = validateCrossDeviceVerifyResponse([]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('empty body');
   });
 });

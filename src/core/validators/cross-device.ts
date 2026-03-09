@@ -8,6 +8,23 @@ import type {
   CrossDeviceContextResult,
 } from '../../types';
 
+/**
+ * Validates the response for cross-device verify and verify-registration endpoints.
+ * Backend returns 204 No Content; body may be undefined, null, or empty object.
+ * Accepts only those; rejects any other shape to detect unexpected API responses.
+ */
+export function validateCrossDeviceVerifyResponse(data: unknown): Result<void, TryMellonError> {
+  if (data === undefined || data === null) {
+    return ok(undefined);
+  }
+  if (isObject(data) && Object.keys(data).length === 0) {
+    return ok(undefined);
+  }
+  return validationError('Invalid API response: expected empty body (204)', {
+    originalData: data,
+  });
+}
+
 function isCreationOptionsShape(opts: unknown): opts is Record<string, unknown> {
   if (!opts || typeof opts !== 'object') return false;
   const o = opts as Record<string, unknown>;
@@ -66,6 +83,10 @@ export function validateCrossDeviceInitResponse(
   });
 }
 
+/**
+ * Accepts either the unwrapped payload { status, user_id?, session_token?, redirect_url? } or the
+ * fintech envelope { ok: true, resultado: { ... } } so the flow works regardless of unwrapping.
+ */
 export function validateCrossDeviceStatusResponse(
   data: unknown
 ): Result<CrossDeviceStatusResult, TryMellonError> {
@@ -73,15 +94,41 @@ export function validateCrossDeviceStatusResponse(
     return validationError('Invalid API response: expected object', { originalData: data });
   }
 
-  const status = data.status;
+  const payload =
+    'resultado' in data && isObject((data as { resultado: unknown }).resultado)
+      ? (data as { resultado: Record<string, unknown> }).resultado
+      : data;
+
+  const status = payload.status;
   if (!isString(status) || !['pending', 'authenticated', 'completed'].includes(status)) {
     return validationError('Invalid API response: invalid status', { originalData: data });
   }
 
+  const user_id = payload.user_id;
+  const session_token = payload.session_token;
+  const redirect_url = payload.redirect_url;
+
+  if (user_id !== undefined && !isString(user_id)) {
+    return validationError('Invalid API response: user_id must be a string when present', {
+      originalData: data,
+    });
+  }
+  if (session_token !== undefined && !isString(session_token)) {
+    return validationError('Invalid API response: session_token must be a string when present', {
+      originalData: data,
+    });
+  }
+  if (redirect_url !== undefined && !isString(redirect_url)) {
+    return validationError('Invalid API response: redirect_url must be a string when present', {
+      originalData: data,
+    });
+  }
+
   return ok({
     status: status as CrossDeviceStatusResult['status'],
-    user_id: data.user_id as string | undefined,
-    session_token: data.session_token as string | undefined,
+    user_id: user_id as string | undefined,
+    session_token: session_token as string | undefined,
+    redirect_url: redirect_url as string | undefined,
   });
 }
 

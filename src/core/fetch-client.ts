@@ -191,6 +191,17 @@ export class FetchHttpClient implements HttpClient {
           if (typeof raw === 'object' && raw !== null && o.ok === true && !('resultado' in o)) {
             return ok(undefined as T);
           }
+          if (isEnvelopeError(raw)) {
+            const { message, code } = parseHttpErrorBody(raw, response.statusText);
+            return err(
+              createError(code, message, {
+                requestId,
+                status: response.status,
+                statusText: response.statusText,
+                data: raw,
+              })
+            );
+          }
           return ok(raw as T);
         } finally {
           clearTimeout(timeoutId);

@@ -157,11 +157,14 @@ describe('Types - AuthenticateResult', () => {
     expect(result.user.external_user_id).toBe('ext_123');
     expectTypeOf(result.authenticated).toBeBoolean();
     expectTypeOf(result.session_token).toBeString();
-    expectTypeOf(result.signals).toMatchTypeOf<{
-      userVerification?: boolean;
-      backupEligible?: boolean;
-      backupStatus?: boolean;
-    }>();
+    expectTypeOf(result.signals).toMatchTypeOf<
+      | {
+          userVerification?: boolean;
+          backupEligible?: boolean;
+          backupStatus?: boolean;
+        }
+      | undefined
+    >();
   });
 });
 
