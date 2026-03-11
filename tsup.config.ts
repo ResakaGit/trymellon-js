@@ -51,7 +51,6 @@ export default defineConfig([
     minify: true,
     outDir: 'dist',
     globalName: 'TryMellon',
-    banner: { js: '"use client";' },
     onSuccess: 'echo "Build completed successfully"',
   },
   {
