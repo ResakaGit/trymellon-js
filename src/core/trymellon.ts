@@ -3,8 +3,6 @@ import { FetchHttpClient } from './fetch-client';
 import { OnboardingManager } from './onboarding-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { EventEmitter } from './events';
-import { registerPasskey, authenticatePasskey } from './webauthn';
-import { recoverAccount } from './recover';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
 import { validateUrl, validateRange, createInvalidArgumentError } from '../errors';
 import {
@@ -22,7 +20,7 @@ import {
   SANDBOX_SESSION_TOKEN,
 } from './constants';
 import { createDefaultTelemetrySender } from './adapters/telemetry-sender';
-import { buildTelemetryPayload, type TelemetrySender } from './ports/telemetry';
+import type { TelemetrySender } from './ports/telemetry';
 import type {
   TryMellonConfig,
   RegisterOptions,
@@ -40,6 +38,8 @@ import type {
 } from '../types';
 import { ok, err, type Result } from '../utils/result';
 import { type TryMellonError, isTryMellonError } from '../errors';
+import { AuthService } from './services/auth-service';
+import { RecoveryService } from './services/recovery-service';
 
 declare const __VERSION__: string;
 
@@ -50,12 +50,14 @@ export class TryMellon {
   private eventEmitter: EventEmitter;
   private telemetrySender: TelemetrySender | undefined;
   private crossDeviceManager: CrossDeviceManager;
+  private authService: AuthService;
+  private recoveryService: RecoveryService;
   public onboarding: OnboardingManager;
 
   /**
-   * Configura una nueva instancia de TryMellon.
-   * Valida la configuración y retorna un Result.
-   * @param config Configuración del SDK
+   * Creates a new TryMellon instance.
+   * Validates config and returns a Result.
+   * @param config SDK configuration
    */
   static create(config: TryMellonConfig): Result<TryMellon, TryMellonError> {
     try {
@@ -148,8 +150,6 @@ export class TryMellon {
     };
 
     this.apiClient = new ApiClient(httpClient, apiBaseUrl, defaultHeaders);
-    this.onboarding = new OnboardingManager(this.apiClient);
-    this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.eventEmitter = new EventEmitter();
 
     if (config.enableTelemetry) {
@@ -157,74 +157,31 @@ export class TryMellon {
         config.telemetrySender ??
         createDefaultTelemetrySender(config.telemetryEndpoint ?? DEFAULT_TELEMETRY_ENDPOINT);
     }
+
+    this.authService = new AuthService(
+      this.apiClient,
+      this.eventEmitter,
+      this.sandbox,
+      this.sandboxToken,
+      this.telemetrySender
+    );
+    this.recoveryService = new RecoveryService(this.apiClient, this.eventEmitter);
+    this.onboarding = new OnboardingManager(this.apiClient);
+    this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
   }
 
   static isSupported(): boolean {
     return isWebAuthnSupported();
   }
 
-  /**
-   * Returns a successful Result for sandbox mode (register or authenticate).
-   * Single place for sandbox contract; used by register() and authenticate().
-   */
-  private sandboxAuthResult(
-    operation: 'register' | 'authenticate',
-    options: RegisterOptions | AuthenticateOptions
-  ): Promise<Result<RegisterResult | AuthenticateResult, TryMellonError>> {
-    const externalUserId = options.externalUserId ?? options.external_user_id ?? 'sandbox';
-    const externalId = typeof externalUserId === 'string' ? externalUserId : 'sandbox';
-    if (operation === 'register') {
-      return Promise.resolve(
-        ok({
-          success: true,
-          credentialId: '',
-          status: 'sandbox',
-          sessionToken: this.sandboxToken,
-          user: { userId: 'sandbox-user', externalUserId: externalId },
-        })
-      );
-    }
-    return Promise.resolve(
-      ok({
-        authenticated: true,
-        sessionToken: this.sandboxToken,
-        user: { userId: 'sandbox-user', externalUserId: externalId },
-      })
-    );
-  }
-
   async register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
-    if (this.sandbox) {
-      return this.sandboxAuthResult('register', options) as Promise<
-        Result<RegisterResult, TryMellonError>
-      >;
-    }
-    const start = Date.now();
-    const result = await registerPasskey(options, this.apiClient, this.eventEmitter);
-    if (result.ok && this.telemetrySender) {
-      this.telemetrySender
-        .send(buildTelemetryPayload('register', Date.now() - start))
-        .catch(() => {});
-    }
-    return result;
+    return this.authService.register(options);
   }
 
   async authenticate(
     options: AuthenticateOptions
   ): Promise<Result<AuthenticateResult, TryMellonError>> {
-    if (this.sandbox) {
-      return this.sandboxAuthResult('authenticate', options) as Promise<
-        Result<AuthenticateResult, TryMellonError>
-      >;
-    }
-    const start = Date.now();
-    const result = await authenticatePasskey(options, this.apiClient, this.eventEmitter);
-    if (result.ok && this.telemetrySender) {
-      this.telemetrySender
-        .send(buildTelemetryPayload('authenticate', Date.now() - start))
-        .catch(() => {});
-    }
-    return result;
+    return this.authService.authenticate(options);
   }
 
   async validateSession(
@@ -281,15 +238,13 @@ export class TryMellon {
   auth = {
     crossDevice: {
       init: () => this.crossDeviceManager.init(),
-      initRegistration: (options: { externalUserId: string }) =>
-        this.crossDeviceManager.initRegistration(options),
+      initRegistration: (options?: { externalUserId?: string }) =>
+        this.crossDeviceManager.initRegistration(options ?? {}),
       waitForSession: (sessionId: string, signal?: AbortSignal, pollingToken?: string | null) =>
         this.crossDeviceManager.waitForSession(sessionId, signal, pollingToken),
       getContext: (sessionId: string) => this.apiClient.getCrossDeviceContext(sessionId),
       approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
     },
-    recoverAccount: async (options: RecoverAccountOptions) => {
-      return recoverAccount(options, this.apiClient, this.eventEmitter);
-    },
+    recoverAccount: (options: RecoverAccountOptions) => this.recoveryService.recover(options),
   };
 }

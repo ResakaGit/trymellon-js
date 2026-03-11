@@ -37,5 +37,24 @@ export default tseslint.config(
       'scripts/**',
       'e2e/**',
     ],
+  },
+  // P2-B: forbid innerHTML/outerHTML in UI layer to prevent DOM-based XSS (02-auditoria-seguridad)
+  {
+    files: ['src/ui/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[property.name='innerHTML']",
+          message:
+            'P2-B: innerHTML is forbidden in src/ui. Use createElement + textContent to prevent XSS.',
+        },
+        {
+          selector: "MemberExpression[property.name='outerHTML']",
+          message:
+            'P2-B: outerHTML is forbidden in src/ui. Use createElement + textContent to prevent XSS.',
+        },
+      ],
+    },
   }
 );

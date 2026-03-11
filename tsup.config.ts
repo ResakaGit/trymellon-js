@@ -54,4 +54,14 @@ export default defineConfig([
     banner: { js: '"use client";' },
     onSuccess: 'echo "Build completed successfully"',
   },
+  {
+    ...sharedOptions,
+    entry: { index: 'src/ui/index.ts' },
+    outDir: 'dist/ui',
+    format: ['esm'],
+    dts: true,
+    clean: false,
+    splitting: false,
+    minify: true,
+  },
 ]);

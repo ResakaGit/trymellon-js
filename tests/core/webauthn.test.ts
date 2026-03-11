@@ -195,6 +195,8 @@ describe('registerPasskey', () => {
     expect(successHandler).toHaveBeenCalledWith({
       type: 'success',
       operation: 'register',
+      token: 'session_token_123',
+      user: { userId: 'user_uuid_123', externalUserId: 'user_123' },
     });
   });
 
@@ -656,6 +658,8 @@ describe('authenticatePasskey', () => {
     expect(successHandler).toHaveBeenCalledWith({
       type: 'success',
       operation: 'authenticate',
+      token: 'session_token_123',
+      user: { userId: 'user_uuid_123', externalUserId: 'user_123' },
     });
   });
 

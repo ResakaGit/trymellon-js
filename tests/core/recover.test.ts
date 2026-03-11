@@ -268,6 +268,13 @@ describe('recoverAccount', () => {
     expect(mockEventEmitter.emit).toHaveBeenCalledWith('success', {
       type: 'success',
       operation: 'register',
+      token: 'sess_tok_abc',
+      user: {
+        userId: 'u_1',
+        externalUserId: 'ext_1',
+        email: 'u@example.com',
+        metadata: { key: 'value' },
+      },
     });
     expect(mockApiClient.verifyAccountRecoveryOtp).toHaveBeenCalledWith('user_1', '123456');
     expect(mockApiClient.completeAccountRecovery).toHaveBeenCalledWith(

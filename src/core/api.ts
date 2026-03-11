@@ -187,12 +187,15 @@ export class ApiClient {
     return this.post('/v1/auth/cross-device/init', {}, validateCrossDeviceInitResponse);
   }
 
-  async initCrossDeviceRegistration(options: {
-    externalUserId: string;
+  async initCrossDeviceRegistration(options?: {
+    externalUserId?: string;
   }): Promise<Result<CrossDeviceInitResult, TryMellonError>> {
+    const trimmed =
+      typeof options?.externalUserId === 'string' ? options.externalUserId.trim() : '';
+    const body = trimmed.length > 0 ? { external_user_id: trimmed } : {};
     return this.post(
       '/v1/auth/cross-device/init-registration',
-      { external_user_id: options.externalUserId },
+      body,
       validateCrossDeviceInitResponse
     );
   }

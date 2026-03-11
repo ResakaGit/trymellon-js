@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { EventEmitter } from '../../src/core/events';
 import type { EventPayload, TryMellonEvent } from '../../src/types';
+import { createError } from '../../src/errors';
 
 describe('EventEmitter', () => {
   describe('on', () => {
@@ -58,7 +59,7 @@ describe('EventEmitter', () => {
       emitter.on('success', successHandler);
 
       emitter.emit('start', { type: 'start', operation: 'register' });
-      emitter.emit('success', { type: 'success', operation: 'register' });
+      emitter.emit('success', { type: 'success', operation: 'register', token: 'tk' });
 
       expect(startHandler).toHaveBeenCalledTimes(1);
       expect(successHandler).toHaveBeenCalledTimes(1);
@@ -156,6 +157,7 @@ describe('EventEmitter', () => {
       const payload: EventPayload = {
         type: 'success',
         operation: 'register',
+        token: 'tk',
       };
 
       emitter.emit('success', payload);
@@ -171,7 +173,7 @@ describe('EventEmitter', () => {
       expect(() => {
         emitter.emit('error', {
           type: 'error',
-          error: new Error('Test'),
+          error: createError('UNKNOWN_ERROR', 'Test'),
         });
       }).not.toThrow();
     });
@@ -190,8 +192,8 @@ describe('EventEmitter', () => {
       }
 
       emitter.emit('start', { type: 'start', operation: 'register' });
-      emitter.emit('success', { type: 'success', operation: 'register' });
-      emitter.emit('error', { type: 'error', error: new Error('Test') });
+      emitter.emit('success', { type: 'success', operation: 'register', token: 'tk' });
+      emitter.emit('error', { type: 'error', error: createError('UNKNOWN_ERROR', 'Test') });
       emitter.emit('cancelled', { type: 'cancelled', operation: 'register' });
 
       expect(handlers.start).toHaveBeenCalledTimes(1);
@@ -247,7 +249,7 @@ describe('EventEmitter', () => {
       emitter.removeAllListeners();
 
       emitter.emit('start', { type: 'start', operation: 'register' });
-      emitter.emit('success', { type: 'success', operation: 'register' });
+      emitter.emit('success', { type: 'success', operation: 'register', token: 'tk' });
 
       expect(startHandler).not.toHaveBeenCalled();
       expect(successHandler).not.toHaveBeenCalled();

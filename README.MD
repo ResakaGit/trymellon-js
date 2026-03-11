@@ -9,95 +9,67 @@ Official **TryMellon** SDK. Add **Passkeys / WebAuthn** to your app in minutes.
 
 ---
 
+## Table of Contents
+
+- [Why TryMellon?](#why-trymellon)
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Credentials](#where-to-get-credentials)
+- [Quickstart (5 minutes)](#quickstart-5-minutes)
+- [Framework Support](#framework-support--entry-points)
+  - [React](#react)
+  - [Vue](#vue)
+  - [Angular](#angular)
+  - [Vanilla JS / Svelte](#vanilla-javascript)
+- [Web Components](#web-components)
+- [Initialization](#initialization)
+- [Sandbox Mode](#sandbox--development-mode)
+- [Basic Usage](#basic-usage)
+  - [Check WebAuthn Support](#check-webauthn-support)
+  - [Passkey Registration](#passkey-registration)
+  - [Passkey Authentication](#passkey-authentication)
+  - [Conditional UI (Passkey Autofill)](#conditional-ui-passkey-autofill)
+  - [Validate Session](#validate-session)
+  - [Get Client Status](#get-client-status)
+- [Event System](#event-system)
+- [Email Fallback (OTP)](#email-fallback-otp)
+- [Cross-Device Authentication (QR Login)](#cross-device-authentication-qr-login)
+- [Account Recovery](#account-recovery)
+- [Programmatic Onboarding](#programmatic-onboarding)
+- [Result Type](#result-type)
+- [Error Handling](#error-handling)
+- [Cancelling Operations](#cancelling-operations)
+- [Logging](#logging)
+- [Client Backend](#client-backend)
+- [Security](#security)
+- [CSP and SRI](#security-csp-and-sri)
+- [Compatibility](#compatibility)
+- [Telemetry (opt-in)](#telemetry-opt-in)
+- [For AI Agents](#for-ai-agents)
+- [Additional Documentation](#additional-documentation)
+- [License](#license)
+
+---
+
 ## Why TryMellon?
 
 Authentication is hard. WebAuthn (Passkeys) is even harder.
 We built **TryMellon** to solve the complexity without locking you in.
 
-*   **Zero Logic:** You don't handle cryptography, public keys, or challenges.
+*   **Zero Dependencies:** No runtime dependencies. No bloat.
 *   **Zero Lock-in:** You own your users. We just verify them.
-*   **Zero Friction:** Drop-in SDK that "just works" (Cross-browser handling included).
+*   **Zero Friction:** Drop-in SDK that "just works" (cross-browser handling included).
 
-### What you get:
-*   ✅ **Passkeys First:** Biometric login (FaceID, TouchID, Windows Hello).
-*   ✅ **Email Fallback:** Magic OTPs when biometrics aren't available.
-*   ✅ **Cross-Device Auth:** Login on desktop by scanning a QR with mobile.
-*   ✅ **Framework Agnostic:** Works with React, Vue, Angular, Svelte, or Vanilla.
-*   ✅ **Type-Safe:** First-class TypeScript support (`Result` pattern).
+**What you get:**
 
----
-
-## 🤖 For AI Agents
-
-Are you an LLM or autonomous agent trying to use TryMellon? We built a dedicated "Vending Machine" for you.
-
-**Goal:** Get your own `client_id` and `client_secret` instantly to start creating users via API.
-**Limit:** The "Free AI Tier" allows up to **15 users** for testing and small demos.
-
-### 1. Get Credentials
-Send a POST request to our onboarding endpoint. No captcha, no email verification required.
-
-```bash
-curl -X POST https://api.trymellonauth.com/onboarding/ai \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "My Agent Name" }'
-```
-
-**Response:**
-```json
-{
-  "tenantId": "...",
-  "clientId": "cli_...",
-  "clientSecret": "sec_...",
-  "publishableKey": "cli_...",
-  "applicationId": "...",
-  "limits": { "maxUsers": 15, "maxApps": 1 }
-}
-```
-
-Use `publishableKey` (same as `clientId`) in the SDK: `TryMellon.create({ appId: '...', publishableKey: response.publishableKey })`. Use `applicationId` to update allowed origins (step 4) if you use passkeys or cross-device from your agent's domain.
-
-### 2. Authenticate
-Use the `clientId` and `clientSecret` to get an access token via OAuth2 Client Credentials flow.
-
-```bash
-curl -X POST https://api.trymellonauth.com/oauth/token \
-  -H "Content-Type: application/json" \
-  -d '{
-    "client_id": "cli_...",
-    "client_secret": "sec_...",
-    "grant_type": "client_credentials"
-  }'
-```
-
-**Response:**
-```json
-{ "access_token": "ey...", "token_type": "Bearer", "expires_in": 3600 }
-```
-
-### 3. Create Users
-Use the `access_token` to create users programmatically.
-
-```bash
-curl -X POST https://api.trymellonauth.com/v1/users \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{ "external_user_id": "user_123" }'
-```
-
-### 4. Update allowed origins (required for passkeys / cross-device)
-If your agent uses passkeys or cross-device auth from a real domain, the API must allow that origin. Call PATCH with the `applicationId` from step 1:
-
-```bash
-curl -X PATCH https://api.trymellonauth.com/v1/applications/<applicationId> \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{ "allowed_origins": ["https://your-agent-domain.com"] }'
-```
-
-Without this, requests from your agent's origin will get 404 when resolving the application. You can keep `https://agent.local` in the list for local testing.
-
-**Cursor / agent roles (Corsaria, Paladin):** When working in the TryMellon monorepo, orchestration roles are defined in `.cursor/skills/agent-orchestrator/` (agents.json, AGENTS.md).
+*   Passkeys first -- biometric login (FaceID, TouchID, Windows Hello)
+*   Email fallback -- magic OTPs when biometrics are not available
+*   Cross-device auth -- login on desktop by scanning a QR with mobile
+*   Account recovery -- OTP-based credential reset with new passkey registration
+*   Web Components -- drop-in `<trymellon-auth>` and `<trymellon-auth-modal>` elements
+*   Framework adapters -- React hooks, Vue composables, Angular service
+*   Type-safe -- first-class TypeScript with `Result` pattern, branded types, strict mode
+*   Sandbox mode -- test the full integration flow without a backend or WebAuthn hardware
 
 ---
 
@@ -107,58 +79,91 @@ Without this, requests from your agent's origin will get 404 when resolving the 
 npm install @trymellon/js
 ```
 
-That's it. No peer dependencies. No bloat.
+No peer dependencies. No bloat.
 
 ---
 
 ## Requirements
 
-* Node 18+, browsers, and Edge runtimes (Cloudflare Workers, Vercel Edge); no Node-specific APIs (Buffer/crypto module).
+* Node 18+ / browsers / Edge runtimes (Cloudflare Workers, Vercel Edge)
 * Browser with WebAuthn support (Chrome, Safari, Firefox, Edge)
 * HTTPS (required except on `localhost`)
 * A TryMellon Application with the correct origin configured
 
-**Isomorphic / Edge-safe:** The runtime bundle uses only `globalThis.crypto`, `btoa`/`atob`, and `ArrayBuffer`/`Uint8Array` (no Node `Buffer` or `node:crypto`). Safe to import in SSR on Edge. Build-time scripts (e.g. `scripts/sri.js`) may use Node APIs; they do not affect the published bundle.
+**Isomorphic / Edge-safe:** The runtime bundle uses only `globalThis.crypto`, `btoa`/`atob`, and `ArrayBuffer`/`Uint8Array` -- no Node `Buffer` or `node:crypto`. Safe to import in SSR on Edge. Build-time scripts (e.g. `scripts/sri.js`) may use Node APIs; they do not affect the published bundle.
 
 ---
 
 ## Where to get credentials
 
-You need two values to initialize the SDK. Get both from the [TryMellon dashboard](https://trymellon-landing.pages.dev/dashboard) after creating an application and adding your app's origin.
+You need two values to initialize the SDK. Get both from the [TryMellon dashboard](https://trymellon-landing.pages.dev/dashboard) after creating an application and adding your app’s origin.
 
 | SDK parameter    | What it is              | Where to find it                          |
 |------------------|-------------------------|-------------------------------------------|
-| `appId`          | **Application ID** (UUID) | Dashboard → Your app → **App ID**        |
-| `publishableKey` | **Client ID** (starts with `cli_`) | Dashboard → Your app → **Client ID** (same value is your publishable key) |
+| `appId`          | **Application ID** (UUID) | Dashboard > Your app > **App ID**        |
+| `publishableKey` | **Client ID** (starts with `cli_`) | Dashboard > Your app > **Client ID** (same value is your publishable key) |
 
-The API identifies your app by `publishableKey` (sent as `Authorization: Bearer <publishableKey>`) and the request **Origin**. Ensure your app's origin is allowed in the dashboard for that application.
+The API identifies your app by `publishableKey` (sent as `Authorization: Bearer <publishableKey>`) and the request **Origin**. Ensure your app’s origin is allowed in the dashboard for that application.
+
+---
+
+## Quickstart (5 minutes)
+
+```typescript
+import { TryMellon } from ‘@trymellon/js’
+
+// 1. Initialize (Factory Pattern -- returns Result, never throws)
+const clientResult = TryMellon.create({
+  appId: ‘your-app-id-uuid’,   // App ID (UUID) from Dashboard
+  publishableKey: ‘cli_xxxx’,  // Client ID from Dashboard
+})
+
+if (!clientResult.ok) {
+  console.error(‘Invalid config:’, clientResult.error.message)
+  throw clientResult.error
+}
+
+const client = clientResult.value
+
+// 2. Register a passkey
+const registerResult = await client.register({ externalUserId: ‘user_123’ })
+if (registerResult.ok) {
+  console.log(‘Session token:’, registerResult.value.sessionToken)
+}
+
+// 3. Authenticate
+const authResult = await client.authenticate({ externalUserId: ‘user_123’ })
+if (authResult.ok) {
+  console.log(‘Session token:’, authResult.value.sessionToken)
+}
+```
 
 ---
 
 ## Framework support & entry points
 
-The SDK is **framework-agnostic**. Use the main entry for Vanilla JS, Svelte, or any environment; use framework-specific entry points for React, Vue, and Angular to get hooks/services and tree-shaking.
+The SDK is **framework-agnostic**. Use the main entry for Vanilla JS, Svelte, or any environment; use framework-specific entry points for React, Vue, and Angular to get idiomatic hooks/services and tree-shaking.
 
-| Entry point | Use case | Exports |
-|-------------|----------|---------|
-| `@trymellon/js` | Vanilla JS, Svelte, Node, or any bundler | `TryMellon`, `TryMellon.isSupported()`, `Result`, `ok`, `err`, `isTryMellonError`, types |
+| Entry point | Use case | Key exports |
+|-------------|----------|-------------|
+| `@trymellon/js` | Vanilla JS, Svelte, Node, any bundler | `TryMellon`, `TryMellon.isSupported()`, `Result`, `ok`, `err`, `isTryMellonError`, types |
 | `@trymellon/js/react` | React 18+ | `TryMellonProvider`, `useTryMellon`, `useRegister`, `useAuthenticate` |
 | `@trymellon/js/vue` | Vue 3 (Composition API) | `provideTryMellon`, `useTryMellon`, `useRegister`, `useAuthenticate`, `TryMellonKey` |
 | `@trymellon/js/angular` | Angular (standalone or NgModule) | `TryMellonService`, `provideTryMellonConfig`, `TRYMELLON_CONFIG` |
+| `@trymellon/js/ui` | Web Components | `TryMellonAuthElement`, `TryMellonAuthModalElement` |
 
 **Runtime:** ESM and CJS supported. For UMD/script tag use `@trymellon/js/umd` or the built `dist/index.global.js` (exposes `window.TryMellon`).
 
 ### React
 
-```bash
-npm install @trymellon/js
-```
-
 ```tsx
-import { TryMellon } from '@trymellon/js'
-import { TryMellonProvider, useTryMellon, useRegister, useAuthenticate } from '@trymellon/js/react'
+import { TryMellon } from ‘@trymellon/js’
+import { TryMellonProvider, useRegister, useAuthenticate } from ‘@trymellon/js/react’
 
-const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' }) // Get these from Dashboard → Your app → App ID and Client ID
+const clientResult = TryMellon.create({
+  appId: ‘your-app-id-uuid’,
+  publishableKey: ‘cli_xxxx’,
+})
 if (!clientResult.ok) throw clientResult.error
 const client = clientResult.value
 
@@ -174,67 +179,63 @@ function LoginForm() {
   const { execute: register, loading } = useRegister()
   const { execute: authenticate } = useAuthenticate()
 
-  const onRegister = () => register({ externalUserId: 'user_123' })
-  const onLogin = () => authenticate({ externalUserId: 'user_123' })
-
   return (
     <>
-      <button onClick={onRegister} disabled={loading}>Register passkey</button>
-      <button onClick={onLogin} disabled={loading}>Sign in</button>
+      <button onClick={() => register({ externalUserId: ‘user_123’ })} disabled={loading}>
+        Register passkey
+      </button>
+      <button onClick={() => authenticate({ externalUserId: ‘user_123’ })} disabled={loading}>
+        Sign in
+      </button>
     </>
   )
 }
 ```
 
-- **Requirements:** React 18+. Create a `TryMellon` instance (e.g. at app root), wrap your app (or auth subtree) with `TryMellonProvider` passing `client={client}`; then use `useTryMellon()`, `useRegister()`, and `useAuthenticate()` in children.
+**Requirements:** React 18+. Wrap your app (or auth subtree) with `TryMellonProvider` passing `client={client}`; then use `useTryMellon()`, `useRegister()`, and `useAuthenticate()` in children.
 
 ### Vue
 
-```bash
-npm install @trymellon/js
-```
-
 ```vue
 <script setup lang="ts">
-import { TryMellon } from '@trymellon/js'
-import { provideTryMellon, useTryMellon, useRegister, useAuthenticate } from '@trymellon/js/vue'
+import { TryMellon } from ‘@trymellon/js’
+import { provideTryMellon, useRegister, useAuthenticate } from ‘@trymellon/js/vue’
 
-const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' }) // Get these from Dashboard → Your app → App ID and Client ID
+const clientResult = TryMellon.create({
+  appId: ‘your-app-id-uuid’,
+  publishableKey: ‘cli_xxxx’,
+})
 if (!clientResult.ok) throw clientResult.error
-const client = clientResult.value
-provideTryMellon(client)
+provideTryMellon(clientResult.value)
 
 const { execute: register, loading } = useRegister()
 const { execute: authenticate } = useAuthenticate()
-
-const onRegister = () => register({ externalUserId: 'user_123' })
-const onLogin = () => authenticate({ externalUserId: 'user_123' })
 </script>
 
 <template>
-  <button @click="onRegister" :disabled="loading">Register passkey</button>
-  <button @click="onLogin" :disabled="loading">Sign in</button>
+  <button @click="register({ externalUserId: ‘user_123’ })" :disabled="loading">
+    Register passkey
+  </button>
+  <button @click="authenticate({ externalUserId: ‘user_123’ })" :disabled="loading">
+    Sign in
+  </button>
 </template>
 ```
 
-- **Requirements:** Vue 3 with Composition API. Create a `TryMellon` instance and call `provideTryMellon(client)` once (e.g. in root or a parent); then use `useTryMellon()`, `useRegister()`, and `useAuthenticate()` in components.
+**Requirements:** Vue 3 with Composition API. Call `provideTryMellon(client)` once in a parent component; then use `useTryMellon()`, `useRegister()`, and `useAuthenticate()` in descendants.
 
 ### Angular
-
-```bash
-npm install @trymellon/js
-```
 
 In your app config (e.g. `app.config.ts` or root module):
 
 ```typescript
-import { provideTryMellonConfig } from '@trymellon/js/angular'
+import { provideTryMellonConfig } from ‘@trymellon/js/angular’
 
 export const appConfig = {
   providers: [
     provideTryMellonConfig({
-      appId: 'your-app-id-uuid',
-      publishableKey: 'cli_xxxx',
+      appId: ‘your-app-id-uuid’,
+      publishableKey: ‘cli_xxxx’,
     }),
   ],
 }
@@ -243,9 +244,10 @@ export const appConfig = {
 In a component or service:
 
 ```typescript
-import { TryMellonService } from '@trymellon/js/angular'
+import { inject, Injectable } from ‘@angular/core’
+import { TryMellonService } from ‘@trymellon/js/angular’
 
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: ‘root’ })
 export class AuthService {
   private tryMellon = inject(TryMellonService)
 
@@ -259,129 +261,184 @@ export class AuthService {
 }
 ```
 
-- **Requirements:** Angular (standalone or NgModule). Add `provideTryMellonConfig(config)` to your app `providers`; inject `TryMellonService` and use `.client` for `register()`, `authenticate()`, and other methods.
+**Requirements:** Angular (standalone or NgModule). Add `provideTryMellonConfig(config)` to your app `providers`; inject `TryMellonService` and use `.client` for all SDK methods.
 
 ### Vanilla JavaScript
 
-Use the main entry and instantiate `TryMellon` directly (see Quickstart below). Works in any ES module or CJS environment. For script-tag usage, use the UMD build: `@trymellon/js/umd` or `dist/index.global.js`; the global is `window.TryMellon`.
+Use the main entry and instantiate `TryMellon` directly (see [Quickstart](#quickstart-5-minutes)). Works in any ES module or CJS environment. For script-tag usage, use the UMD build: `@trymellon/js/umd` or `dist/index.global.js` (exposes `window.TryMellon`).
 
 ### Svelte (and other frameworks)
 
-No dedicated adapter. Use the **main entry** `@trymellon/js`: create one `TryMellon` instance (e.g. in a module or store) and call `register()` / `authenticate()` from your components. Same API as Quickstart; no provider required.
+No dedicated adapter needed. Use the **main entry** `@trymellon/js`: create one `TryMellon` instance (e.g. in a module or store) and call `register()` / `authenticate()` from your components. Same API as the Quickstart.
 
 ---
 
-## Quickstart (5 minutes)
+## Web Components
 
-```bash
-npm install @trymellon/js
-```
+The SDK ships two custom elements via the `@trymellon/js/ui` entry point. Import the entry once to auto-register both elements. **Tag canónico:** `<trymellon-auth>` (botón + modal por defecto). **Escape hatch:** `trigger-only="true"` — solo emite `mellon:open-request`; el host monta/abre el modal. Ver [Web Components](./documentation/WEB-COMPONENTS.md).
 
 ```typescript
-import { TryMellon } from '@trymellon/js'
-
-// 1. Initialize safely (Factory Pattern)
-const clientResult = TryMellon.create({
-  appId: 'your-app-id-uuid',   // App ID (UUID) from Dashboard → Your app
-  publishableKey: 'cli_xxxx',  // Client ID from Dashboard → Your app
-})
-
-if (!clientResult.ok) {
-  console.error('Invalid config:', clientResult.error.message);
-  throw clientResult.error;
-}
-
-const client = clientResult.value;
-
-// 2. Register passkey (camelCase recommended in options)
-const registerResult = await client.register({ externalUserId: 'user_123' })
-if (registerResult.ok) {
-  console.log('Session token:', registerResult.value.sessionToken)
-}
-
-// 3. Authenticate
-const authResult = await client.authenticate({ externalUserId: 'user_123' })
-if (authResult.ok) {
-  console.log('Session token:', authResult.value.sessionToken)
-}
+import ‘@trymellon/js/ui’
 ```
+
+### `<trymellon-auth>` (tag canónico)
+
+Inline authentication widget: **one tag** for both button and modal. Handles environment detection, passkey flows, and fallback states internally.
+
+- **Option A (default):** Button + internal modal. Click emits `mellon:open-request` and opens the modal inside the same WC.
+- **Option B (escape hatch):** Set `trigger-only="true"`. The WC only renders the button and emits `mellon:open-request` on click; it does **not** create or mount a modal. The host must listen for the event and open a separate `<trymellon-auth-modal>`. See [Web Components](./documentation/WEB-COMPONENTS.md).
+
+```html
+<trymellon-auth
+  app-id="your-app-id-uuid"
+  publishable-key="cli_xxxx"
+  mode="auto"
+  external-user-id="user_123"
+  theme="light"
+></trymellon-auth>
+```
+
+**Attributes:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `app-id` | `string` | Application ID (UUID) |
+| `publishable-key` | `string` | Client ID (`cli_xxxx`) |
+| `mode` | `’auto’` \| `’login’` \| `’register’` | Auth mode. `auto` defaults to login. |
+| `external-user-id` | `string` | User identifier for the auth flow |
+| `theme` | `’light’` \| `’dark’` | Visual theme |
+| `action` | `'open-modal'` \| `'direct-auth'` | Default: botón + modal. `direct-auth`: ceremonia directa sin modal. |
+| `trigger-only` | `'true'` \| `'false'` | Si `true`, solo emite `mellon:open-request`; el host monta/abre `<trymellon-auth-modal>`. |
+
+### `<trymellon-auth-modal>`
+
+Modal-based authentication component with tab switching, onboarding support, and open/close lifecycle.
+
+```html
+<trymellon-auth-modal
+  app-id="your-app-id-uuid"
+  publishable-key="cli_xxxx"
+  open="false"
+  tab="login"
+  theme="light"
+></trymellon-auth-modal>
+```
+
+**Attributes:**
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `app-id` | `string` | Application ID (UUID) |
+| `publishable-key` | `string` | Client ID (`cli_xxxx`) |
+| `open` | `’true’` \| `’false’` | Controls modal visibility |
+| `tab` | `’login’` \| `’register’` | Active tab |
+| `tab-labels` | `string` | Custom tab labels, comma-separated (e.g. `"Sign Up,Sign In"`) |
+| `mode` | `’modal’` \| `’inline’` | Display mode |
+| `theme` | `’light’` \| `’dark’` | Visual theme |
+| `session-id` | `string` | Onboarding session ID |
+| `onboarding-url` | `string` | Onboarding URL for external completion |
+| `is-mobile-override` | `’true’` \| `’false’` | Override mobile detection |
+| `fallback-type` | `’email’` \| `’qr’` | Preferred fallback channel |
+
+**JavaScript API:**
+
+```typescript
+const modal = document.querySelector(‘trymellon-auth-modal’)
+modal.open = true
+modal.tab = ‘register’
+modal.theme = ‘dark’
+modal.reset() // Reset to idle state
+```
+
+**Custom Events:**
+
+| Event | Detail | Description |
+|-------|--------|-------------|
+| `mellon:open` | `{}` | Modal opened |
+| `mellon:close` | `{ reason: ‘success’ \| ‘cancel’ \| ‘error’ \| ‘user’ }` | Modal closed |
+| `mellon:start` | `{ operation }` | Auth operation started |
+| `mellon:success` | `{ token, user }` | Auth succeeded |
+| `mellon:error` | `{ error }` | Auth error |
+| `mellon:cancelled` | `{}` | Auth cancelled |
+| `mellon:fallback` | `{ operation? }` | Fallback triggered |
+| `mellon:tab-change` | `{ tab }` | Tab switched |
 
 ---
 
 ## Initialization
 
-Prefer **TryMellon.create()** so invalid config returns a Result instead of throwing:
+Prefer **`TryMellon.create()`** so invalid config returns a Result instead of throwing:
 
 ```typescript
-import { TryMellon } from '@trymellon/js'
+import { TryMellon } from ‘@trymellon/js’
 
 const clientResult = TryMellon.create({
-  appId: 'your-app-id-uuid',
-  publishableKey: 'cli_xxxx',
-  apiBaseUrl: 'https://api.trymellonauth.com', // optional
-  timeoutMs: 30000,
-  maxRetries: 3,
-  retryDelayMs: 1000,
+  appId: ‘your-app-id-uuid’,
+  publishableKey: ‘cli_xxxx’,
+  apiBaseUrl: ‘https://api.trymellonauth.com’, // optional
+  timeoutMs: 30000,     // 1000 - 300000
+  maxRetries: 3,         // 0 - 10
+  retryDelayMs: 1000,    // 100 - 10000
 })
 
 if (!clientResult.ok) {
-  console.error('Invalid config:', clientResult.error.message)
+  console.error(‘Invalid config:’, clientResult.error.message)
   throw clientResult.error
 }
 const client = clientResult.value
 ```
 
-> [!TIP]
-> For static, validated config you can use `new TryMellon(config)`; it throws on invalid config. Prefer `TryMellon.create()` for user- or env-driven config so you can handle errors without try/catch.
+> **Tip:** For static, validated config you can use `new TryMellon(config)` (throws on invalid config). Prefer `TryMellon.create()` for user- or env-driven config so you can handle errors without try/catch.
 
 **Configuration options:**
 
-- `appId` (required): Your Application ID (UUID). Get it from Dashboard → Your app → App ID. Sent in header `X-App-Id`. The API identifies your app by `publishableKey` and Origin; `appId` is sent for consistency and future use.
-- `publishableKey` (required): Your Client ID (value starting with `cli_`). Get it from Dashboard → Your app → Client ID. Sent in header `Authorization: Bearer <publishableKey>`. The API uses this plus the request Origin to resolve your application.
-- `apiBaseUrl` (optional): API base URL. Default: `'https://api.trymellonauth.com'`
-- `timeoutMs` (optional): HTTP request timeout. Range: `1000` - `300000`. Default: `30000`
-- `maxRetries` (optional): Retries for network errors. Range: `0` - `10`. Default: `3`
-- `retryDelayMs` (optional): Delay between retries. Range: `100` - `10000`. Default: `1000`
-- `logger` (optional): `Logger` implementation for request correlation (e.g. `requestId` in logs and `error.details`).
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `appId` | Yes | -- | Application ID (UUID). Sent as `X-App-Id` header. |
+| `publishableKey` | Yes | -- | Client ID (`cli_xxxx`). Sent as `Authorization: Bearer`. |
+| `apiBaseUrl` | No | `’https://api.trymellonauth.com’` | API base URL. |
+| `timeoutMs` | No | `30000` | HTTP request timeout in ms (`1000`-`300000`). |
+| `maxRetries` | No | `3` | Retries for network/5xx errors (`0`-`10`). |
+| `retryDelayMs` | No | `1000` | Initial delay between retries in ms (`100`-`10000`). Exponential backoff. |
+| `logger` | No | -- | `Logger` implementation for request correlation. |
+| `sandbox` | No | `false` | Enable sandbox mode (no API/WebAuthn calls). |
+| `sandboxToken` | No | `SANDBOX_SESSION_TOKEN` | Custom token for sandbox mode. |
+| `origin` | No | `window.location.origin` | Override origin header. Useful for SSR or Node environments. |
+| `enableTelemetry` | No | `false` | Send anonymous telemetry (event + latency). |
 
-**Register/authenticate options:** Both `externalUserId` (camelCase, recommended) and `external_user_id` (snake_case) are accepted. The SDK normalizes to snake_case for the API.
+**Register/authenticate options:** Both `externalUserId` (camelCase, recommended) and `external_user_id` (snake_case, deprecated) are accepted. The SDK normalizes to snake_case for the API.
 
 ---
 
 ## Sandbox / development mode
 
-For local development or testing the integration flow without a real backend or WebAuthn (e.g. no passkey hardware), enable **sandbox mode**. With `sandbox: true`, `register()` and `authenticate()` return immediately with a fixed session token and a demo user—no API or WebAuthn calls.
-
-**Configuration:**
-
-- `sandbox` (optional): Set to `true` to enable sandbox mode.
-- `sandboxToken` (optional): Custom token to return. If not set, the exported constant `SANDBOX_SESSION_TOKEN` is used.
-
-**Exported constant:** Import `SANDBOX_SESSION_TOKEN` from `@trymellon/js` so your backend can recognize the sandbox token in development. **Your backend MUST NOT accept this token in production**—only in development. See [Backend validation](https://trymellon.com/docs/backend-validation) for the hook contract.
-
-**Example:**
+For local development or testing the integration flow without a real backend or WebAuthn hardware, enable **sandbox mode**. With `sandbox: true`, `register()` and `authenticate()` return immediately with a fixed session token and a demo user -- no API or WebAuthn calls.
 
 ```typescript
-import { TryMellon, SANDBOX_SESSION_TOKEN } from '@trymellon/js'
+import { TryMellon, SANDBOX_SESSION_TOKEN } from ‘@trymellon/js’
 
 const clientResult = TryMellon.create({
   sandbox: true,
-  appId: 'sandbox',
-  publishableKey: 'sandbox',
+  appId: ‘sandbox’,
+  publishableKey: ‘sandbox’,
 })
 if (!clientResult.ok) throw clientResult.error
 const client = clientResult.value
 
-const result = await client.authenticate({ externalUserId: 'dev_user_1' })
+const result = await client.authenticate({ externalUserId: ‘dev_user_1’ })
 if (result.ok) {
   // result.value.sessionToken === SANDBOX_SESSION_TOKEN
-  await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  await fetch(‘/api/login’, {
+    method: ‘POST’,
+    headers: { ‘Content-Type’: ‘application/json’ },
     body: JSON.stringify({ sessionToken: result.value.sessionToken }),
   })
 }
 ```
+
+**Exported constant:** Import `SANDBOX_SESSION_TOKEN` from `@trymellon/js` so your backend can recognize the sandbox token in development. **Your backend MUST NOT accept this token in production.**
+
+`validateSession()` also supports sandbox mode -- if called with the sandbox token, it returns a mock valid response.
 
 ---
 
@@ -401,7 +458,10 @@ if (TryMellon.isSupported()) {
 
 ```typescript
 const result = await client.register({
-  externalUserId: 'user_123'  // recommended: camelCase. external_user_id also accepted
+  externalUserId: ‘user_123’,
+  authenticatorType: ‘platform’,  // optional: ‘platform’ or ‘cross-platform’
+  successUrl: ‘https://app.example.com/welcome’, // optional: redirect URL
+  signal: controller.signal,      // optional: AbortSignal
 })
 
 if (!result.ok) {
@@ -409,95 +469,79 @@ if (!result.ok) {
   return
 }
 
-// Send session_token to your backend
-await fetch('/api/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    sessionToken: result.value.sessionToken
-  })
+// result.value contains:
+// {
+//   success: true,
+//   credentialId: string,
+//   status: string,
+//   sessionToken: string,
+//   user: { userId, externalUserId, email?, metadata? },
+//   redirectUrl?: string  -- present when successUrl was allowed
+// }
+
+await fetch(‘/api/login’, {
+  method: ‘POST’,
+  headers: { ‘Content-Type’: ‘application/json’ },
+  body: JSON.stringify({ sessionToken: result.value.sessionToken }),
 })
-```
-
-**Registration options:**
-
-- `externalUserId` or `external_user_id` (one required): Unique user ID in your system. camelCase recommended.
-- `authenticatorType` (optional): `'platform'` (device) or `'cross-platform'` (USB/NFC)
-- `signal` (optional): `AbortSignal` to cancel the operation
-
-**Response:**
-
-```typescript
-{
-  success: true,
-  credentialId: string,
-  status: string,
-  sessionToken: string,
-  user: {
-    userId: string,
-    externalUserId: string,
-    email?: string,
-    metadata?: Record<string, unknown>
-  }
-}
 ```
 
 ### Passkey authentication
 
 ```typescript
 const result = await client.authenticate({
-  external_user_id: 'user_123',
-  hint: 'user@example.com'  // optional, improves UX
+  externalUserId: ‘user_123’,
+  hint: ‘user@example.com’,    // optional: improves passkey selection UX
+  successUrl: ‘https://app.example.com/dashboard’, // optional
+  signal: controller.signal,   // optional
 })
 
-// Send to backend
-await fetch('/api/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    sessionToken: result.value.sessionToken
+if (result.ok) {
+  // result.value contains:
+  // {
+  //   authenticated: boolean,
+  //   sessionToken: string,
+  //   user: { userId, externalUserId, email?, metadata? },
+  //   signals?: { userVerification?, backupEligible?, backupStatus? },
+  //   redirectUrl?: string
+  // }
+
+  await fetch(‘/api/login’, {
+    method: ‘POST’,
+    headers: { ‘Content-Type’: ‘application/json’ },
+    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
   })
-})
-```
-
-**Authentication options:**
-
-- `externalUserId` or `external_user_id` (one required): User ID. camelCase recommended.
-- `hint` (optional): Hint for the passkey (e.g. email)
-- `signal` (optional): AbortSignal to cancel
-
-**Response:**
-
-```typescript
-{
-  authenticated: boolean,
-  sessionToken: string,
-  user: {
-    userId: string,
-    externalUserId: string,
-    email?: string,
-    metadata?: Record<string, unknown>
-  },
-  signals: {
-    userVerification?: boolean,
-    backupEligible?: boolean,
-    backupStatus?: boolean
-  }
 }
 ```
+
+### Conditional UI (passkey autofill)
+
+Use the `mediation` option to integrate with the browser’s passkey autofill (conditional UI). This lets users authenticate by selecting a passkey from the browser’s autofill prompt on an input field.
+
+```typescript
+const result = await client.authenticate({
+  mediation: ‘conditional’,
+})
+
+if (result.ok) {
+  console.log(‘Authenticated via autofill:’, result.value.sessionToken)
+}
+```
+
+Supported `mediation` values: `’optional’` (default), `’conditional’` (autofill), `’required’`.
 
 ### Validate session
 
 ```typescript
-const validationResult = await client.validateSession('session_token_123')
+const validationResult = await client.validateSession(‘session_token_123’)
 
 if (validationResult.ok && validationResult.value.valid) {
   const v = validationResult.value
-  console.log('User:', v.external_user_id, 'Tenant:', v.tenant_id, 'App:', v.app_id)
+  console.log(‘User:’, v.external_user_id, ‘Tenant:’, v.tenant_id, ‘App:’, v.app_id)
 }
 ```
 
-**Response:**
+**Response shape:**
 
 ```typescript
 {
@@ -515,61 +559,64 @@ if (validationResult.ok && validationResult.value.valid) {
 const status = await client.getStatus()
 
 if (status.isPasskeySupported) {
-  console.log('Passkeys available')
+  console.log(‘Passkeys available’)
   if (status.platformAuthenticatorAvailable) {
-    console.log('Platform authenticator available')
+    console.log(‘Platform authenticator available’)
   }
 } else {
-  console.log('Use fallback')
+  console.log(‘Use fallback:’, status.recommendedFlow)
 }
 ```
 
-**Response:**
+### SDK version
 
 ```typescript
-{
-  isPasskeySupported: boolean,
-  platformAuthenticatorAvailable: boolean,
-  recommendedFlow: 'passkey' | 'fallback'
-}
+console.log(‘SDK version:’, client.version()) // e.g. "1.7.6"
 ```
 
 ---
 
 ## Event system
 
-The SDK emits events for better UX and analytics:
+The SDK emits lifecycle events for UX feedback and analytics:
 
 ```typescript
-// Subscribe to events
-client.on('start', (payload) => {
-  console.log('Operation started:', payload.operation)  // 'register' | 'authenticate'
+client.on(‘start’, (payload) => {
+  console.log(‘Operation started:’, payload.operation)  // ‘register’ | ‘authenticate’
   showSpinner()
 })
 
-client.on('success', (payload) => {
-  console.log('Operation succeeded:', payload.operation)
+client.on(‘success’, (payload) => {
+  // payload.token -- session token
+  // payload.user  -- user info (userId, externalUserId, email)
   hideSpinner()
   showSuccessMessage()
 })
 
-client.on('error', (payload) => {
-  console.error('Error:', payload.error)
+client.on(‘error’, (payload) => {
+  console.error(‘Error:’, payload.error)
   hideSpinner()
   showError(payload.error.message)
 })
 
+client.on(‘cancelled’, (payload) => {
+  console.log(‘Cancelled:’, payload.operation)
+  hideSpinner()
+})
+
 // Unsubscribe
-const unsubscribe = client.on('start', handler)
+const unsubscribe = client.on(‘start’, handler)
 unsubscribe()
 ```
 
 **Available events:**
 
-- `'start'`: Operation started (`register` or `authenticate`)
-- `'success'`: Operation completed successfully
-- `'error'`: Error during the operation
-- `'cancelled'`: Operation cancelled (future)
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `’start’` | `{ type, operation, nonce? }` | Operation started |
+| `’success’` | `{ type, operation, token, user?, nonce? }` | Operation completed successfully |
+| `’error’` | `{ type, error, operation?, nonce? }` | Error during operation |
+| `’cancelled’` | `{ type, operation, nonce? }` | Operation cancelled by user or abort |
 
 ---
 
@@ -580,40 +627,42 @@ When WebAuthn is not available, you can use the email fallback. All methods retu
 ```typescript
 // 1. Send OTP code by email
 const startResult = await client.fallback.email.start({
-  userId: 'user_123',
-  email: 'user@example.com'
+  userId: ‘user_123’,
+  email: ‘user@example.com’,
 })
 if (!startResult.ok) { console.error(startResult.error); return }
 
 // 2. Ask user for the code
-const code = prompt('Enter the code sent by email:')
+const code = prompt(‘Enter the code sent by email:’)
 
 // 3. Verify code
 const verifyResult = await client.fallback.email.verify({
-  userId: 'user_123',
-  code: code
+  userId: ‘user_123’,
+  code: code,
+  successUrl: ‘https://app.example.com/dashboard’, // optional
 })
 if (!verifyResult.ok) { console.error(verifyResult.error); return }
 
-// 4. Send sessionToken to backend
-await fetch('/api/login', {
-  method: 'POST',
-  body: JSON.stringify({ sessionToken: verifyResult.value.sessionToken })
+// verifyResult.value: { sessionToken: string, redirectUrl?: string }
+await fetch(‘/api/login’, {
+  method: ‘POST’,
+  body: JSON.stringify({ sessionToken: verifyResult.value.sessionToken }),
 })
 ```
 
-**Full flow with fallback:**
+**Full flow with automatic fallback:**
 
 ```typescript
-async function authenticateUser(userId: string) {
+async function authenticateUser(userId: string, email: string) {
   if (!TryMellon.isSupported()) {
-    return await authenticateWithEmail(userId, userId)
+    return await authenticateWithEmail(userId, email)
   }
 
   const authResult = await client.authenticate({ externalUserId: userId })
   if (authResult.ok) return authResult
-  if (authResult.error.code === 'PASSKEY_NOT_FOUND' || authResult.error.code === 'NOT_SUPPORTED') {
-    return await authenticateWithEmail(userId, userId)
+
+  if (authResult.error.code === ‘PASSKEY_NOT_FOUND’ || authResult.error.code === ‘NOT_SUPPORTED’) {
+    return await authenticateWithEmail(userId, email)
   }
   return authResult
 }
@@ -621,8 +670,8 @@ async function authenticateUser(userId: string) {
 async function authenticateWithEmail(userId: string, email: string) {
   const startRes = await client.fallback.email.start({ userId, email })
   if (!startRes.ok) return startRes
-  const code = prompt('Enter the code sent by email:')
-  return await client.fallback.email.verify({ userId, code })
+  const code = prompt(‘Enter the code sent by email:’)
+  return await client.fallback.email.verify({ userId, code: code! })
 }
 ```
 
@@ -630,112 +679,199 @@ async function authenticateWithEmail(userId: string, email: string) {
 
 ## Cross-Device Authentication (QR Login)
 
-Enable users to sign in on a desktop device by scanning a QR code with their mobile phone (where their passkey is stored).
+Enable users to sign in or register on a desktop device by scanning a QR code with their mobile phone (where their passkey is stored or will be created).
 
-**About `qr_url` and the mobile app:** The API returns `qr_url` in the form `{baseUrl}/mobile-auth?session_id={session_id}` (where `session_id` is a UUID). Your **mobile web app** must be deployed and its URL/origin **allowed in the TryMellon dashboard** for that application. The user scans the QR, opens that URL (which includes the `session_id`), and your mobile app must call `approve(session_id)` to complete the flow. If the mobile app’s origin is not allowed, the API will reject the request.
+**About `qr_url` and the mobile app:** The API returns `qr_url` in the form `{baseUrl}/mobile-auth?session_id={session_id}`. Your **mobile web app** must be deployed and its URL/origin **allowed in the TryMellon dashboard**. The user scans the QR, opens that URL, and your mobile app calls `approve(session_id)` to complete the flow.
 
-### 1. Desktop: Initialize and Show QR
+### Desktop: Authentication via QR
 
 ```typescript
 // Initialize session
 const initResult = await client.auth.crossDevice.init()
 if (!initResult.ok) { console.error(initResult.error); return }
 
-const { session_id, qr_url } = initResult.value
+const { session_id, qr_url, polling_token } = initResult.value
 
-// Show QR code with `qr_url`
+// Show QR code with qr_url (use any QR library)
 renderQrCode(qr_url)
 
 // Start polling for approval
-// Use AbortController to cancel if user leaves the page
 const controller = new AbortController()
-
 const pollResult = await client.auth.crossDevice.waitForSession(
-  session_id, 
-  controller.signal
+  session_id,
+  controller.signal,
+  polling_token,  // pass the polling token for secure polling
 )
 
 if (!pollResult.ok) {
-  if (pollResult.error.code === 'TIMEOUT') {
-    showError('QR code expired')
-  }
+  if (pollResult.error.code === ‘TIMEOUT’) showError(‘QR code expired’)
   return
 }
 
-// Success!
-console.log('Session token:', pollResult.value.sessionToken)
+console.log(‘Session token:’, pollResult.value.session_token)
 ```
 
-### 2. Mobile: Approve Login
+### Desktop: Registration via QR
 
-When the user scans the QR code, your mobile web app should handle the URL (containing `session_id`) and call `approve`:
+For anonymous registration you can omit `externalUserId` in `initRegistration()`; the backend will generate an id.
 
 ```typescript
-// Extract session_id from URL query params
+const initResult = await client.auth.crossDevice.initRegistration({
+  externalUserId: ‘new_user_123’,
+})
+if (!initResult.ok) { console.error(initResult.error); return }
+
+const { session_id, qr_url, polling_token } = initResult.value
+renderQrCode(qr_url)
+
+const pollResult = await client.auth.crossDevice.waitForSession(
+  session_id,
+  controller.signal,
+  polling_token,
+)
+```
+
+### Mobile: Approve
+
+When the user scans the QR code, your mobile web app handles the URL and calls `approve`. The SDK auto-detects whether the session is for authentication or registration and runs the appropriate WebAuthn ceremony.
+
+```typescript
 const sessionId = getSessionIdFromUrl()
 
-// Trigger WebAuthn flow on mobile
 const approveResult = await client.auth.crossDevice.approve(sessionId)
 
 if (approveResult.ok) {
-  showSuccess('Process complete! Check your desktop.')
+  showSuccess(‘Done! Check your desktop.’)
 } else {
-  showError('Failed to approve login: ' + approveResult.error.message)
+  showError(‘Failed: ‘ + approveResult.error.message)
+}
+```
+
+### Get Session Context (advanced)
+
+```typescript
+const contextResult = await client.auth.crossDevice.getContext(sessionId)
+if (contextResult.ok) {
+  // contextResult.value.type === ‘auth’ | ‘registration’
+  // contextResult.value.options -- WebAuthn challenge options
+  // contextResult.value.application_name -- app name for display
 }
 ```
 
 ---
 
-## Result type
+## Account Recovery
 
-The SDK exports the `Result<T, E>` type and the `ok(value)` and `err(error)` helpers for typing and building results (useful in tests or utilities):
+When a user loses access to their passkey (new device, cleared browser data), they can recover their account via email OTP and register a new passkey in a single operation.
 
 ```typescript
-import { Result, ok, err } from '@trymellon/js'
+const result = await client.auth.recoverAccount({
+  externalUserId: ‘user_123’,
+  otp: ‘123456’, // 6-digit code sent to user’s email
+})
 
-const result: Result<{ id: string }, Error> = ok({ id: '123' })
-if (result.ok) console.log(result.value.id)
+if (result.ok) {
+  // result.value contains:
+  // {
+  //   success: true,
+  //   credentialId: string,
+  //   status: string,
+  //   sessionToken: string,
+  //   user: { userId, externalUserId, email?, metadata? },
+  //   redirectUrl?: string
+  // }
+  console.log(‘Account recovered, new passkey registered’)
+  console.log(‘Session token:’, result.value.sessionToken)
+}
+```
+
+The flow: your backend sends a recovery OTP to the user’s email. The user enters the OTP. The SDK verifies the OTP with the API, triggers a WebAuthn registration ceremony for the new passkey, and returns a session token on success.
+
+---
+
+## Programmatic Onboarding
+
+The SDK provides a programmatic onboarding flow for new tenants/users. This handles the complete lifecycle: start session, poll for status, register passkey via WebAuthn, and complete onboarding.
+
+```typescript
+const result = await client.onboarding.startFlow({
+  user_role: ‘maintainer’, // ‘maintainer’ or ‘app_user’
+  company_name: ‘Acme Corp’, // optional
+})
+
+if (result.ok) {
+  // result.value contains:
+  // {
+  //   session_id: string,
+  //   status: ‘completed’,
+  //   user_id: string,
+  //   tenant_id: string,
+  //   session_token: string
+  // }
+  console.log(‘Onboarding complete:’, result.value.tenant_id)
+}
+```
+
+If the onboarding requires the user to complete passkey registration externally (e.g. in a browser when running from a non-WebAuthn environment), the SDK returns a `NOT_SUPPORTED` error with the `onboarding_url` in `error.details` for the user to complete the flow.
+
+---
+
+## Result type
+
+Every SDK method returns `Result<T, TryMellonError>` -- a discriminated union that eliminates try/catch:
+
+```typescript
+import { Result, ok, err } from ‘@trymellon/js’
+
+// Check results
+const result = await client.register({ externalUserId: ‘user_123’ })
+if (result.ok) {
+  console.log(result.value.sessionToken) // T
+} else {
+  console.error(result.error.code)       // TryMellonError
+}
+
+// Build results (useful in tests or utilities)
+const success: Result<{ id: string }, Error> = ok({ id: ‘123’ })
+const failure: Result<never, Error> = err(new Error(‘fail’))
 ```
 
 ---
 
 ## Error handling
 
-The SDK returns `Result<T, TryMellonError>`: check `result.ok` and on error use `result.error.code`:
+Check `result.ok` and use `result.error.code` for structured error handling:
 
 ```typescript
-import { isTryMellonError } from '@trymellon/js'
+import { isTryMellonError } from ‘@trymellon/js’
 
-const result = await client.authenticate({ externalUserId: 'user_123' })
+const result = await client.authenticate({ externalUserId: ‘user_123’ })
 
 if (!result.ok) {
-  const error = result.error
-  switch (error.code) {
-    case 'USER_CANCELLED':
-      console.log('User cancelled the operation')
+  switch (result.error.code) {
+    case ‘USER_CANCELLED’:
+      console.log(‘User dismissed the prompt’)
       break
-    case 'NOT_SUPPORTED':
-      await client.fallback.email.start({
-        userId: 'user_123',
-        email: 'user@example.com'
-      })
+    case ‘NOT_SUPPORTED’:
+      await client.fallback.email.start({ userId: ‘user_123’, email: ‘user@example.com’ })
       break
-    case 'PASSKEY_NOT_FOUND':
-      await client.register({ externalUserId: 'user_123' })
+    case ‘PASSKEY_NOT_FOUND’:
+      await client.register({ externalUserId: ‘user_123’ })
       break
-    case 'NETWORK_FAILURE':
-      console.error('Network error:', error.details)
+    case ‘NETWORK_FAILURE’:
+      console.error(‘Network error:’, result.error.details)
       break
-    case 'TIMEOUT':
-      console.error('Operation timed out')
+    case ‘TIMEOUT’:
+      console.error(‘Operation timed out’)
+      break
+    case ‘CHALLENGE_MISMATCH’:
+      console.error(‘QR link expired or already used -- scan again’)
       break
     default:
-      console.error('Error:', error.code, error.message)
+      console.error(‘Error:’, result.error.code, result.error.message)
   }
   return
 }
-
-// result.value contains session_token, user, etc.
 ```
 
 **Error codes:**
@@ -743,21 +879,24 @@ if (!result.ok) {
 | Code | Description |
 |------|-------------|
 | `NOT_SUPPORTED` | WebAuthn not available in this environment |
-| `USER_CANCELLED` | User cancelled the operation |
+| `USER_CANCELLED` | User cancelled the operation (dismissed prompt) |
 | `PASSKEY_NOT_FOUND` | No passkey found for the user |
 | `SESSION_EXPIRED` | Session expired |
 | `NETWORK_FAILURE` | Network error (with automatic retries) |
 | `INVALID_ARGUMENT` | Invalid argument in config or method call |
 | `TIMEOUT` | Operation timed out |
 | `ABORTED` | Operation aborted via AbortSignal |
-| `CHALLENGE_MISMATCH` | Cross-device: link already used or expired; ask user to scan QR again from computer |
-| `UNKNOWN_ERROR` | Unknown error |
+| `ABORT_ERROR` | Operation aborted by user or timeout (cross-device polling) |
+| `CHALLENGE_MISMATCH` | Cross-device: link already used or expired |
+| `UNKNOWN_ERROR` | Unknown or unmapped error |
+
+**Retry behavior:** The SDK retries automatically with exponential backoff for HTTP 5xx, HTTP 429 (rate limiting), and transient network errors. HTTP 4xx (except 429), timeouts, and validation errors are not retried.
 
 ---
 
 ## Cancelling operations
 
-You can cancel operations with `AbortSignal`:
+Cancel any operation with `AbortSignal`:
 
 ```typescript
 const controller = new AbortController()
@@ -766,11 +905,40 @@ const controller = new AbortController()
 setTimeout(() => controller.abort(), 10000)
 
 const result = await client.register({
-  externalUserId: 'user_123',
-  signal: controller.signal
+  externalUserId: ‘user_123’,
+  signal: controller.signal,
 })
-if (!result.ok && result.error.code === 'ABORTED') {
-  console.log('Operation cancelled')
+if (!result.ok && result.error.code === ‘ABORTED’) {
+  console.log(‘Operation cancelled’)
+}
+```
+
+Works with `register()`, `authenticate()`, and `waitForSession()`.
+
+---
+
+## Logging
+
+Inject a `Logger` for request correlation and debugging. The SDK exports a `ConsoleLogger` or you can implement the `Logger` interface:
+
+```typescript
+import { TryMellon, ConsoleLogger } from ‘@trymellon/js’
+
+const clientResult = TryMellon.create({
+  appId: ‘your-app-id-uuid’,
+  publishableKey: ‘cli_xxxx’,
+  logger: new ConsoleLogger(),
+})
+```
+
+**Logger interface:**
+
+```typescript
+interface Logger {
+  debug(message: string, meta?: Record<string, unknown>): void
+  info(message: string, meta?: Record<string, unknown>): void
+  warn(message: string, meta?: Record<string, unknown>): void
+  error(message: string, meta?: Record<string, unknown>): void
 }
 ```
 
@@ -780,105 +948,37 @@ if (!result.ok && result.error.code === 'ABORTED') {
 
 Your backend must validate the `session_token` with TryMellon and create its own session:
 
-```typescript
-// POST /api/login
+```
 POST https://api.trymellonauth.com/v1/sessions/validate
 Authorization: Bearer {session_token}
+```
 
-// TryMellon response
+**Response:**
+
+```json
 {
-  valid: true,
-  user_id: string,
-  external_user_id: string,
-  tenant_id: string,
-  app_id: string
+  "valid": true,
+  "user_id": "...",
+  "external_user_id": "...",
+  "tenant_id": "...",
+  "app_id": "..."
 }
 ```
 
-Then create your own session in your system.
+Then create your own session (JWT, cookie, etc.) in your system. The SDK also provides `client.validateSession(token)` if you want to validate from the client side.
 
 ---
 
 ## Security
 
-* ✅ Native browser WebAuthn (no client-side cryptography)
-* ✅ Short-lived challenges generated by TryMellon
-* ✅ Replay attack protection (automatic counters)
-* ✅ SDK never handles secrets or private keys
-* ✅ Thorough validation of inputs and API responses
-* ✅ Robust error handling with typed errors
-* ✅ Guaranteed cleanup of resources (timeouts, signals)
-* ✅ Automatic origin validation
-
----
-
-## Compatibility
-
-| Browser | WebAuthn support | Passkeys support |
-|---------|-------------------|-------------------|
-| Chrome  | ✅                 | ✅                |
-| Safari  | ✅                 | ✅                |
-| Firefox | ✅                 | ✅                |
-| Edge    | ✅                 | ✅                |
-
-**Requirements:**
-- HTTPS (required except on `localhost`)
-- Modern browser with WebAuthn support
-
----
-
-## Features
-
-* ✅ **Zero runtime dependencies** – No external runtime dependencies in the core bundle
-* ✅ **TypeScript first** – Full types and strict mode; all entry points typed
-* ✅ **Framework support** – Dedicated entry points: `@trymellon/js` (core), `@trymellon/js/react`, `@trymellon/js/vue`, `@trymellon/js/angular`; Vanilla and Svelte use core
-* ✅ **Automatic retries** – Exponential backoff for transient errors
-* ✅ **Thorough validation** – Input and API response validation
-* ✅ **Robust error handling** – Typed, descriptive errors
-* ✅ **Events for UX** – Event system for spinners and analytics
-* ✅ **Email fallback** – OTP by email when WebAuthn is unavailable
-* ✅ **Operation cancellation** – AbortSignal support
-* ✅ **Cross-Device Auth** – QR Login flow support (Desktop to Mobile)
-* ✅ **Automatic detection** – Origin and WebAuthn support detected automatically
-
----
-
-## Troubleshooting
-
-### WebAuthn not available
-
-If `TryMellon.isSupported()` returns `false`:
-
-- Ensure you are on HTTPS (required except on `localhost`)
-- Ensure your browser supports WebAuthn (Chrome, Safari, Firefox, Edge)
-- Use the email fallback: `client.fallback.email.start({ userId, email })`
-
-### User cancelled the operation
-
-If you get `USER_CANCELLED`:
-
-- This is normal when the user dismisses the prompt
-- Not a critical error; inform the user and optionally retry
-
-### Passkey not found
-
-If you get `PASSKEY_NOT_FOUND`:
-
-- The user has no registered passkey
-- Offer to register: `client.register()`
-- Or use email fallback: `client.fallback.email.start({ userId, email })`
-
-### Network errors
-
-If you get `NETWORK_FAILURE`:
-
-- Check your internet connection
-- Ensure `apiBaseUrl` is a valid URL
-- The SDK retries automatically with exponential backoff for:
-  - HTTP 5xx (server errors)
-  - HTTP 429 (rate limiting)
-  - Transient network errors
-- You can configure `maxRetries` and `retryDelayMs` to tune behavior
+* Native browser WebAuthn -- no client-side cryptography
+* Short-lived challenges generated by TryMellon
+* Replay attack protection (automatic counters)
+* SDK never handles secrets or private keys
+* Thorough validation of inputs and API responses
+* Robust error handling with typed errors
+* Guaranteed cleanup of resources (timeouts, signals)
+* Automatic origin validation
 
 ---
 
@@ -886,26 +986,22 @@ If you get `NETWORK_FAILURE`:
 
 ### Content-Security-Policy (CSP)
 
-If you load the SDK via `<script>` or enforce a content security policy, include in your `Content-Security-Policy`:
+If you load the SDK via `<script>` or enforce a content security policy, include:
 
-- **script-src:** The script origin (e.g. `https://cdn.trymellon.com` or `'self'`) and `'unsafe-inline'` only if you use inline scripts; not needed for a bundled SDK.
-- **connect-src:** The TryMellon API origin (e.g. `https://api.trymellonauth.com`) so register/authenticate requests are not blocked.
-
-Minimal example (adjust origins to your environment):
+- **script-src:** The script origin (e.g. `https://cdn.trymellon.com` or `’self’`)
+- **connect-src:** The TryMellon API origin: `https://api.trymellonauth.com`
 
 ```
-Content-Security-Policy: script-src 'self'; connect-src 'self' https://api.trymellonauth.com;
+Content-Security-Policy: script-src ‘self’; connect-src ‘self’ https://api.trymellonauth.com;
 ```
 
 ### SRI (Subresource Integrity)
 
-To load `index.global.js` with integrity, generate the SRI hash after building:
+To load `index.global.js` with integrity:
 
 ```bash
 openssl dgst -sha384 -binary dist/index.global.js | openssl base64 -A
 ```
-
-Use the value in the `integrity` attribute:
 
 ```html
 <script
@@ -915,43 +1011,124 @@ Use the value in the `integrity` attribute:
 ></script>
 ```
 
-Optional: the build can generate `dist/sri.json` with the hash (see `package.json` script: `"sri": "node ..."`).
+---
+
+## Compatibility
+
+| Browser | WebAuthn | Passkeys |
+|---------|----------|----------|
+| Chrome  | Yes      | Yes      |
+| Safari  | Yes      | Yes      |
+| Firefox | Yes      | Yes      |
+| Edge    | Yes      | Yes      |
+
+**Requirements:** HTTPS (except `localhost`), modern browser with WebAuthn support.
 
 ---
 
 ## Telemetry (opt-in)
 
-The SDK can send anonymous telemetry (event + latency, no user identifiers) when `enableTelemetry: true` in config. Used to improve the product. Minimal payload: `{ event: 'register'|'authenticate', latencyMs: number, ok: true }`. You can inject a custom `telemetrySender` to send to your own endpoint or disable with `enableTelemetry: false` (default).
+The SDK can send anonymous telemetry (event + latency, no user identifiers) when `enableTelemetry: true` in config. Payload: `{ event: ‘register’|’authenticate’, latencyMs: number, ok: true }`. You can inject a custom `telemetrySender` to send to your own endpoint or disable with `enableTelemetry: false` (default).
 
 ---
 
-## Specification summary (for project ingestion)
+## For AI Agents
 
-Projects integrating this SDK should document in their README:
+Are you an LLM or autonomous agent trying to use TryMellon? We built a dedicated "Vending Machine" for you.
 
-- **SDK:** `@trymellon/js` (and optionally `/react`, `/vue`, `/angular` if using those entry points)
-- **Node:** >= 18 (per `engines`)
-- **Browsers:** WebAuthn-capable (Chrome, Safari, Firefox, Edge); HTTPS required except `localhost`
-- **Config:** `appId` and `publishableKey` from TryMellon dashboard; optional `apiBaseUrl` for self-hosted API
-- **Backend:** Must validate `session_token` via TryMellon API (`GET /v1/sessions/validate`) and create own session
+**Goal:** Get your own `client_id` and `client_secret` instantly to start creating users via API.
+**Limit:** The "Free AI Tier" allows up to **15 users** for testing and small demos.
 
-Framework-specific: React uses `TryMellonProvider` + hooks; Vue uses `provideTryMellon` + composables; Angular uses `provideTryMellonConfig` + `TryMellonService`; Vanilla/Svelte use core `TryMellon` only.
+### 1. Get Credentials
+
+```bash
+curl -X POST https://api.trymellonauth.com/onboarding/ai \
+  -H "Content-Type: application/json" \
+  -d ‘{ "name": "My Agent Name" }’
+```
+
+**Response:**
+
+```json
+{
+  "tenantId": "...",
+  "clientId": "cli_...",
+  "clientSecret": "sec_...",
+  "publishableKey": "cli_...",
+  "applicationId": "...",
+  "limits": { "maxUsers": 15, "maxApps": 1 }
+}
+```
+
+Use `publishableKey` (same as `clientId`) in the SDK: `TryMellon.create({ appId: ‘...’, publishableKey: response.publishableKey })`. Use `applicationId` to update allowed origins (step 4) if you use passkeys or cross-device from your agent’s domain.
+
+### 2. Authenticate
+
+```bash
+curl -X POST https://api.trymellonauth.com/oauth/token \
+  -H "Content-Type: application/json" \
+  -d ‘{
+    "client_id": "cli_...",
+    "client_secret": "sec_...",
+    "grant_type": "client_credentials"
+  }’
+```
+
+### 3. Create Users
+
+```bash
+curl -X POST https://api.trymellonauth.com/v1/users \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d ‘{ "external_user_id": "user_123" }’
+```
+
+### 4. Update Allowed Origins
+
+```bash
+curl -X PATCH https://api.trymellonauth.com/v1/applications/<applicationId> \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d ‘{ "allowed_origins": ["https://your-agent-domain.com"] }’
+```
+
+Without this, requests from your agent’s origin will get 404 when resolving the application.
 
 ---
 
-## Contact & landing
+## Troubleshooting
 
-- **Landing:** [https://trymellon-landing.pages.dev/](https://trymellon-landing.pages.dev/)
-- **Contact:** [siliangrove@gmail.com](mailto:siliangrove@gmail.com) — Sales inquiries by email only.
+### WebAuthn not available
+
+If `TryMellon.isSupported()` returns `false`:
+- Ensure you are on HTTPS (required except on `localhost`)
+- Ensure your browser supports WebAuthn
+- Use the email fallback: `client.fallback.email.start({ userId, email })`
+
+### User cancelled the operation
+
+`USER_CANCELLED` is normal when the user dismisses the browser prompt. Not a critical error; inform the user and optionally retry.
+
+### Passkey not found
+
+`PASSKEY_NOT_FOUND` means the user has no registered passkey. Offer registration or email fallback.
+
+### Network errors
+
+`NETWORK_FAILURE` -- check internet connection and `apiBaseUrl`. The SDK retries automatically with exponential backoff for HTTP 5xx, 429, and transient network errors. Configure `maxRetries` and `retryDelayMs` to tune.
+
+### QR link expired
+
+`CHALLENGE_MISMATCH` -- the cross-device link was already used or expired. Ask the user to scan a new QR code from the desktop.
 
 ---
 
 ## Additional documentation
 
-- [API Reference](./documentation/API.md) – Full API reference
-- [Usage examples](./documentation/EXAMPLES.md) – Practical integration examples (React, Vue, Vanilla, events, fallback)
-- [Contributing](./documentation/CONTRIBUTING.md) – How to contribute (including running tests, coverage, Angular, E2E, audit and workflow lint locally)
-- [CI standards (fintech)](./documentation/CI-FINTECH-STANDARDS.md) – Coverage, security, E2E and workflow validation criteria
+- [API Reference](./documentation/API.md) — Full API reference
+- [Web Components](./documentation/WEB-COMPONENTS.md) — `<trymellon-auth>` and `<trymellon-auth-modal>`: attributes, events, trigger-only
+- [Usage examples](./documentation/EXAMPLES.md) — Practical integration examples
+- [Contributing](./CONTRIBUTING.md) — How to contribute (tests, coverage, E2E)
 
 ---
 
@@ -968,7 +1145,12 @@ Releases are published to npm automatically by **semantic-release** in CI. The v
 - **Triggers a release:** `fix:` (patch), `feat:` (minor), `BREAKING CHANGE:` / `feat!:` (major).
 - **Does not trigger a release:** `chore:`, `refactor:`, `docs:`, `style:`, `test:`.
 
-If changes must be published, ensure at least one commit since the last tag uses `fix:` or `feat:`. See monorepo [docs/ai_context_leePrimero.md](../docs/ai_context_leePrimero.md) §4.D.
+---
+
+## Contact & Landing
+
+- **Landing:** [https://trymellon-landing.pages.dev/](https://trymellon-landing.pages.dev/)
+- **Contact:** [siliangrove@gmail.com](mailto:siliangrove@gmail.com)
 
 ---
 
@@ -978,7 +1160,4 @@ MIT
 
 ---
 
-## Philosophy
-
-> Implementing Passkeys should take minutes, not weeks.
-> The backend remains yours.
+> Implementing Passkeys should take minutes, not weeks. The backend remains yours.

@@ -36,7 +36,11 @@ export async function recoverAccount(
     return err(error);
   }
 
-  return invokeCeremony<RecoveryVerifyResponse, RecoverAccountResult, CredentialCreationOptions>({
+  const result = await invokeCeremony<
+    RecoveryVerifyResponse,
+    RecoverAccountResult,
+    CredentialCreationOptions
+  >({
     operation: 'register',
     eventEmitter,
     start: () => apiClient.verifyAccountRecoveryOtp(extId, options.otp),
@@ -73,4 +77,14 @@ export async function recoverAccount(
       });
     },
   });
+
+  if (result.ok) {
+    eventEmitter.emit('success', {
+      type: 'success',
+      operation: 'register',
+      token: result.value.sessionToken,
+      user: result.value.user,
+    });
+  }
+  return result;
 }

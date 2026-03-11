@@ -17,8 +17,8 @@ import { serializeCredentialForAuth, serializeCredentialForRegister } from './we
 import { invokeCeremony } from './ceremony';
 
 /**
- * Crea las opciones de creación de credencial para WebAuthn.
- * Convierte la respuesta del servidor en formato WebAuthn API.
+ * Creates credential creation options for WebAuthn.
+ * Converts server response to WebAuthn API format.
  * WebAuthn protocol: challenge and rp.id are taken from the server only; do not override.
  * Exported for use by OnboardingManager (same-device) and CrossDeviceManager (QR registration).
  *
@@ -91,8 +91,8 @@ export function createRegistrationOptions(
 }
 
 /**
- * Crea las opciones de autenticación para WebAuthn.
- * Convierte la respuesta del servidor en formato WebAuthn API.
+ * Creates authentication options for WebAuthn.
+ * Converts server response to WebAuthn API format.
  * WebAuthn protocol: challenge and rpId are taken from the server only; do not override.
  */
 export function createAuthenticationOptions(
@@ -127,8 +127,8 @@ export function createAuthenticationOptions(
 }
 
 /**
- * Registra una nueva passkey para un usuario.
- * Maneja el flujo completo de registro WebAuthn.
+ * Registers a new passkey for a user.
+ * Handles the full WebAuthn registration flow.
  */
 export async function registerPasskey(
   options: RegisterOptions,
@@ -142,7 +142,11 @@ export async function registerPasskey(
     return err(error);
   }
 
-  return invokeCeremony<RegisterStartResponse, RegisterResult, CredentialCreationOptions>({
+  const result = await invokeCeremony<
+    RegisterStartResponse,
+    RegisterResult,
+    CredentialCreationOptions
+  >({
     operation: 'register',
     eventEmitter,
     start: () => apiClient.startRegister({ external_user_id: extId }),
@@ -177,11 +181,21 @@ export async function registerPasskey(
       });
     },
   });
+
+  if (result.ok) {
+    eventEmitter.emit('success', {
+      type: 'success',
+      operation: 'register',
+      token: result.value.sessionToken,
+      user: result.value.user,
+    });
+  }
+  return result;
 }
 
 /**
- * Autentica un usuario usando su passkey.
- * Maneja el flujo completo de autenticación WebAuthn.
+ * Authenticates a user with their passkey.
+ * Handles the full WebAuthn authentication flow.
  */
 export async function authenticatePasskey(
   options: AuthenticateOptions,
@@ -191,7 +205,11 @@ export async function authenticatePasskey(
   const extId = options.externalUserId ?? options.external_user_id;
   const hasUserId = extId !== undefined && typeof extId === 'string' && extId.trim() !== '';
 
-  return invokeCeremony<AuthStartResponse, AuthenticateResult, CredentialRequestOptions>({
+  const result = await invokeCeremony<
+    AuthStartResponse,
+    AuthenticateResult,
+    CredentialRequestOptions
+  >({
     operation: 'authenticate',
     eventEmitter,
     start: () =>
@@ -225,4 +243,14 @@ export async function authenticatePasskey(
       });
     },
   });
+
+  if (result.ok) {
+    eventEmitter.emit('success', {
+      type: 'success',
+      operation: 'authenticate',
+      token: result.value.sessionToken,
+      user: result.value.user,
+    });
+  }
+  return result;
 }

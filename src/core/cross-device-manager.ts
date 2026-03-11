@@ -11,6 +11,7 @@ import type {
 import { createAuthenticationOptions, createRegistrationOptions } from './webauthn';
 import { serializeCredentialForAuth, serializeCredentialForRegister } from './webauthn-utils';
 import { validateCredentialStructure } from '../utils/validation';
+import { waitWithAbort } from './polling-utils';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 60; // ~2 minutes
@@ -29,9 +30,10 @@ export class CrossDeviceManager {
   /**
    * Initializes a cross-device registration session (create account via QR).
    * Typically called by the desktop side to get a QR code URL for new users.
+   * Pass externalUserId for known users; omit for anonymous registration.
    */
-  async initRegistration(options: {
-    externalUserId: string;
+  async initRegistration(options?: {
+    externalUserId?: string;
   }): Promise<Result<CrossDeviceInitResult, TryMellonError>> {
     return this.apiClient.initCrossDeviceRegistration(options);
   }
@@ -48,11 +50,11 @@ export class CrossDeviceManager {
   ): Promise<
     Result<{ session_token: string; user_id: string; redirectUrl?: string }, TryMellonError>
   > {
-    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-      if (signal?.aborted) {
-        return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
-      }
+    if (signal?.aborted) {
+      return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+    }
 
+    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId, pollingToken);
       if (!statusResult.ok) return err(statusResult.error);
 
@@ -71,24 +73,8 @@ export class CrossDeviceManager {
         });
       }
 
-      // Wait with abort check
-      if (signal?.aborted) {
-        return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
-      }
-      await new Promise((resolve) => {
-        const timeout = setTimeout(() => {
-          resolve(null);
-          signal?.removeEventListener('abort', onAbort);
-        }, POLL_INTERVAL_MS);
-
-        const onAbort = () => {
-          clearTimeout(timeout);
-          resolve(null);
-        };
-        signal?.addEventListener('abort', onAbort);
-      });
-
-      if (signal?.aborted) {
+      const waitResult = await waitWithAbort(POLL_INTERVAL_MS, signal);
+      if (waitResult === 'aborted') {
         return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
       }
     }

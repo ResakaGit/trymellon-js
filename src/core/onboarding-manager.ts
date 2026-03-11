@@ -8,6 +8,7 @@ import { createRegistrationOptions } from './webauthn';
 import { serializeCredentialForRegister } from './webauthn-utils';
 import { validateCredentialStructure } from '../utils/validation';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
+import { waitWithAbort } from './polling-utils';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 60; // ~2 minutes
@@ -23,7 +24,8 @@ export class OnboardingManager {
    * 4. If pending_passkey but API does not return challenge: returns NOT_SUPPORTED with onboarding_url for user to complete elsewhere
    */
   async startFlow(
-    options: OnboardingStartOptions & { company_name?: string }
+    options: OnboardingStartOptions & { company_name?: string },
+    signal?: AbortSignal
   ): Promise<Result<OnboardingCompleteResult, TryMellonError>> {
     const startResult = await this.apiClient.startOnboarding({ user_role: options.user_role });
     if (!startResult.ok) return err(startResult.error);
@@ -31,7 +33,14 @@ export class OnboardingManager {
     const { session_id } = startResult.value;
 
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+      if (signal?.aborted) {
+        return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+      }
+
+      const waitResult = await waitWithAbort(POLL_INTERVAL_MS, signal);
+      if (waitResult === 'aborted') {
+        return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+      }
 
       const statusResult = await this.apiClient.getOnboardingStatus(session_id);
       if (!statusResult.ok) return err(statusResult.error);

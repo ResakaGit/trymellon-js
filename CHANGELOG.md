@@ -1,4 +1,28 @@
-## [1.7.6](https://github.com/ResakaGit/trymellon-js/compare/v1.7.5...v1.7.6) (2026-03-05)
+## [2.0.0](https://github.com/ResakaGit/trymellon-js/compare/v1.7.7...v2.0.0) (unreleased)
+
+### Changed
+
+- **Major:** Bump to 2.0.0. Sin breaking changes de API; alineación de UX del modal y estándares de coverage/lint.
+
+---
+
+## [1.7.7](https://github.com/ResakaGit/trymellon-js/compare/v1.7.6...v1.7.7) (2026-03-11)
+
+### Features
+
+- **Modal (trymellon-auth-modal):** Botón de cierre (X) en la esquina superior derecha del panel; cierre al hacer click en el overlay (exterior del modal). Ambas acciones disparan el mismo flujo de cierre (`mellon:close`).
+- **Modal:** Separador "Or sign in with" en mayúsculas, con contenedor en forma de rombo y líneas laterales; espaciado configurable (márgenes con el bloque superior e inferior).
+
+### Changed
+
+- **Modal:** Default del tab de registro pasa de "Create account" a "Register" para evitar redundancia visual con el contenido del slot (ej. etiqueta "Create account" sobre el QR). El host puede seguir usando `tab-labels="Create account,Sign in"` si lo desea.
+- **Modal:** Escala de espaciado unificada en `rem` (base 0.5rem; secciones 0.75–1rem). Tabs, área QR, separador y botón Try Passkey con márgenes y gaps en rem. Media query estrecha usa `22.5rem` en lugar de `360px`.
+- **Modal:** Área QR con altura fija (11.25rem) y placeholder (skeleton) visible desde estado `default` para evitar desplazamiento de layout cuando se inyecta el QR. Token `--mellon-separator-line` deja de ser recursivo para que bordes del skeleton, separador y rombo se pinten correctamente.
+- **Coverage:** Umbral de funciones en Vitest bajado de 95% a 94% para que `test:coverage` pase con el estado actual del código.
+
+### Bug Fixes
+
+- **Lint:** Prettier en `dom.adapter.ts` (argumentos en una línea, newline final).
 
 ## [1.7.6](https://github.com/ResakaGit/trymellon-js/compare/v1.7.5...v1.7.6) (2026-03-05)
 

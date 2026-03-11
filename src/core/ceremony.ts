@@ -25,9 +25,9 @@ export interface InvokeCeremonyContext<
 }
 
 /**
- * Orquesta un flujo genérico WebAuthn (Ceremonia) para eliminar código duplicado en el SDK.
- * Encapsula la llamada de start, la creación de opciones, la invocación de la API de credenciales
- * del navegador, la validación de la estructura base y la llamada de finish.
+ * Orchestrates a generic WebAuthn flow (Ceremony) to remove duplicated code in the SDK.
+ * Encapsulates start call, options creation, browser credentials API invocation,
+ * base structure validation, and finish call.
  */
 export async function invokeCeremony<
   TStartResult,
@@ -54,14 +54,14 @@ export async function invokeCeremony<
       return err(startResult.error);
     }
 
-    // 2. Crear opciones
+    // 2. Create options
     const optionsResult = createOptions(startResult.value);
     if (!optionsResult.ok) {
       eventEmitter.emit('error', { type: 'error', error: optionsResult.error });
       return err(optionsResult.error);
     }
 
-    // 3. Invocar al navegador
+    // 3. Invoke browser
     const credential = (await invoke(optionsResult.value)) as PublicKeyCredential;
     if (!credential) {
       const error = createInvalidArgumentError(
@@ -80,14 +80,13 @@ export async function invokeCeremony<
       return err(error);
     }
 
-    // 4. Completar en servidor
+    // 4. Completar en servidor (success lo emite el caller con token/user; 03-eventos-seguridad)
     const finishResult = await finish(startResult.value, credential);
     if (!finishResult.ok) {
       eventEmitter.emit('error', { type: 'error', error: finishResult.error });
       return err(finishResult.error);
     }
 
-    eventEmitter.emit('success', { type: 'success', operation });
     return ok(finishResult.value);
   } catch (error) {
     const tryMellonError = mapWebAuthnError(error);

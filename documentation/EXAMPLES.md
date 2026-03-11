@@ -1,12 +1,12 @@
-# Ejemplos de Uso
+# Usage Examples
 
-Ejemplos prácticos de integración del SDK `@trymellon/js` en diferentes escenarios.
+Practical integration examples for the `@trymellon/js` SDK in different scenarios.
 
-**Credenciales:** En todos los ejemplos, `appId` es tu **App ID** (UUID) y `publishableKey` es tu **Client ID** (valor `cli_xxx`). Obtén ambos en Dashboard → Tu aplicación → App ID y Client ID.
+**Credentials:** In all examples, `appId` is your **App ID** (UUID) and `publishableKey` is your **Client ID** (value `cli_xxx`). Get both from Dashboard → Your app → App ID and Client ID.
 
 ---
 
-## Ejemplo Básico: Registro
+## Basic Example: Registration
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -20,8 +20,8 @@ async function registerUser(externalUserId: string) {
   const result = await client.register({ externalUserId });
 
   if (result.ok) {
-    console.log('Passkey registrada exitosamente');
-    // Enviar session_token a tu backend para crear sesión
+    console.log('Passkey registered successfully');
+    // Send session_token to your backend to create session
     await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -29,9 +29,9 @@ async function registerUser(externalUserId: string) {
     });
   } else {
     if (result.error.code === 'USER_CANCELLED') {
-      console.log('Usuario canceló el registro');
+      console.log('User cancelled registration');
     } else {
-      console.error('Error al registrar:', result.error.message);
+      console.error('Registration error:', result.error.message);
     }
   }
 }
@@ -39,7 +39,7 @@ async function registerUser(externalUserId: string) {
 
 ---
 
-## Ejemplo Básico: Autenticación
+## Basic Example: Authentication
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -60,13 +60,13 @@ async function loginUser(externalUserId: string) {
     });
     if (response.ok) {
       const data = await response.json();
-      console.log('Login exitoso:', data);
+      console.log('Login successful:', data);
     }
   } else {
     if (result.error.code === 'USER_CANCELLED') {
-      console.log('Usuario canceló');
+      console.log('User cancelled');
     } else {
-      console.error('Error al autenticar:', result.error.message);
+      console.error('Authentication error:', result.error.message);
     }
   }
 }
@@ -74,7 +74,7 @@ async function loginUser(externalUserId: string) {
 
 ---
 
-## Ejemplo con Eventos
+## Example with Events
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -84,35 +84,35 @@ const client = new TryMellon({
   publishableKey: 'cli_xxxx',
 });
 
-// Suscribirse a eventos
+// Subscribe to events
 client.on('start', (payload) => {
-  console.log('Operación iniciada:', payload.operation);
-  // Mostrar spinner
+  console.log('Operation started:', payload.operation);
+  // Show spinner
 });
 
 client.on('success', (payload) => {
-  console.log('Operación exitosa:', payload.operation);
-  // Ocultar spinner
+  console.log('Operation succeeded:', payload.operation);
+  // Hide spinner
 });
 
 client.on('error', (payload) => {
   console.error('Error:', payload.error);
-  // Mostrar mensaje de error
+  // Show error message
 });
 
 client.on('cancelled', (payload) => {
-  console.log('Operación cancelada:', payload.operation);
-  // Ocultar spinner
+  console.log('Operation cancelled:', payload.operation);
+  // Hide spinner
 });
 
-// Usar el cliente
+// Use the client
 const result = await client.register({ externalUserId: 'user_123' });
-if (result.ok) console.log('Registro OK:', result.value.sessionToken);
+if (result.ok) console.log('Registration OK:', result.value.sessionToken);
 ```
 
 ---
 
-## Ejemplo con Fallback
+## Example with Fallback
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -140,8 +140,8 @@ async function authenticateWithEmail(userId: string, email: string) {
   const startResult = await client.fallback.email.start({ userId, email });
   if (!startResult.ok) throw new Error(startResult.error.message);
 
-  const code = prompt('Ingresa el código enviado por email:');
-  if (!code) throw new Error('Código requerido');
+  const code = prompt('Enter the code sent by email:');
+  if (!code) throw new Error('Code required');
 
   const verifyResult = await client.fallback.email.verify({ userId, code });
   if (!verifyResult.ok) throw new Error(verifyResult.error.message);
@@ -162,7 +162,7 @@ async function sendToBackend(sessionToken: string) {
 
 ---
 
-## Ejemplo con React
+## Example with React
 
 ```tsx
 import { useState, useEffect } from 'react';
@@ -199,7 +199,7 @@ function PasskeyAuth() {
       if (result.error.code !== 'USER_CANCELLED') setError(result.error.message);
       return;
     }
-    // Opcional: enviar result.value.sessionToken al backend
+    // Optional: send result.value.sessionToken to backend
   };
 
   const handleLogin = async () => {
@@ -218,13 +218,13 @@ function PasskeyAuth() {
 
   return (
     <div>
-      {loading && <p>Procesando...</p>}
+      {loading && <p>Processing...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
       <button onClick={handleRegister} disabled={loading}>
-        Registrar Passkey
+        Register Passkey
       </button>
       <button onClick={handleLogin} disabled={loading}>
-        Iniciar Sesión
+        Sign In
       </button>
     </div>
   );
@@ -233,15 +233,15 @@ function PasskeyAuth() {
 
 ---
 
-## Ejemplo con Vue
+## Example with Vue
 
 ```vue
 <template>
   <div>
-    <p v-if="loading">Procesando...</p>
+    <p v-if="loading">Processing...</p>
     <p v-if="error" style="color: red">{{ error }}</p>
-    <button @click="handleRegister" :disabled="loading">Registrar Passkey</button>
-    <button @click="handleLogin" :disabled="loading">Iniciar Sesión</button>
+    <button @click="handleRegister" :disabled="loading">Register Passkey</button>
+    <button @click="handleLogin" :disabled="loading">Sign In</button>
   </div>
 </template>
 
@@ -303,7 +303,7 @@ const handleLogin = async () => {
 
 ---
 
-## Ejemplo con Vanilla JavaScript
+## Example with Vanilla JavaScript
 
 ```html
 <!DOCTYPE html>
@@ -312,8 +312,8 @@ const handleLogin = async () => {
     <title>Passkey Auth</title>
   </head>
   <body>
-    <button id="registerBtn">Registrar Passkey</button>
-    <button id="loginBtn">Iniciar Sesión</button>
+    <button id="registerBtn">Register Passkey</button>
+    <button id="loginBtn">Sign In</button>
     <div id="status"></div>
 
     <script type="module">
@@ -327,14 +327,14 @@ const handleLogin = async () => {
         statusDiv.style.color = isError ? 'red' : 'black';
       }
 
-      client.on('start', () => showStatus('Procesando...'));
-      client.on('success', () => showStatus('Operación exitosa'));
+      client.on('start', () => showStatus('Processing...'));
+      client.on('success', () => showStatus('Operation succeeded'));
       client.on('error', (payload) => showStatus(payload.error.message, true));
-      client.on('cancelled', () => showStatus('Operación cancelada'));
+      client.on('cancelled', () => showStatus('Operation cancelled'));
 
       document.getElementById('registerBtn').addEventListener('click', async () => {
         const result = await client.register({ externalUserId: 'user_123' });
-        if (result.ok) showStatus('Registro exitoso');
+        if (result.ok) showStatus('Registration successful');
         else if (result.error.code !== 'USER_CANCELLED') showStatus(result.error.message, true);
       });
 
@@ -349,7 +349,7 @@ const handleLogin = async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionToken: result.value.sessionToken }),
         });
-        if (response.ok) showStatus('Login exitoso');
+        if (response.ok) showStatus('Login successful');
       });
     </script>
   </body>
@@ -358,7 +358,7 @@ const handleLogin = async () => {
 
 ---
 
-## Ejemplo con AbortSignal
+## Example with AbortSignal
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -367,7 +367,7 @@ const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_x
 
 const controller = new AbortController();
 
-// Cancelar después de 10 segundos
+// Cancel after 10 seconds
 setTimeout(() => {
   controller.abort();
 }, 10000);
@@ -377,13 +377,13 @@ const result = await client.register({
   signal: controller.signal,
 });
 if (!result.ok && result.error.code === 'USER_CANCELLED') {
-  console.log('Operación cancelada por timeout o usuario');
+  console.log('Operation cancelled by timeout or user');
 }
 ```
 
 ---
 
-## Ejemplo con Verificación de Estado
+## Example with Status Check
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -394,18 +394,18 @@ async function checkSupport() {
   const status = await client.getStatus();
 
   if (!status.isPasskeySupported) {
-    console.log('WebAuthn no está disponible');
+    console.log('WebAuthn is not available');
     return false;
   }
 
   if (status.platformAuthenticatorAvailable) {
-    console.log('Authenticator platform disponible');
+    console.log('Platform authenticator available');
   } else {
-    console.log('Solo authenticators cross-platform disponibles');
+    console.log('Only cross-platform authenticators available');
   }
 
   if (status.recommendedFlow === 'fallback') {
-    console.log('Se recomienda usar fallback');
+    console.log('Fallback flow is recommended');
   }
 
   return true;
@@ -414,7 +414,7 @@ async function checkSupport() {
 
 ---
 
-## Ejemplo Completo: Registro y Login
+## Complete Example: Registration and Login
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -422,34 +422,34 @@ import { TryMellon } from '@trymellon/js';
 const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 
 async function completeFlow() {
-  // Verificar soporte
+  // Check support
   if (!TryMellon.isSupported()) {
-    console.log('WebAuthn no disponible, usando fallback');
+    console.log('WebAuthn not available, using fallback');
     return await useEmailFallback();
   }
 
   const registerResult = await client.register({ externalUserId: 'user_123' });
   if (!registerResult.ok) {
     if (registerResult.error.code === 'USER_CANCELLED') {
-      console.log('Registro cancelado');
+      console.log('Registration cancelled');
       return;
     }
     throw new Error(registerResult.error.message);
   }
-  console.log('Registro exitoso');
+  console.log('Registration successful');
   const response = await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionToken: registerResult.value.sessionToken }),
   });
   if (response.ok) {
-    console.log('Usuario autenticado después del registro');
+    console.log('User authenticated after registration');
     return;
   }
 
   const authResult = await client.authenticate({ externalUserId: 'user_123' });
   if (!authResult.ok) {
-    if (authResult.error.code === 'USER_CANCELLED') console.log('Cancelado');
+    if (authResult.error.code === 'USER_CANCELLED') console.log('Cancelled');
     else throw new Error(authResult.error.message);
     return;
   }
@@ -466,7 +466,7 @@ async function useEmailFallback() {
     email: 'user@example.com',
   });
   if (!startResult.ok) throw new Error(startResult.error.message);
-  const code = prompt('Ingresa el código:');
+  const code = prompt('Enter the code:');
   const verifyResult = await client.fallback.email.verify({
     userId: 'user_123',
     code: code!,

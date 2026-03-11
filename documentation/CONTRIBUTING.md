@@ -1,12 +1,12 @@
-# Guía de Contribución
+# Contributing Guide
 
-Gracias por tu interés en contribuir a `@trymellon/js`. Esta guía te ayudará a entender cómo contribuir al proyecto.
+Thank you for your interest in contributing to `@trymellon/js`. This guide will help you understand how to contribute to the project.
 
 ---
 
-## Desarrollo
+## Development
 
-### Requisitos
+### Requirements
 
 - Node.js >= 18
 - npm >= 9
@@ -15,92 +15,92 @@ Gracias por tu interés en contribuir a `@trymellon/js`. Esta guía te ayudará 
 ### Setup
 
 ```bash
-# Clonar el repositorio
+# Clone the repository
 git clone https://github.com/trymellon/js-sdk.git
 cd js-sdk
 
-# Instalar dependencias
+# Install dependencies
 npm install
 
-# Ejecutar tests
+# Run tests
 npm test
 
-# Ejecutar lint
+# Run lint
 npm run lint
 
-# Verificar tipos
+# Type check
 npm run typecheck
 ```
 
 ---
 
-## Ejecutar cada parte del pipeline (local)
+## Running Each Part of the Pipeline (Local)
 
-El CI ejecuta varios jobs; puedes reproducirlos en local con estos comandos.
+CI runs several jobs; you can reproduce them locally with these commands.
 
-| Parte                         | Comando                             | Descripción                                                                                                                                |
-| ----------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Tests**                     | `npm test`                          | Vitest, todos los tests (excepto Angular).                                                                                                 |
-| **Cobertura**                 | `npm run test:coverage`             | Tests con reporte de cobertura; falla si no se cumplen los umbrales (93% lines/statements/functions, 87% branches).                        |
-| **Tests Angular**             | `npm run test:angular`              | Hace `build` y luego ejecuta solo los tests del adapter Angular (Vitest con config dedicada).                                              |
-| **E2E**                       | `npm run build && npm run test:e2e` | Build + Playwright; abre Chromium, sirve la app y verifica carga del SDK e `isSupported()`. Requiere build previo.                         |
-| **Lint**                      | `npm run lint`                      | ESLint sobre el código.                                                                                                                    |
-| **Formato**                   | `npm run format:check`              | Prettier en modo check.                                                                                                                    |
-| **Typecheck**                 | `npm run typecheck`                 | `tsc --noEmit`.                                                                                                                            |
-| **Auditoría de dependencias** | `npm run audit:ci`                  | audit-ci con la política del repo (falla en high/critical).                                                                                |
-| **Lint de workflows**         | `npm run lint:workflows`            | Valida los YAML de `.github/workflows` con actionlint. Si actionlint no está en PATH, el script lo descarga a `scripts/.cache/actionlint`. |
+| Part | Command | Description |
+| ---- | ------- | ----------- |
+| **Tests** | `npm test` | Vitest, all tests (except Angular). |
+| **Coverage** | `npm run test:coverage` | Tests with coverage report; fails if thresholds are not met (93% lines/statements/functions, 87% branches). |
+| **Angular tests** | `npm run test:angular` | Runs `build` then only the Angular adapter tests (Vitest with dedicated config). |
+| **E2E** | `npm run build && npm run test:e2e` | Build + Playwright; opens Chromium, serves the app and verifies SDK load and `isSupported()`. Requires prior build. |
+| **Lint** | `npm run lint` | ESLint on the codebase. |
+| **Format** | `npm run format:check` | Prettier in check mode. |
+| **Typecheck** | `npm run typecheck` | `tsc --noEmit`. |
+| **Dependency audit** | `npm run audit:ci` | audit-ci with repo policy (fails on high/critical). |
+| **Workflow lint** | `npm run lint:workflows` | Validates `.github/workflows` YAML with actionlint. If actionlint is not in PATH, the script downloads it to `scripts/.cache/actionlint`. |
 
-**Recomendación antes de un PR:** ejecutar al menos `npm run lint`, `npm run typecheck` y `npm run test:coverage`. Opcional: `npm run test:angular`, `npm run test:e2e`, `npm run audit:ci`, `npm run lint:workflows`.
+**Recommendation before a PR:** run at least `npm run lint`, `npm run typecheck`, and `npm run test:coverage`. Optional: `npm run test:angular`, `npm run test:e2e`, `npm run audit:ci`, `npm run lint:workflows`.
 
-Los criterios completos del pipeline (umbrales, seguridad, E2E) están documentados en [CI-FINTECH-STANDARDS.md](./CI-FINTECH-STANDARDS.md).
+Coverage thresholds are in `vitest.config.ts`; the pipeline definition is in `.github/workflows`.
 
 ---
 
-## Estándares de Código
+## Code Standards
 
 ### TypeScript
 
-- Usa TypeScript strict mode
-- Evita `any`, usa tipos específicos
-- Exporta tipos públicos en `src/types.ts`
-- Usa JSDoc solo cuando sea necesario para la API pública
+- Use TypeScript strict mode
+- Avoid `any`, use specific types
+- Export public types in `src/types.ts`
+- Use JSDoc only when needed for the public API
 
-### Estilo
+### Style
 
-- Usa Prettier para formateo (se ejecuta automáticamente)
-- Sigue las reglas de ESLint
-- No uses comentarios innecesarios
-- Código debe ser autodocumentado
+- Use Prettier for formatting (runs automatically)
+- Follow ESLint rules
+- No unnecessary comments
+- Code should be self-documenting
 
-### Funciones
+### Functions
 
-- Prefiere funciones stateless cuando sea posible
-- Usa funciones puras donde sea apropiado
-- Evita efectos secundarios innecesarios
+- Prefer stateless functions when possible
+- Use pure functions where appropriate
+- Avoid unnecessary side effects
 
 ### Testing
 
-- Escribe tests antes de implementar (TDD)
-- Cobertura objetivo: umbrales en `vitest.config.ts` (93% lines/statements/functions, 87% branches); ver `npm run test:coverage`
-- Usa mocks para dependencias externas
-- Tests deben ser rápidos y determinísticos
+- Write tests before implementing (TDD)
+- Coverage target: thresholds in `vitest.config.ts` (93% lines/statements/functions, 87% branches); see `npm run test:coverage`
+- Use mocks for external dependencies
+- Tests must be fast and deterministic
 
 ---
 
-## Proceso de Desarrollo
+## Development Process
 
-### 1. Crear una Branch
+### 1. Create a Branch
 
 ```bash
-git checkout -b feature/nueva-funcionalidad
+git checkout -b feature/new-feature
 ```
 
-### 2. Desarrollo
+### 2. Development
 
-1. Escribe tests primero (TDD)
-2. Implementa la funcionalidad
-3. Asegúrate de que todos los tests pasen
-4. Ejecuta lint y typecheck
+1. Write tests first (TDD)
+2. Implement the feature
+3. Ensure all tests pass
+4. Run lint and typecheck
 
 ```bash
 npm run lint
@@ -110,69 +110,69 @@ npm test
 
 ### 3. Commit
 
-Usa mensajes de commit descriptivos:
+Use descriptive commit messages:
 
 ```bash
-git commit -m "feat: agregar nueva funcionalidad X"
+git commit -m "feat: add new feature X"
 ```
 
-Prefijos recomendados:
+Recommended prefixes:
 
-- `feat:` - Nueva funcionalidad
-- `fix:` - Corrección de bug
-- `docs:` - Cambios en documentación
-- `test:` - Agregar o modificar tests
-- `refactor:` - Refactorización de código
-- `chore:` - Tareas de mantenimiento
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `test:` - Add or modify tests
+- `refactor:` - Code refactoring
+- `chore:` - Maintenance tasks
 
 ### 4. Push
 
 ```bash
-git push origin feature/nueva-funcionalidad
+git push origin feature/new-feature
 ```
 
 ---
 
-## Proceso de Pull Request
+## Pull Request Process
 
-### Antes de Crear un PR
+### Before Creating a PR
 
-1. Asegúrate de que todos los tests pasen
-2. Ejecuta `npm run lint` y corrige errores
-3. Ejecuta `npm run typecheck` y corrige errores
-4. Verifica que la cobertura de tests no disminuya
-5. Actualiza la documentación si es necesario
+1. Ensure all tests pass
+2. Run `npm run lint` and fix any errors
+3. Run `npm run typecheck` and fix any errors
+4. Verify test coverage does not decrease
+5. Update documentation if needed
 
-### Crear el PR
+### Creating the PR
 
-1. Ve a GitHub y crea un Pull Request
-2. Describe claramente los cambios
-3. Menciona cualquier issue relacionado
-4. Espera la revisión
+1. Go to GitHub and create a Pull Request
+2. Describe the changes clearly
+3. Mention any related issues
+4. Wait for review
 
-### Revisión
+### Review
 
-- Los PRs requieren al menos una aprobación
-- Los tests deben pasar en CI
-- El código debe seguir los estándares del proyecto
+- PRs require at least one approval
+- Tests must pass in CI
+- Code must follow project standards
 
 ---
 
 ## Testing Guidelines
 
-### Estructura de Tests
+### Test Structure
 
-- Tests en `tests/` o junto al código con `.test.ts`
-- Usa `describe` para agrupar tests relacionados
-- Usa `it` o `test` para casos individuales
+- Tests in `tests/` or next to code with `.test.ts`
+- Use `describe` to group related tests
+- Use `it` or `test` for individual cases
 
 ### Mocks
 
-- Usa mocks de Vitest para dependencias externas
-- Usa `tests/mocks/webauthn.ts` para mocks de WebAuthn
-- No mocks innecesarios, solo cuando sea requerido
+- Use Vitest mocks for external dependencies
+- Use `tests/mocks/webauthn.ts` for WebAuthn mocks
+- No unnecessary mocks, only when required
 
-### Ejemplo
+### Example
 
 ```typescript
 import { describe, it, expect, vi } from 'vitest';
@@ -187,67 +187,67 @@ describe('MyFunction', () => {
 
 ---
 
-## Estructura del Proyecto
+## Project Structure
 
 ```
 src/
-  core/          # Lógica principal del SDK
-  utils/         # Utilidades
-  fallback/     # Fallback por email
-  types.ts      # Tipos públicos
-  errors.ts     # Sistema de errores
-  index.ts      # Punto de entrada
+  core/          # Core SDK logic
+  utils/         # Utilities
+  fallback/      # Email fallback
+  types.ts       # Public types
+  errors.ts      # Error system
+  index.ts       # Entry point
 
 tests/
-  core/         # Tests de core
-  utils/        # Tests de utils
-  fallback/     # Tests de fallback
-  mocks/        # Mocks para tests
-  setup.ts      # Configuración de tests
+  core/          # Core tests
+  utils/         # Utils tests
+  fallback/      # Fallback tests
+  mocks/         # Test mocks
+  setup.ts       # Test configuration
 
 documentation/
-  API.md        # Referencia de API
-  EXAMPLES.md   # Ejemplos de uso
-  CONTRIBUTING.md # Esta guía
+  API.md         # API reference
+  EXAMPLES.md    # Usage examples
+  CONTRIBUTING.md # This guide
 
-docs/           # Documentación de desarrollo (ignorada en git)
-  ROADMAP.md    # Plan de desarrollo
-  ARCHITECTURE.md # Arquitectura del SDK
-  README.md     # Índice de documentación
+docs/            # Development docs (gitignored)
+  ROADMAP.md     # Development plan
+  ARCHITECTURE.md # SDK architecture
+  README.md      # Documentation index
 ```
 
 ---
 
-## Preguntas Frecuentes
+## FAQ
 
-### ¿Cómo agrego una nueva funcionalidad?
+### How do I add a new feature?
 
-1. Revisa el [ROADMAP.md](./ROADMAP.md) para ver si está planificado
-2. Crea una issue para discutir la funcionalidad
-3. Sigue el proceso de desarrollo descrito arriba
+1. Check [ROADMAP.md](./ROADMAP.md) to see if it is planned
+2. Create an issue to discuss the feature
+3. Follow the development process described above
 
-### ¿Cómo reporto un bug?
+### How do I report a bug?
 
-1. Crea una issue en GitHub
-2. Describe el problema claramente
-3. Incluye pasos para reproducir
-4. Incluye información del entorno (navegador, versión, etc.)
+1. Create an issue on GitHub
+2. Describe the problem clearly
+3. Include steps to reproduce
+4. Include environment info (browser, version, etc.)
 
-### ¿Cómo sugiero una mejora?
+### How do I suggest an improvement?
 
-1. Crea una issue con la etiqueta "enhancement"
-2. Describe la mejora y su beneficio
-3. Espera feedback antes de implementar
-
----
-
-## Contacto
-
-Si tienes preguntas, puedes:
-
-- Crear una issue en GitHub
-- Contactar al equipo de TryMellon
+1. Create an issue with the "enhancement" label
+2. Describe the improvement and its benefit
+3. Wait for feedback before implementing
 
 ---
 
-Gracias por contribuir a `@trymellon/js`! 🎉
+## Contact
+
+If you have questions, you can:
+
+- Create an issue on GitHub
+- Contact the TryMellon team
+
+---
+
+Thank you for contributing to `@trymellon/js`! 🎉

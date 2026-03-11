@@ -6,7 +6,7 @@ type SerializedCredentialForRegister = RegisterFinishRequest['credential'];
 type SerializedCredentialForAuth = AuthFinishRequest['credential'];
 
 /**
- * Type guard para verificar si una respuesta de credencial es válida.
+ * Type guard to verify whether a credential response is valid.
  */
 function isValidCredentialResponse(
   response: unknown
@@ -20,12 +20,12 @@ function isValidCredentialResponse(
 }
 
 /**
- * Serializa una credencial para registro (finish).
- * Incluye attestationObject requerido para la verificación de registro.
+ * Serializes a credential for registration (finish).
+ * Includes attestationObject required for registration verification.
  *
- * @param credential - Credencial WebAuthn obtenida de navigator.credentials.create()
- * @returns Credencial serializada con formato Base64URL
- * @throws {TryMellonError} Si la credencial no tiene la estructura esperada para registro
+ * @param credential - WebAuthn credential from navigator.credentials.create()
+ * @returns Serialized credential in Base64URL format
+ * @throws {TryMellonError} If the credential does not have the expected structure for registration
  */
 export function serializeCredentialForRegister(
   credential: PublicKeyCredential
@@ -63,12 +63,12 @@ export function serializeCredentialForRegister(
 }
 
 /**
- * Serializa una credencial para autenticación (finish).
- * Incluye authenticatorData, signature, y opcionalmente userHandle.
+ * Serializes a credential for authentication (finish).
+ * Includes authenticatorData, signature, and optionally userHandle.
  *
- * @param credential - Credencial WebAuthn obtenida de navigator.credentials.get()
- * @returns Credencial serializada con formato Base64URL
- * @throws {TryMellonError} Si la credencial no tiene la estructura esperada para autenticación
+ * @param credential - WebAuthn credential from navigator.credentials.get()
+ * @returns Serialized credential in Base64URL format
+ * @throws {TryMellonError} If the credential does not have the expected structure for authentication
  */
 export function serializeCredentialForAuth(
   credential: PublicKeyCredential

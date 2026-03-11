@@ -108,11 +108,33 @@ export type ClientStatus = {
 
 export type TryMellonEvent = 'start' | 'success' | 'error' | 'cancelled';
 
+/** User info in success event (aligns with API user payload). */
+export type SuccessEventUserInfo = {
+  userId: string;
+  externalUserId?: string;
+  email?: string;
+  metadata?: Record<string, unknown>;
+};
+
+/** Success payload: token always present (03-eventos-seguridad). Nonce when flow generates it. */
+export type SuccessEventPayload = {
+  type: 'success';
+  operation: 'register' | 'authenticate';
+  token: string;
+  user?: SuccessEventUserInfo;
+  nonce?: string;
+};
+
 export type EventPayload =
-  | { type: 'start'; operation: 'register' | 'authenticate' }
-  | { type: 'success'; operation: 'register' | 'authenticate' }
-  | { type: 'error'; error: TryMellonError }
-  | { type: 'cancelled'; operation: 'register' | 'authenticate' };
+  | { type: 'start'; operation: 'register' | 'authenticate'; nonce?: string }
+  | SuccessEventPayload
+  | {
+      type: 'error';
+      error: TryMellonError;
+      operation?: 'register' | 'authenticate';
+      nonce?: string;
+    }
+  | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
 
 export type EventHandler = (payload: EventPayload) => void;
 
@@ -254,6 +276,8 @@ export type CrossDeviceInitResult = {
   expires_at: string;
   /** Opaque token; send in X-Polling-Token header when calling GET status. Not included in qr_url. */
   polling_token: string;
+  /** Set when backend returns it (e.g. after anonymous init-registration). */
+  external_user_id?: string;
 };
 
 export type CrossDeviceStatusResult = {
@@ -428,8 +452,8 @@ export interface RegisterResult {
   success: true;
   credentialId: string;
   /**
-   * Alias para compatibilidad con versiones anteriores que usaban snake_case.
-   * Preferir `credentialId` en código nuevo.
+   * Alias for backward compatibility with snake_case.
+   * Prefer `credentialId` in new code.
    */
   credential_id?: string;
   status: string;

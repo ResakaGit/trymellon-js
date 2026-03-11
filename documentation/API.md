@@ -1,12 +1,12 @@
 # API Reference
 
-Referencia completa de la API pública del SDK `@trymellon/js`.
+Complete reference for the public API of the `@trymellon/js` SDK.
 
 ---
 
-## Clase TryMellon
+## TryMellon Class
 
-Clase principal del SDK para autenticación passwordless con Passkeys/WebAuthn.
+Main SDK class for passwordless authentication with Passkeys/WebAuthn.
 
 ### Constructor
 
@@ -14,22 +14,22 @@ Clase principal del SDK para autenticación passwordless con Passkeys/WebAuthn.
 new TryMellon(config: TryMellonConfig)
 ```
 
-**Parámetros:**
+**Parameters:**
 
-- `config.appId` (string, requerido): Application ID (UUID) de tu aplicación. Se envía en el header `X-App-Id`. Obtén el valor en Dashboard → Tu aplicación → App ID. La API identifica tu app por `publishableKey` y Origin.
-- `config.publishableKey` (string, requerido): Client ID (valor que empieza por `cli_`). Se envía en `Authorization: Bearer <publishableKey>`. Obtén el valor en Dashboard → Tu aplicación → Client ID.
-- `config.apiBaseUrl` (string, opcional): URL base de la API. Por defecto: `'https://api.trymellonauth.com'`
-  - Debe ser una URL válida
-- `config.timeoutMs` (number, opcional): Timeout en milisegundos para requests HTTP. Por defecto: `30000`
-  - Rango válido: `1000` - `300000` (1 segundo - 5 minutos)
-- `config.maxRetries` (number, opcional): Número máximo de reintentos para requests HTTP fallidos. Por defecto: `3`
-  - Rango válido: `0` - `10`
-  - Solo se reintentan errores 5xx y errores de red transitorios
-- `config.retryDelayMs` (number, opcional): Delay inicial en milisegundos entre reintentos. Por defecto: `1000`
-  - Rango válido: `100` - `10000` (100ms - 10 segundos)
-  - El delay aumenta exponencialmente en cada reintento
+- `config.appId` (string, required): Application ID (UUID) for your app. Sent in the `X-App-Id` header. Get it from Dashboard → Your app → App ID. The API identifies your app by `publishableKey` and Origin.
+- `config.publishableKey` (string, required): Client ID (value starting with `cli_`). Sent in `Authorization: Bearer <publishableKey>`. Get it from Dashboard → Your app → Client ID.
+- `config.apiBaseUrl` (string, optional): API base URL. Default: `'https://api.trymellonauth.com'`
+  - Must be a valid URL
+- `config.timeoutMs` (number, optional): Timeout in milliseconds for HTTP requests. Default: `30000`
+  - Valid range: `1000` - `300000` (1 second - 5 minutes)
+- `config.maxRetries` (number, optional): Maximum number of retries for failed HTTP requests. Default: `3`
+  - Valid range: `0` - `10`
+  - Only 5xx and transient network errors are retried
+- `config.retryDelayMs` (number, optional): Initial delay in milliseconds between retries. Default: `1000`
+  - Valid range: `100` - `10000` (100ms - 10 seconds)
+  - Delay increases exponentially on each retry
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 import { TryMellon } from '@trymellon/js';
@@ -44,89 +44,89 @@ const client = new TryMellon({
 });
 ```
 
-**Errores:**
+**Errors:**
 
-- Lanza `TryMellonError` con código `'INVALID_ARGUMENT'` si:
-  - `appId` está vacío o no es un string
-  - `publishableKey` está vacío o no es un string
-  - `apiBaseUrl` no es una URL válida
-  - `timeoutMs` está fuera del rango válido (o no es finito)
-  - `maxRetries` está fuera del rango válido
-  - `retryDelayMs` está fuera del rango válido
+- Throws `TryMellonError` with code `'INVALID_ARGUMENT'` if:
+  - `appId` is empty or not a string
+  - `publishableKey` is empty or not a string
+  - `apiBaseUrl` is not a valid URL
+  - `timeoutMs` is out of valid range (or not finite)
+  - `maxRetries` is out of valid range
+  - `retryDelayMs` is out of valid range
 
 ---
 
-## Métodos Estáticos
+## Static Methods
 
 ### `TryMellon.create(config)`
 
-Valida la configuración y crea una instancia sin lanzar. Retorna `Result<TryMellon, TryMellonError>`.
+Validates the configuration and creates an instance without throwing. Returns `Result<TryMellon, TryMellonError>`.
 
 ```typescript
 static create(config: TryMellonConfig): Result<TryMellon, TryMellonError>
 ```
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 const result = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
 if (result.ok) {
   const client = result.value;
-  // usar client
+  // use client
 } else {
   console.error(result.error.code, result.error.message);
 }
 ```
 
-**Recomendado** para manejar errores de configuración sin try/catch. El constructor sigue disponible pero lanza si la config es inválida.
+**Recommended** for handling configuration errors without try/catch. The constructor is still available but throws if config is invalid.
 
 ---
 
 ### `TryMellon.isSupported()`
 
-Verifica si el navegador soporta WebAuthn/Passkeys.
+Checks whether the browser supports WebAuthn/Passkeys.
 
 ```typescript
 static isSupported(): boolean
 ```
 
-**Retorna:**
+**Returns:**
 
-- `true` si WebAuthn está soportado
-- `false` si no está soportado
+- `true` if WebAuthn is supported
+- `false` if not supported
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 if (!TryMellon.isSupported()) {
-  console.log('WebAuthn no está disponible');
-  // Mostrar fallback
+  console.log('WebAuthn is not available');
+  // Show fallback
 }
 ```
 
 ---
 
-## Métodos de Instancia
+## Instance Methods
 
 ### `register()`
 
-Registra una nueva passkey para un usuario.
+Registers a new passkey for a user.
 
 ```typescript
 register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>>
 ```
 
-**Parámetros:**
+**Parameters:**
 
-- `options.externalUserId` (string, requerido): ID externo del usuario (ej. en tu sistema). También acepta `external_user_id` (deprecated)
-- `options.authenticatorType` ('platform' | 'cross-platform', opcional): Tipo de authenticator preferido
-- `options.signal` (AbortSignal, opcional): Signal para cancelar la operación
+- `options.externalUserId` (string, optional): External user ID. Usually required for same-device `register()`; optional for `auth.crossDevice.initRegistration()` (omit for anonymous registration; backend generates an id). Also accepts `external_user_id` (deprecated)
+- `options.authenticatorType` ('platform' | 'cross-platform', optional): Preferred authenticator type
+- `options.signal` (AbortSignal, optional): Signal to cancel the operation
 
-**Retorna:**
+**Returns:**
 
-- `Promise<Result<RegisterResult, TryMellonError>>`: `ok: true` con `value` (success, sessionToken, user, etc.) o `ok: false` con `error` (TryMellonError)
+- `Promise<Result<RegisterResult, TryMellonError>>`: `ok: true` with `value` (success, sessionToken, user, etc.) or `ok: false` with `error` (TryMellonError)
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 const result = await client.register({
@@ -144,41 +144,41 @@ if (result.ok) {
   }
 } else {
   if (result.error.code === 'USER_CANCELLED') {
-    console.log('Usuario canceló el registro');
+    console.log('User cancelled registration');
   }
 }
 ```
 
-**Errores (result.error.code):**
+**Errors (result.error.code):**
 
-- `NOT_SUPPORTED`: WebAuthn no está disponible
-- `USER_CANCELLED`: Usuario canceló la operación
-- `INVALID_ARGUMENT`: `externalUserId` faltante o inválido
-- `NETWORK_FAILURE`: Error de red
-- `TIMEOUT`: Operación expiró
+- `NOT_SUPPORTED`: WebAuthn is not available
+- `USER_CANCELLED`: User cancelled the operation
+- `INVALID_ARGUMENT`: `externalUserId` missing or invalid
+- `NETWORK_FAILURE`: Network error
+- `TIMEOUT`: Operation expired
 
 ---
 
 ### `authenticate()`
 
-Autentica un usuario usando su passkey.
+Authenticates a user with their passkey.
 
 ```typescript
 authenticate(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>>
 ```
 
-**Parámetros:**
+**Parameters:**
 
-- `options.externalUserId` (string, opcional): ID externo del usuario. También acepta `external_user_id` (deprecated)
-- `options.hint` (string, opcional): Hint para ayudar al usuario a seleccionar la passkey correcta (ej: email)
-- `options.signal` (AbortSignal, opcional): Signal para cancelar la operación
-- `options.mediation` ('optional' | 'conditional' | 'required', opcional): Para conditional UI / autofill
+- `options.externalUserId` (string, optional): External user ID. Also accepts `external_user_id` (deprecated)
+- `options.hint` (string, optional): Hint to help the user select the correct passkey (e.g. email)
+- `options.signal` (AbortSignal, optional): Signal to cancel the operation
+- `options.mediation` ('optional' | 'conditional' | 'required', optional): For conditional UI / autofill
 
-**Retorna:**
+**Returns:**
 
-- `Promise<Result<AuthenticateResult, TryMellonError>>`: `ok: true` con `value` (sessionToken, user, etc.) o `ok: false` con `error`
+- `Promise<Result<AuthenticateResult, TryMellonError>>`: `ok: true` with `value` (sessionToken, user, etc.) or `ok: false` with `error`
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 const result = await client.authenticate({
@@ -194,45 +194,45 @@ if (result.ok) {
   });
 } else {
   if (result.error.code === 'PASSKEY_NOT_FOUND') {
-    console.log('No se encontró passkey para este usuario');
+    console.log('No passkey found for this user');
   }
 }
 ```
 
-**Errores (result.error.code):**
+**Errors (result.error.code):**
 
-- `NOT_SUPPORTED`: WebAuthn no está disponible
-- `USER_CANCELLED`: Usuario canceló la operación
-- `PASSKEY_NOT_FOUND`: No se encontró passkey para el usuario
-- `NETWORK_FAILURE`: Error de red
-- `TIMEOUT`: Operación expiró
+- `NOT_SUPPORTED`: WebAuthn is not available
+- `USER_CANCELLED`: User cancelled the operation
+- `PASSKEY_NOT_FOUND`: No passkey found for the user
+- `NETWORK_FAILURE`: Network error
+- `TIMEOUT`: Operation expired
 
 ---
 
 ### `getStatus()`
 
-Obtiene el estado de soporte de WebAuthn en el cliente.
+Gets WebAuthn support status on the client.
 
 ```typescript
 getStatus(): Promise<ClientStatus>
 ```
 
-**Retorna:**
+**Returns:**
 
-- `Promise<ClientStatus>`: Objeto con información sobre el soporte de WebAuthn
+- `Promise<ClientStatus>`: Object with WebAuthn support information
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 const status = await client.getStatus();
 
 if (status.isPasskeySupported) {
-  console.log('Passkeys disponibles');
+  console.log('Passkeys available');
   if (status.platformAuthenticatorAvailable) {
-    console.log('Authenticator platform disponible');
+    console.log('Platform authenticator available');
   }
 } else {
-  console.log('Usar fallback');
+  console.log('Use fallback');
 }
 ```
 
@@ -240,37 +240,37 @@ if (status.isPasskeySupported) {
 
 ### `on()`
 
-Suscribe un handler a eventos del SDK.
+Subscribes a handler to SDK events.
 
 ```typescript
 on(event: TryMellonEvent, handler: EventHandler): () => void
 ```
 
-**Parámetros:**
+**Parameters:**
 
-- `event`: Tipo de evento ('start' | 'success' | 'error' | 'cancelled')
-- `handler`: Función que se ejecutará cuando ocurra el evento
+- `event`: Event type ('start' | 'success' | 'error' | 'cancelled')
+- `handler`: Function to run when the event occurs
 
-**Retorna:**
+**Returns:**
 
-- Función para desuscribirse del evento
+- Function to unsubscribe from the event
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 const unsubscribe = client.on('start', (payload) => {
-  console.log('Operación iniciada:', payload.operation);
+  console.log('Operation started:', payload.operation);
 });
 
 client.on('success', (payload) => {
-  console.log('Operación exitosa:', payload.operation);
+  console.log('Operation succeeded:', payload.operation);
 });
 
 client.on('error', (payload) => {
   console.error('Error:', payload.error);
 });
 
-// Desuscribirse
+// Unsubscribe
 unsubscribe();
 ```
 
@@ -278,17 +278,17 @@ unsubscribe();
 
 ### `version()`
 
-Retorna la versión del SDK.
+Returns the SDK version.
 
 ```typescript
 version(): string
 ```
 
-**Retorna:**
+**Returns:**
 
-- Versión del SDK como string
+- SDK version as string
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 console.log('SDK version:', client.version());
@@ -296,22 +296,22 @@ console.log('SDK version:', client.version());
 
 ---
 
-## Fallback por Email
+## Email Fallback
 
 ### `fallback.email.start()`
 
-Inicia el flujo de fallback por email, enviando un código OTP.
+Starts the email fallback flow by sending an OTP code.
 
 ```typescript
 fallback.email.start(options: EmailFallbackStartOptions): Promise<void>
 ```
 
-**Parámetros:**
+**Parameters:**
 
-- `options.userId` (string, requerido): Identificador externo del usuario
-- `options.email` (string, requerido): Email donde enviar el código OTP
+- `options.userId` (string, required): External user identifier
+- `options.email` (string, required): Email address to send the OTP code to
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 try {
@@ -319,37 +319,37 @@ try {
     userId: 'user_123',
     email: 'user@example.com',
   });
-  console.log('Código OTP enviado por email');
+  console.log('OTP code sent by email');
 } catch (error) {
-  console.error('Error al enviar OTP:', error);
+  console.error('Error sending OTP:', error);
 }
 ```
 
-**Errores:**
+**Errors:**
 
-- `INVALID_ARGUMENT`: `userId` o `email` inválidos
-- `NETWORK_FAILURE`: Error de red
+- `INVALID_ARGUMENT`: Invalid `userId` or `email`
+- `NETWORK_FAILURE`: Network error
 
 ---
 
 ### `fallback.email.verify()`
 
-Verifica el código OTP y retorna un sessionToken.
+Verifies the OTP code and returns a sessionToken.
 
 ```typescript
 fallback.email.verify(options: EmailFallbackVerifyOptions): Promise<EmailFallbackVerifyResult>
 ```
 
-**Parámetros:**
+**Parameters:**
 
-- `options.userId` (string, requerido): ID del usuario
-- `options.code` (string, requerido): Código OTP recibido por email
+- `options.userId` (string, required): User ID
+- `options.code` (string, required): OTP code received by email
 
-**Retorna:**
+**Returns:**
 
-- `Promise<EmailFallbackVerifyResult>`: Objeto con `sessionToken`
+- `Promise<EmailFallbackVerifyResult>`: Object with `sessionToken`
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 try {
@@ -358,25 +358,25 @@ try {
     code: '123456',
   });
 
-  // Enviar sessionToken al backend
+  // Send sessionToken to backend
   await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionToken: result.sessionToken }),
   });
 } catch (error) {
-  console.error('Código inválido:', error);
+  console.error('Invalid code:', error);
 }
 ```
 
-**Errores:**
+**Errors:**
 
-- `INVALID_ARGUMENT`: `userId` o `code` inválidos
-- `NETWORK_FAILURE`: Error de red
+- `INVALID_ARGUMENT`: Invalid `userId` or `code`
+- `NETWORK_FAILURE`: Network error
 
 ---
 
-## Tipos
+## Types
 
 ### `TryMellonConfig`
 
@@ -399,24 +399,24 @@ type TryMellonConfig = {
 };
 ```
 
-**Validaciones:**
+**Validation:**
 
-- `appId`: Debe ser un string no vacío
-- `publishableKey`: Debe ser un string no vacío
-- `apiBaseUrl`: Debe ser una URL válida (validada con `new URL()`)
-- `timeoutMs`: Debe ser un número finito entre `1000` y `300000` milisegundos
-- `maxRetries`: Debe estar entre `0` y `10`
-- `retryDelayMs`: Debe estar entre `100` y `10000` milisegundos
+- `appId`: Must be a non-empty string
+- `publishableKey`: Must be a non-empty string
+- `apiBaseUrl`: Must be a valid URL (validated with `new URL()`)
+- `timeoutMs`: Must be a finite number between `1000` and `300000` milliseconds
+- `maxRetries`: Must be between `0` and `10`
+- `retryDelayMs`: Must be between `100` and `10000` milliseconds
 
-**Comportamiento con `sandbox === true`:** `register()` y `authenticate()` no realizan llamadas HTTP ni WebAuthn; devuelven de inmediato un `Result` exitoso con `sessionToken` igual a `config.sandboxToken` o a la constante `SANDBOX_SESSION_TOKEN`. `validateSession(sessionToken)` devuelve un mock válido si el token es el de sandbox.
+**Behavior with `sandbox === true`:** `register()` and `authenticate()` do not perform HTTP or WebAuthn calls; they return immediately with a successful `Result` and `sessionToken` equal to `config.sandboxToken` or the `SANDBOX_SESSION_TOKEN` constant. `validateSession(sessionToken)` returns a valid mock when the token is the sandbox token.
 
-### `SANDBOX_SESSION_TOKEN` (constante exportada)
+### `SANDBOX_SESSION_TOKEN` (exported constant)
 
-Valor fijo del token de sesión que el SDK devuelve en modo sandbox. El backend del cliente puede importarla para reconocer el token en desarrollo y crear sesión sin llamar a TryMellon. **En producción el backend NO debe aceptar este token.**
+Fixed value of the session token the SDK returns in sandbox mode. The client backend can import it to recognize the token in development and create a session without calling TryMellon. **In production the backend must NOT accept this token.**
 
 ```typescript
 import { SANDBOX_SESSION_TOKEN } from '@trymellon/js';
-// Valor: 'trymellon_sandbox_session_token_v1'
+// Value: 'trymellon_sandbox_session_token_v1'
 ```
 
 ### `RegisterOptions`
@@ -424,7 +424,7 @@ import { SANDBOX_SESSION_TOKEN } from '@trymellon/js';
 ```typescript
 type RegisterOptions = {
   externalUserId?: string;
-  external_user_id?: string; // deprecated, usar externalUserId
+  external_user_id?: string; // deprecated, use externalUserId
   authenticatorType?: 'platform' | 'cross-platform';
   signal?: AbortSignal;
 };
@@ -439,7 +439,7 @@ type RegisterResult = {
 };
 ```
 
-**Nota:** El `sessionToken` es opcional y solo estará presente si TryMellon Backend lo proporciona durante el registro. Si está presente, puedes usarlo inmediatamente para autenticar al usuario sin necesidad de llamar a `authenticate()`.
+**Note:** `sessionToken` is optional and is only present when TryMellon Backend provides it during registration. If present, you can use it immediately to authenticate the user without calling `authenticate()`.
 
 ### `AuthenticateOptions`
 
@@ -525,11 +525,11 @@ type EmailFallbackVerifyResult = {
 
 ---
 
-## Errores
+## Errors
 
 ### `TryMellonError`
 
-Clase de error principal del SDK.
+Main SDK error class.
 
 ```typescript
 class TryMellonError extends Error {
@@ -539,13 +539,13 @@ class TryMellonError extends Error {
 }
 ```
 
-**Propiedades:**
+**Properties:**
 
-- `code`: Código del error
-- `details`: Detalles adicionales del error (opcional)
-- `isTryMellonError`: Siempre `true` para identificación de tipo
+- `code`: Error code
+- `details`: Additional error details (optional)
+- `isTryMellonError`: Always `true` for type identification
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 try {
@@ -560,43 +560,43 @@ try {
 
 ### `TryMellonErrorCode`
 
-Códigos de error disponibles:
+Available error codes:
 
-- `'NOT_SUPPORTED'`: WebAuthn no está disponible
-- `'USER_CANCELLED'`: Usuario canceló la operación
-- `'PASSKEY_NOT_FOUND'`: No se encontró passkey
-- `'SESSION_EXPIRED'`: Sesión expirada
-- `'NETWORK_FAILURE'`: Error de red
-- `'INVALID_ARGUMENT'`: Argumento inválido
-- `'TIMEOUT'`: Operación expiró
-- `'ABORTED'`: Operación abortada
-- `'UNKNOWN_ERROR'`: Error desconocido
+- `'NOT_SUPPORTED'`: WebAuthn is not available
+- `'USER_CANCELLED'`: User cancelled the operation
+- `'PASSKEY_NOT_FOUND'`: No passkey found
+- `'SESSION_EXPIRED'`: Session expired
+- `'NETWORK_FAILURE'`: Network error
+- `'INVALID_ARGUMENT'`: Invalid argument
+- `'TIMEOUT'`: Operation expired
+- `'ABORTED'`: Operation aborted
+- `'UNKNOWN_ERROR'`: Unknown error
 
-**Nota sobre reintentos:**
+**Note on retries:**
 
-El SDK implementa reintentos automáticos con backoff exponencial para:
+The SDK implements automatic retries with exponential backoff for:
 
-- Errores HTTP 5xx (errores del servidor)
-- Errores HTTP 429 (rate limiting)
-- Errores de red transitorios (TypeError, errores de conexión)
+- HTTP 5xx errors (server errors)
+- HTTP 429 (rate limiting)
+- Transient network errors (TypeError, connection errors)
 
-Los reintentos NO se aplican a:
+Retries are NOT applied to:
 
-- Errores HTTP 4xx (errores del cliente, excepto 429)
-- Errores de timeout (se lanzan inmediatamente)
-- Errores de validación
+- HTTP 4xx errors (client errors, except 429)
+- Timeout errors (thrown immediately)
+- Validation errors
 
-### Funciones Helper de Errores
+### Error Helper Functions
 
 #### `isTryMellonError()`
 
-Type guard para verificar si un error es `TryMellonError`.
+Type guard to check if an error is `TryMellonError`.
 
 ```typescript
 isTryMellonError(error: unknown): error is TryMellonError
 ```
 
-**Ejemplo:**
+**Example:**
 
 ```typescript
 try {
@@ -612,7 +612,7 @@ try {
 
 #### `createError()`
 
-Crea un `TryMellonError` con un código específico.
+Creates a `TryMellonError` with a specific code.
 
 ```typescript
 createError(code: TryMellonErrorCode, message?: string, details?: unknown): TryMellonError
@@ -620,7 +620,7 @@ createError(code: TryMellonErrorCode, message?: string, details?: unknown): TryM
 
 #### `createNotSupportedError()`
 
-Crea un error de tipo `NOT_SUPPORTED`.
+Creates a `NOT_SUPPORTED` error.
 
 ```typescript
 createNotSupportedError(): TryMellonError
@@ -628,7 +628,7 @@ createNotSupportedError(): TryMellonError
 
 #### `createUserCancelledError()`
 
-Crea un error de tipo `USER_CANCELLED`.
+Creates a `USER_CANCELLED` error.
 
 ```typescript
 createUserCancelledError(): TryMellonError
@@ -636,7 +636,7 @@ createUserCancelledError(): TryMellonError
 
 #### `createNetworkError()`
 
-Crea un error de tipo `NETWORK_FAILURE`.
+Creates a `NETWORK_FAILURE` error.
 
 ```typescript
 createNetworkError(cause?: Error): TryMellonError
@@ -644,7 +644,7 @@ createNetworkError(cause?: Error): TryMellonError
 
 #### `createTimeoutError()`
 
-Crea un error de tipo `TIMEOUT`.
+Creates a `TIMEOUT` error.
 
 ```typescript
 createTimeoutError(): TryMellonError
@@ -652,7 +652,7 @@ createTimeoutError(): TryMellonError
 
 #### `createInvalidArgumentError()`
 
-Crea un error de tipo `INVALID_ARGUMENT`.
+Creates an `INVALID_ARGUMENT` error.
 
 ```typescript
 createInvalidArgumentError(field: string, reason: string): TryMellonError
@@ -660,7 +660,7 @@ createInvalidArgumentError(field: string, reason: string): TryMellonError
 
 #### `mapWebAuthnError()`
 
-Mapea errores nativos de WebAuthn a `TryMellonError`.
+Maps native WebAuthn errors to `TryMellonError`.
 
 ```typescript
 mapWebAuthnError(error: unknown): TryMellonError
@@ -668,6 +668,6 @@ mapWebAuthnError(error: unknown): TryMellonError
 
 ---
 
-## Ejemplos de Uso
+## Usage Examples
 
-Ver [EXAMPLES.md](./EXAMPLES.md) para ejemplos completos de integración.
+See [EXAMPLES.md](./EXAMPLES.md) for full integration examples.

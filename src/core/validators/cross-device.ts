@@ -75,12 +75,16 @@ export function validateCrossDeviceInitResponse(
     return validationError('Invalid API response: missing required fields', { originalData: data });
   }
 
-  return ok({
+  const result: CrossDeviceInitResult = {
     session_id,
     qr_url,
     expires_at,
     polling_token,
-  });
+  };
+  if (payload.external_user_id !== undefined && isString(payload.external_user_id)) {
+    result.external_user_id = payload.external_user_id;
+  }
+  return ok(result);
 }
 
 /**

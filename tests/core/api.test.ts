@@ -685,6 +685,34 @@ describe('ApiClient', () => {
         expect.any(Object)
       );
     });
+
+    it('should post init-registration with body {} when options omitted and return ok with session_id, qr_url', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          session_id: 'sess_reg_anon',
+          qr_url: 'https://example.com/qr/anon',
+          expires_at: '2026-02-12T12:00:00Z',
+          polling_token: 'opaque_poll_anon',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.initCrossDeviceRegistration({});
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.session_id).toBe('sess_reg_anon');
+        expect(result.value.qr_url).toBe('https://example.com/qr/anon');
+        expect(result.value.expires_at).toBeDefined();
+        expect(result.value.polling_token).toBeDefined();
+      }
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/auth/cross-device/init-registration',
+        {},
+        expect.any(Object)
+      );
+    });
   });
 
   describe('verifyCrossDeviceRegistration', () => {

@@ -114,6 +114,18 @@ describe('validateCrossDeviceInitResponse', () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  it('should include optional external_user_id when present in payload', () => {
+    const payloadWithExternalUserId = {
+      ...validPayload,
+      external_user_id: '3674d305-492c-46a1-9921-f916493354d4',
+    };
+    const result = validateCrossDeviceInitResponse(payloadWithExternalUserId);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.external_user_id).toBe(payloadWithExternalUserId.external_user_id);
+    }
+  });
 });
 
 describe('validateCrossDeviceStatusResponse', () => {

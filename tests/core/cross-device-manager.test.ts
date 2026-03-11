@@ -77,6 +77,31 @@ describe('CrossDeviceManager', () => {
       const result = await manager.initRegistration({ externalUserId: 'ext_1' });
       expect(result.ok).toBe(false);
     });
+
+    it('should delegate to API with undefined or empty options for anonymous init', async () => {
+      mockApiClient.initCrossDeviceRegistration.mockResolvedValue(
+        ok({
+          session_id: 'sess_anon',
+          qr_url: 'https://example.com/qr/anon',
+          expires_at: '2026-02-12T12:00:00Z',
+          polling_token: 'poll_anon',
+        })
+      );
+      const resultUndef = await manager.initRegistration(undefined);
+      expect(resultUndef.ok).toBe(true);
+      expect(mockApiClient.initCrossDeviceRegistration).toHaveBeenCalledWith(undefined);
+      vi.clearAllMocks();
+      mockApiClient.initCrossDeviceRegistration.mockResolvedValue(
+        ok({
+          session_id: 'sess_anon2',
+          qr_url: 'https://example.com/qr/anon2',
+          expires_at: '2026-02-12T12:00:00Z',
+        })
+      );
+      const resultEmpty = await manager.initRegistration({});
+      expect(resultEmpty.ok).toBe(true);
+      expect(mockApiClient.initCrossDeviceRegistration).toHaveBeenCalledWith({});
+    });
   });
 
   describe('waitForSession', () => {
