@@ -46,6 +46,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Borrar tag v1.7.7 si existe (evita "tag already exists" cuando la versión calculada salta a 2.0.0 y el tag viejo queda huérfano).
+      - name: Remove orphan tag v1.7.7
+        run: git push origin --delete v1.7.7 2>/dev/null || true
+
       # semantic-release publica a npm cuando hay commits que generan release (feat:, fix:, etc.).
       # También con chore(release): o release: (patch). Requiere NPM_TOKEN en Secrets.
       - name: Release
