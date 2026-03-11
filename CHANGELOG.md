@@ -1,3 +1,12 @@
+# [2.0.0](https://github.com/ResakaGit/trymellon-js/compare/v1.7.6...v2.0.0) (2026-03-11)
+
+
+### Bug Fixes
+
+* **build:** remove 'use client' from main bundle, normalize repository.url ([91be2c0](https://github.com/ResakaGit/trymellon-js/commit/91be2c0b80ed56e8c7893c0fe6ddd0712409f3d9))
+* **release:** major rule glob subject 2.0.0*, remove orphan v1.7.7 tag before release ([22de35e](https://github.com/ResakaGit/trymellon-js/commit/22de35e6465b7136d040c05c7ffbbb6ecedd432c))
+* **validators:** cross-device and recovery validation, api and formatting ([d6dbb39](https://github.com/ResakaGit/trymellon-js/commit/d6dbb3917ba19b00ecdc339175e6308f568da294))
+
 ## [2.0.0](https://github.com/ResakaGit/trymellon-js/compare/v1.7.7...v2.0.0) (unreleased)
 
 ### Changed
