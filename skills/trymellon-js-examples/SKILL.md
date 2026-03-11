@@ -41,35 +41,29 @@ Domain module that receives an already initialized `TryMellon` client and expose
 ### Snippet
 
 ```ts
-import type { TryMellon } from '@trymellon/js'
+import type { TryMellon } from '@trymellon/js';
 
 type RegisterOptions = {
-  externalUserId: string
-}
+  externalUserId: string;
+};
 
-export async function registerUser(
-  client: TryMellon,
-  options: RegisterOptions,
-) {
+export async function registerUser(client: TryMellon, options: RegisterOptions) {
   const result = await client.register({
     externalUserId: options.externalUserId,
-  })
+  });
 
   if (!result.ok) {
     // Minimal handling; specific branching by error.code should live elsewhere
-    return result
+    return result;
   }
 
   // Send sessionToken to the backend in another layer
-  return result
+  return result;
 }
 
-export async function authenticateUser(
-  client: TryMellon,
-  externalUserId: string,
-) {
-  const result = await client.authenticate({ externalUserId })
-  return result
+export async function authenticateUser(client: TryMellon, externalUserId: string) {
+  const result = await client.authenticate({ externalUserId });
+  return result;
 }
 ```
 
@@ -85,27 +79,23 @@ Use `TryMellonProvider` at the root and `useRegister` / `useAuthenticate` hooks 
 
 ```tsx
 // app/TryMellonProvider.tsx
-import React from 'react'
-import { TryMellon } from '@trymellon/js'
-import { TryMellonProvider } from '@trymellon/js/react'
+import React from 'react';
+import { TryMellon } from '@trymellon/js';
+import { TryMellonProvider } from '@trymellon/js/react';
 
 const clientResult = TryMellon.create({
   appId: 'app_live_xxxx',
   publishableKey: 'key_live_xxxx',
-})
+});
 
 if (!clientResult.ok) {
-  throw clientResult.error
+  throw clientResult.error;
 }
 
-const mellonClient = clientResult.value
+const mellonClient = clientResult.value;
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <TryMellonProvider client={mellonClient}>
-      {children}
-    </TryMellonProvider>
-  )
+  return <TryMellonProvider client={mellonClient}>{children}</TryMellonProvider>;
 }
 ```
 
@@ -113,37 +103,37 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
 ```tsx
 // components/RegisterButton.tsx
-import { useRegister } from '@trymellon/js/react'
+import { useRegister } from '@trymellon/js/react';
 
 type Props = {
-  externalUserId: string
-}
+  externalUserId: string;
+};
 
 export function RegisterButton({ externalUserId }: Props) {
-  const { execute, loading, error } = useRegister()
+  const { execute, loading, error } = useRegister();
 
   const handleClick = async () => {
-    const result = await execute({ externalUserId })
+    const result = await execute({ externalUserId });
     if (!result.ok) {
       if (result.error.code === 'NOT_SUPPORTED') {
         // Email fallback or other flow here
       }
-      return
+      return;
     }
 
     await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionToken: result.value.sessionToken }),
-    })
-  }
+    });
+  };
 
   return (
     <button onClick={handleClick} disabled={loading}>
       {loading ? 'Registrando…' : 'Registrar con passkey'}
       {error && <span>{error.message}</span>}
     </button>
-  )
+  );
 }
 ```
 
@@ -159,23 +149,23 @@ Provide the `TryMellon` instance in the app root with `provideTryMellon` and con
 
 ```ts
 // main.ts
-import { createApp } from 'vue'
-import { TryMellon } from '@trymellon/js'
-import { provideTryMellon } from '@trymellon/js/vue'
-import App from './App.vue'
+import { createApp } from 'vue';
+import { TryMellon } from '@trymellon/js';
+import { provideTryMellon } from '@trymellon/js/vue';
+import App from './App.vue';
 
 const clientResult = TryMellon.create({
   appId: 'app_live_xxxx',
   publishableKey: 'key_live_xxxx',
-})
+});
 
 if (!clientResult.ok) {
-  throw clientResult.error
+  throw clientResult.error;
 }
 
-const app = createApp(App)
-provideTryMellon(app, clientResult.value)
-app.mount('#app')
+const app = createApp(App);
+provideTryMellon(app, clientResult.value);
+app.mount('#app');
 ```
 
 ### Snippet – Botón de registro
@@ -183,24 +173,24 @@ app.mount('#app')
 ```vue
 <!-- components/RegisterButton.vue -->
 <script setup lang="ts">
-import { useRegister } from '@trymellon/js/vue'
+import { useRegister } from '@trymellon/js/vue';
 
 const props = defineProps<{
-  externalUserId: string
-}>()
+  externalUserId: string;
+}>();
 
-const { execute, loading, error } = useRegister()
+const { execute, loading, error } = useRegister();
 
 const handleClick = async () => {
-  const result = await execute({ externalUserId: props.externalUserId })
-  if (!result.ok) return
+  const result = await execute({ externalUserId: props.externalUserId });
+  if (!result.ok) return;
 
   await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionToken: result.value.sessionToken }),
-  })
-}
+  });
+};
 </script>
 
 <template>
@@ -223,9 +213,9 @@ Configure `provideTryMellonConfig` during app bootstrap and use `TryMellonServic
 
 ```ts
 // main.ts
-import { bootstrapApplication } from '@angular/platform-browser'
-import { provideTryMellonConfig } from '@trymellon/js/angular'
-import { AppComponent } from './app/app.component'
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideTryMellonConfig } from '@trymellon/js/angular';
+import { AppComponent } from './app/app.component';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -234,15 +224,15 @@ bootstrapApplication(AppComponent, {
       publishableKey: 'key_live_xxxx',
     }),
   ],
-})
+});
 ```
 
 ### Snippet – Componente de registro
 
 ```ts
 // app/register-button.component.ts
-import { Component, Input } from '@angular/core'
-import { TryMellonService } from '@trymellon/js/angular'
+import { Component, Input } from '@angular/core';
+import { TryMellonService } from '@trymellon/js/angular';
 
 @Component({
   selector: 'mellon-register-button',
@@ -254,25 +244,25 @@ import { TryMellonService } from '@trymellon/js/angular'
   `,
 })
 export class RegisterButtonComponent {
-  @Input() externalUserId = ''
-  loading = false
+  @Input() externalUserId = '';
+  loading = false;
 
   constructor(private readonly mellon: TryMellonService) {}
 
   async onClick() {
-    this.loading = true
+    this.loading = true;
     const result = await this.mellon.client.register({
       externalUserId: this.externalUserId,
-    })
-    this.loading = false
+    });
+    this.loading = false;
 
-    if (!result.ok) return
+    if (!result.ok) return;
 
     await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionToken: result.value.sessionToken }),
-    })
+    });
   }
 }
 ```
@@ -289,45 +279,45 @@ Framework-agnostic Custom Element that receives the `TryMellon` client and emits
 
 ```ts
 // mellon-login-button.ts
-import type { TryMellon } from '@trymellon/js'
+import type { TryMellon } from '@trymellon/js';
 
 export class MellonLoginButton extends HTMLElement {
-  private client: TryMellon | null = null
-  private button!: HTMLButtonElement
-  externalUserId = ''
+  private client: TryMellon | null = null;
+  private button!: HTMLButtonElement;
+  externalUserId = '';
 
   set mellonClient(client: TryMellon) {
-    this.client = client
+    this.client = client;
   }
 
   connectedCallback() {
-    this.button = document.createElement('button')
-    this.button.textContent = 'Login con passkey'
+    this.button = document.createElement('button');
+    this.button.textContent = 'Login con passkey';
     this.button.addEventListener('click', () => {
-      void this.handleClick()
-    })
-    this.appendChild(this.button)
+      void this.handleClick();
+    });
+    this.appendChild(this.button);
   }
 
   private async handleClick() {
-    if (!this.client) return
+    if (!this.client) return;
 
     const result = await this.client.authenticate({
       externalUserId: this.externalUserId,
-    })
+    });
 
-    if (!result.ok) return
+    if (!result.ok) return;
 
     this.dispatchEvent(
       new CustomEvent('mellon:authenticated', {
         detail: { sessionToken: result.value.sessionToken },
         bubbles: true,
-      }),
-    )
+      })
+    );
   }
 }
 
-customElements.define('mellon-login-button', MellonLoginButton)
+customElements.define('mellon-login-button', MellonLoginButton);
 ```
 
 ---
@@ -336,4 +326,3 @@ customElements.define('mellon-login-button', MellonLoginButton)
 
 - Main SDK skill: [.cursor/skills/trymellon-js-sdk/SKILL.md](../../.cursor/skills/trymellon-js-sdk/SKILL.md)
 - External documentation (npm, GitHub): linked from the SDK skill; not repeated here.
-

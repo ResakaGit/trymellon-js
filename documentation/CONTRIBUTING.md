@@ -38,17 +38,17 @@ npm run typecheck
 
 CI runs several jobs; you can reproduce them locally with these commands.
 
-| Part | Command | Description |
-| ---- | ------- | ----------- |
-| **Tests** | `npm test` | Vitest, all tests (except Angular). |
-| **Coverage** | `npm run test:coverage` | Tests with coverage report; fails if thresholds are not met (93% lines/statements/functions, 87% branches). |
-| **Angular tests** | `npm run test:angular` | Runs `build` then only the Angular adapter tests (Vitest with dedicated config). |
-| **E2E** | `npm run build && npm run test:e2e` | Build + Playwright; opens Chromium, serves the app and verifies SDK load and `isSupported()`. Requires prior build. |
-| **Lint** | `npm run lint` | ESLint on the codebase. |
-| **Format** | `npm run format:check` | Prettier in check mode. |
-| **Typecheck** | `npm run typecheck` | `tsc --noEmit`. |
-| **Dependency audit** | `npm run audit:ci` | audit-ci with repo policy (fails on high/critical). |
-| **Workflow lint** | `npm run lint:workflows` | Validates `.github/workflows` YAML with actionlint. If actionlint is not in PATH, the script downloads it to `scripts/.cache/actionlint`. |
+| Part                 | Command                             | Description                                                                                                                               |
+| -------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tests**            | `npm test`                          | Vitest, all tests (except Angular).                                                                                                       |
+| **Coverage**         | `npm run test:coverage`             | Tests with coverage report; fails if thresholds are not met (93% lines/statements/functions, 87% branches).                               |
+| **Angular tests**    | `npm run test:angular`              | Runs `build` then only the Angular adapter tests (Vitest with dedicated config).                                                          |
+| **E2E**              | `npm run build && npm run test:e2e` | Build + Playwright; opens Chromium, serves the app and verifies SDK load and `isSupported()`. Requires prior build.                       |
+| **Lint**             | `npm run lint`                      | ESLint on the codebase.                                                                                                                   |
+| **Format**           | `npm run format:check`              | Prettier in check mode.                                                                                                                   |
+| **Typecheck**        | `npm run typecheck`                 | `tsc --noEmit`.                                                                                                                           |
+| **Dependency audit** | `npm run audit:ci`                  | audit-ci with repo policy (fails on high/critical).                                                                                       |
+| **Workflow lint**    | `npm run lint:workflows`            | Validates `.github/workflows` YAML with actionlint. If actionlint is not in PATH, the script downloads it to `scripts/.cache/actionlint`. |
 
 **Recommendation before a PR:** run at least `npm run lint`, `npm run typecheck`, and `npm run test:coverage`. Optional: `npm run test:angular`, `npm run test:e2e`, `npm run audit:ci`, `npm run lint:workflows`.
 

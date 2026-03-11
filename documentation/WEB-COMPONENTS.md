@@ -7,7 +7,7 @@ Reference for using `<trymellon-auth>` and `<trymellon-auth-modal>` (entry point
 ## Registration
 
 ```typescript
-import '@trymellon/js/ui'
+import '@trymellon/js/ui';
 ```
 
 Import once to register both custom elements.
@@ -30,33 +30,29 @@ Single tag: action button and built-in modal. Ideal for most integrations.
 ></trymellon-auth>
 ```
 
-| Attribute | Type | Description |
-|----------|------|-------------|
-| `app-id` | string | Application ID (UUID) |
-| `publishable-key` | string | Client ID (`cli_xxxx`) |
-| `mode` | `auto` \| `login` \| `register` | Auth mode. `auto` = login by default. |
-| `external-user-id` | string | User identifier |
-| `theme` | `light` \| `dark` | Visual theme |
-| `action` | `open-modal` \| `direct-auth` | Default: button + modal. `direct-auth`: direct ceremony without opening modal. |
-| `trigger-only` | `true` \| `false` | If `true`, only renders the button and emits `mellon:open-request`; the host must open `<trymellon-auth-modal>` itself. |
+| Attribute          | Type                            | Description                                                                                                             |
+| ------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `app-id`           | string                          | Application ID (UUID)                                                                                                   |
+| `publishable-key`  | string                          | Client ID (`cli_xxxx`)                                                                                                  |
+| `mode`             | `auto` \| `login` \| `register` | Auth mode. `auto` = login by default.                                                                                   |
+| `external-user-id` | string                          | User identifier                                                                                                         |
+| `theme`            | `light` \| `dark`               | Visual theme                                                                                                            |
+| `action`           | `open-modal` \| `direct-auth`   | Default: button + modal. `direct-auth`: direct ceremony without opening modal.                                          |
+| `trigger-only`     | `true` \| `false`               | If `true`, only renders the button and emits `mellon:open-request`; the host must open `<trymellon-auth-modal>` itself. |
 
 ### Button-only option (`trigger-only="true"`)
 
 To control where the modal is mounted (portal, custom overlay):
 
 ```html
-<trymellon-auth
-  app-id="…"
-  publishable-key="…"
-  trigger-only="true"
-></trymellon-auth>
+<trymellon-auth app-id="…" publishable-key="…" trigger-only="true"></trymellon-auth>
 <trymellon-auth-modal id="my-modal" app-id="…" publishable-key="…"></trymellon-auth-modal>
 ```
 
 ```js
 document.querySelector('trymellon-auth').addEventListener('mellon:open-request', () => {
-  document.getElementById('my-modal').open = true
-})
+  document.getElementById('my-modal').open = true;
+});
 ```
 
 ---
@@ -67,31 +63,31 @@ Modal with Login/Register tabs, onboarding, and open/close cycle.
 
 ### Attributes
 
-| Attribute | Type | Description |
-|----------|------|-------------|
-| `app-id` | string | Application ID (UUID) |
-| `publishable-key` | string | Client ID (`cli_xxxx`) |
-| `open` | `true` \| `false` | Controls visibility |
-| `tab` | `login` \| `register` | Active tab |
-| `tab-labels` | string | Custom labels, comma-separated (e.g. `"Sign Up,Sign In"`) |
-| `mode` | `modal` \| `inline` | Presentation mode |
-| `theme` | `light` \| `dark` | Theme |
-| `dialog-title` | string | Modal title; if not set, "TryMellon — Sign in or register" or `app-name` + " — Sign in or register" is used. |
-| `dialog-description` | string | Description below the title; if not set, SDK default text. |
-| `session-id` | string | Session ID for onboarding |
-| `onboarding-url` | string | External URL to complete onboarding |
-| `is-mobile-override` | `true` \| `false` | Override mobile detection |
-| `fallback-type` | `email` \| `qr` | Preferred fallback channel |
-| `qr-load-timeout-ms` | number | Timeout (ms) to show error if no content is injected into the cross-device slot after opening (default 12000). |
+| Attribute            | Type                  | Description                                                                                                    |
+| -------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `app-id`             | string                | Application ID (UUID)                                                                                          |
+| `publishable-key`    | string                | Client ID (`cli_xxxx`)                                                                                         |
+| `open`               | `true` \| `false`     | Controls visibility                                                                                            |
+| `tab`                | `login` \| `register` | Active tab                                                                                                     |
+| `tab-labels`         | string                | Custom labels, comma-separated (e.g. `"Sign Up,Sign In"`)                                                      |
+| `mode`               | `modal` \| `inline`   | Presentation mode                                                                                              |
+| `theme`              | `light` \| `dark`     | Theme                                                                                                          |
+| `dialog-title`       | string                | Modal title; if not set, "TryMellon — Sign in or register" or `app-name` + " — Sign in or register" is used.   |
+| `dialog-description` | string                | Description below the title; if not set, SDK default text.                                                     |
+| `session-id`         | string                | Session ID for onboarding                                                                                      |
+| `onboarding-url`     | string                | External URL to complete onboarding                                                                            |
+| `is-mobile-override` | `true` \| `false`     | Override mobile detection                                                                                      |
+| `fallback-type`      | `email` \| `qr`       | Preferred fallback channel                                                                                     |
+| `qr-load-timeout-ms` | number                | Timeout (ms) to show error if no content is injected into the cross-device slot after opening (default 12000). |
 
 ### API from JS
 
 ```typescript
-const modal = document.querySelector('trymellon-auth-modal')
-modal.open = true
-modal.tab = 'register'
-modal.theme = 'dark'
-modal.reset() // Reset to initial state
+const modal = document.querySelector('trymellon-auth-modal');
+modal.open = true;
+modal.tab = 'register';
+modal.theme = 'dark';
+modal.reset(); // Reset to initial state
 ```
 
 ### Core injection (when the host mounts the modal)
@@ -99,13 +95,13 @@ modal.reset() // Reset to initial state
 If you use `trigger-only` and mount `<trymellon-auth-modal>` yourself, you must inject the auth core:
 
 ```js
-import { TryMellon } from '@trymellon/js'
+import { TryMellon } from '@trymellon/js';
 
-const clientResult = TryMellon.create({ appId: '…', publishableKey: '…' })
-if (!clientResult.ok) throw clientResult.error
+const clientResult = TryMellon.create({ appId: '…', publishableKey: '…' });
+if (!clientResult.ok) throw clientResult.error;
 
-const modal = document.querySelector('trymellon-auth-modal')
-modal.attachCore(clientResult.value)
+const modal = document.querySelector('trymellon-auth-modal');
+modal.attachCore(clientResult.value);
 ```
 
 Before reopening the modal, call `modal.reset()` for a clean state.
@@ -133,30 +129,32 @@ To show a **scannable QR**, the host must:
 
 Listen on the WC **element** (not on `document`), so the token is not exposed to third-party scripts.
 
-| Event | Detail | Description |
-|--------|--------|-------------|
-| `mellon:open` | `{}` | Modal opened |
-| `mellon:close` | `{ reason: 'success' \| 'cancel' \| 'error' \| 'user' }` | Modal closed |
-| `mellon:open-request` | `{}` | Button click (when `action="open-modal"`) |
-| `mellon:start` | `{ operation }` | Auth operation started |
-| `mellon:success` | `{ token, user, nonce? }` | Auth succeeded |
-| `mellon:error` | `{ error }` | Auth error |
-| `mellon:cancelled` | `{}` | Auth cancelled |
-| `mellon:fallback` | `{ operation? }` | Fallback (email/QR) triggered |
-| `mellon:tab-change` | `{ tab }` | Tab change |
+| Event                 | Detail                                                   | Description                               |
+| --------------------- | -------------------------------------------------------- | ----------------------------------------- |
+| `mellon:open`         | `{}`                                                     | Modal opened                              |
+| `mellon:close`        | `{ reason: 'success' \| 'cancel' \| 'error' \| 'user' }` | Modal closed                              |
+| `mellon:open-request` | `{}`                                                     | Button click (when `action="open-modal"`) |
+| `mellon:start`        | `{ operation }`                                          | Auth operation started                    |
+| `mellon:success`      | `{ token, user, nonce? }`                                | Auth succeeded                            |
+| `mellon:error`        | `{ error }`                                              | Auth error                                |
+| `mellon:cancelled`    | `{}`                                                     | Auth cancelled                            |
+| `mellon:fallback`     | `{ operation? }`                                         | Fallback (email/QR) triggered             |
+| `mellon:tab-change`   | `{ tab }`                                                | Tab change                                |
 
 ### Example: send token to backend
 
 ```js
-const modal = document.querySelector('trymellon-auth-modal')
+const modal = document.querySelector('trymellon-auth-modal');
 modal.addEventListener('mellon:success', (e) => {
-  const { token } = e.detail
+  const { token } = e.detail;
   fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sessionToken: token }),
-  }).then(() => { /* redirect or close */ })
-})
+  }).then(() => {
+    /* redirect or close */
+  });
+});
 ```
 
 The backend **must always validate** the token (TryMellon validation endpoint); do not create a session just because the front sent a string.
@@ -165,10 +163,10 @@ The backend **must always validate** the token (TryMellon validation endpoint); 
 
 ## `action` behavior
 
-| `action` | Effect |
-|----------|--------|
-| `open-modal` (default) | Click → emits `mellon:open-request` and (if not `trigger-only`) opens the internal modal. |
-| `direct-auth` | Click → direct ceremony in the WC; no modal opens. Listen for `mellon:success` or `mellon:error`/`mellon:cancelled` on the element. |
+| `action`               | Effect                                                                                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `open-modal` (default) | Click → emits `mellon:open-request` and (if not `trigger-only`) opens the internal modal.                                           |
+| `direct-auth`          | Click → direct ceremony in the WC; no modal opens. Listen for `mellon:success` or `mellon:error`/`mellon:cancelled` on the element. |
 
 ---
 
