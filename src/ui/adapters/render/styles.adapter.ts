@@ -474,7 +474,10 @@ export const MODAL_EXTRA_STYLES = `
     animation: none;
   }
 }
-/* Minimal variant: transparent black, white border, same as landing (auth.styles modalContent) */
+/* Minimal variant: opaque backdrop + panel (no reliance on host CSS vars when modal is in body). */
+[data-mellon-modal-variant="minimal"] .mellon-modal-overlay {
+  background: rgba(0, 0, 0, 0.65);
+}
 [data-mellon-modal-variant="minimal"] .mellon-modal-panel {
   border-radius: 1rem;
   border-width: 2px;
@@ -487,10 +490,10 @@ export const MODAL_EXTRA_STYLES = `
   --mellon-border: rgba(0, 0, 0, 0.15);
 }
 :host([theme="dark"]) [data-mellon-modal-variant="minimal"] .mellon-modal-panel {
-  background: rgba(0, 0, 0, 0.88);
+  background: #0f0f0f;
 }
 :host([theme="light"]) [data-mellon-modal-variant="minimal"] .mellon-modal-panel {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
 }
 [data-mellon-modal-variant="minimal"] .mellon-modal-tabs {
   padding: 0.5rem 1rem 0;

@@ -19,7 +19,7 @@ import {
 } from '../adapters/render/styles.adapter';
 import type { MellonFallbackDetail } from '../ports';
 import { toCoreAuthOptions } from '../adapters/infra/core-factory.adapter';
-import { MELLON_CLOSE } from '../adapters/infra/event-bridge.adapter';
+import { MELLON_CLOSE, MELLON_SUCCESS } from '../adapters/infra/event-bridge.adapter';
 import { AuthElementBase } from './auth-element-base';
 import { TryMellonAuthModalElement } from './trymellon-auth-modal.element';
 import { OBSERVED_ATTRIBUTES_AUTH } from './constants';
@@ -39,6 +39,18 @@ export class TryMellonAuthElement extends AuthElementBase {
   private _onInternalModalClose = (): void => {
     if (this._internalModal) this._internalModal.open = false;
     this._restoreFocusToTrigger();
+  };
+
+  /** Re-dispatch modal success on this element so host can listen on <trymellon-auth> (modal is in body, events don't bubble here). */
+  private _onInternalModalSuccess = (e: Event): void => {
+    const ev = e as CustomEvent;
+    this.dispatchEvent(
+      new CustomEvent(MELLON_SUCCESS, {
+        detail: ev.detail,
+        bubbles: false,
+        composed: true,
+      })
+    );
   };
 
   private _restoreFocusToTrigger(): void {
@@ -82,7 +94,7 @@ export class TryMellonAuthElement extends AuthElementBase {
     this._unregisterInteractions?.();
     this._unregisterInteractions = registerAuthButtonInteractions(this.shadowRoot, {
       onPrimaryClick: () => this._onPrimaryClick(),
-      onFallbackClick: (type) => this.dispatchFallback(type),
+      onFallbackClick: (type?: 'email' | 'qr') => this.dispatchFallback(type),
     });
   }
 
@@ -173,6 +185,8 @@ export class TryMellonAuthElement extends AuthElementBase {
     this._internalModal.setAttribute('theme', this._parsed.theme);
     const tab = this._parsed.mode === 'auto' ? 'login' : this._parsed.mode;
     this._internalModal.setAttribute('tab', tab);
+    /** Opaque panel (avoids transparent look when host CSS vars don't reach body-portaled modal). */
+    this._internalModal.setAttribute('modal-variant', 'minimal');
   }
 
   private _ensureInternalModal(): void {
@@ -193,6 +207,7 @@ export class TryMellonAuthElement extends AuthElementBase {
     this._internalModal = modal;
     this._syncInternalModalAttributes();
     modal.addEventListener(MELLON_CLOSE, this._onInternalModalClose);
+    modal.addEventListener(MELLON_SUCCESS, this._onInternalModalSuccess);
     // Portal to body so overlay covers viewport; ancestors with transform/filter/backdrop-filter
     // would otherwise create a containing block and trap position:fixed (modal off to the side).
     if (typeof document !== 'undefined' && document.body) {
@@ -207,6 +222,7 @@ export class TryMellonAuthElement extends AuthElementBase {
     this._unregisterInteractions = null;
     if (this._internalModal?.isConnected) {
       this._internalModal.removeEventListener(MELLON_CLOSE, this._onInternalModalClose);
+      this._internalModal.removeEventListener(MELLON_SUCCESS, this._onInternalModalSuccess);
       this._internalModal.remove();
       this._internalModal = null;
     }
