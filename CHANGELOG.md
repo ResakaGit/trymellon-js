@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/ResakaGit/trymellon-js/compare/v2.0.0...v2.1.0) (2026-03-12)
+
+
+### Features
+
+* **ui:** solid modal background in auth boot (2.0.1) ([92aba05](https://github.com/ResakaGit/trymellon-js/commit/92aba05495c5e61887e191d66cd7d4ee80664513))
+
 # [2.0.0](https://github.com/ResakaGit/trymellon-js/compare/v1.7.6...v2.0.0) (2026-03-11)
 
 
