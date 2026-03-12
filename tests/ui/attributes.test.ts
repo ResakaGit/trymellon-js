@@ -78,5 +78,19 @@ describe('attributes (E.4)', () => {
       el.setAttribute('button-variant', 'default');
       expect(parseAttributesFromElement(el).buttonVariant).toBe('default');
     });
+
+    it('parses button-label into parsed buttonLabel', () => {
+      const el = document.createElement('div');
+      el.setAttribute('button-label', 'Sign in');
+      const parsed = parseAttributesFromElement(el);
+      expect(parsed.buttonLabel).toBe('Sign in');
+    });
+
+    it('parses button-aria-label into parsed buttonAriaLabel', () => {
+      const el = document.createElement('div');
+      el.setAttribute('button-aria-label', 'Sign in with TryMellon');
+      const parsed = parseAttributesFromElement(el);
+      expect(parsed.buttonAriaLabel).toBe('Sign in with TryMellon');
+    });
   });
 });

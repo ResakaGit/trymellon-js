@@ -77,6 +77,18 @@ describe('TryMellonAuthElement (E.4 shell)', () => {
     expect(msg?.textContent).toContain('Success');
   });
 
+  it('uses button-label and button-aria-label when provided', () => {
+    const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
+    el.setAttribute('button-label', 'Sign in');
+    el.setAttribute('button-aria-label', 'Sign in with TryMellon');
+    container.appendChild(el);
+    el.setStateForRender('READY_LOGIN');
+    const btn = el.shadowRoot?.querySelector('button.mellon-btn') as HTMLButtonElement | null;
+    expect(btn).not.toBeNull();
+    expect(btn?.textContent).toContain('Sign in');
+    expect(btn?.getAttribute('aria-label')).toBe('Sign in with TryMellon');
+  });
+
   it('button-variant pill: setAttribute updates render to pill button', () => {
     const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
     el.setAttribute('app-id', 'app_test');

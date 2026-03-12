@@ -31,6 +31,8 @@ export function parseAttributesFromElement(element: HTMLElement): ParsedAttribut
       BUTTON_VARIANTS,
       DEFAULT_BUTTON_VARIANT
     ),
+    buttonLabel: parseOptionalString(element.getAttribute('button-label')),
+    buttonAriaLabel: parseOptionalString(element.getAttribute('button-aria-label')),
   };
   return ensureParsedAttributes(raw);
 }

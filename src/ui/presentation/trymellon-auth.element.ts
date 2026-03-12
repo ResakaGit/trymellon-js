@@ -167,6 +167,8 @@ export class TryMellonAuthElement extends AuthElementBase {
     if (!this.shadowRoot) return;
     const vm = buildAuthButtonViewModel(this.currentState, this._parsed, {
       registerSessionReady: this._parsed.mode === 'register' ? this.canStartAuth() : undefined,
+      primaryButtonLabel: this._parsed.buttonLabel ?? undefined,
+      primaryButtonAriaLabel: this._parsed.buttonAriaLabel ?? undefined,
     });
     const surface: IRenderSurface = { shadowRoot: this.shadowRoot };
     renderAuthButton(surface, vm);

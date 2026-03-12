@@ -20,6 +20,8 @@ export const OBSERVED_ATTRIBUTES_AUTH = [
   'action',
   'trigger-only',
   'button-variant',
+  'button-label',
+  'button-aria-label',
 ] as const;
 
 export const OBSERVED_ATTRIBUTES_MODAL = [

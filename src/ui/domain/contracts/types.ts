@@ -25,6 +25,10 @@ export type ParsedAttributes = {
   action: ButtonAction;
   triggerOnly: boolean;
   buttonVariant: ButtonVariant;
+  /** Optional visible label for the trigger button (default = PRIMARY_BUTTON_LABEL). */
+  buttonLabel?: string | null;
+  /** Optional aria-label for the trigger button (default = TRIGGER_ARIA_LABEL). */
+  buttonAriaLabel?: string | null;
 };
 
 /** Modal display mode: overlay vs inline. */
