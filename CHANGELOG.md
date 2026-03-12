@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/ResakaGit/trymellon-js/compare/v2.1.0...v2.2.0) (2026-03-12)
+
+
+### Features
+
+* **ui:** customizable auth button label ([f16dc0d](https://github.com/ResakaGit/trymellon-js/commit/f16dc0d7860558be5641968d25a1eef84ef0ef6c))
+
 # [2.1.0](https://github.com/ResakaGit/trymellon-js/compare/v2.0.0...v2.1.0) (2026-03-12)
 
 
