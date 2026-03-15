@@ -123,6 +123,7 @@ export class TryMellonAuthModalElement extends AuthElementBase {
     this._parsed = parseModalAttributesFromElement(this);
     if (name === 'open') {
       if (this._parsed.open && oldValue !== 'true') {
+        this._clearCrossDeviceSlot();
         const detail: MellonOpenDetail = { timestamp: Date.now() };
         this.dispatchEvent(createMellonOpenEvent(detail));
         this._startQrLoadWait();
@@ -143,6 +144,11 @@ export class TryMellonAuthModalElement extends AuthElementBase {
     ensureModalStructure(this.shadowRoot, this._parsed);
     this._render();
     this._applyModalVisibility();
+  }
+
+  /** Clear any host-injected cross-device slot content so each open starts with a clean slot (avoids stacked QRs). */
+  private _clearCrossDeviceSlot(): void {
+    this.querySelectorAll(`[slot="${SLOT_CROSS_DEVICE}"]`).forEach((el) => el.remove());
   }
 
   private _startQrLoadWait(): void {
