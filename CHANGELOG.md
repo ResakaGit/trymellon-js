@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/ResakaGit/trymellon-js/compare/v2.2.0...v2.2.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* **ui:** clear cross-device slot on modal open to prevent stacked QRs ([57678d1](https://github.com/ResakaGit/trymellon-js/commit/57678d1944aaec5ac068660f868be00c357c75c7))
+
 # [2.2.0](https://github.com/ResakaGit/trymellon-js/compare/v2.1.0...v2.2.0) (2026-03-12)
 
 
