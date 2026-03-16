@@ -2,12 +2,13 @@
 
 ### Features
 
-* **sdk+ui:** onboarding v1 paths, enrollment/bridge managers and improved auth UI ([b552f2a](https://github.com/ResakaGit/trymellon-js/commit/b552f2a7ab380c137a6f2fc61d5ae292a2275423))
+- **sdk+ui:** onboarding v1 paths, enrollment/bridge managers and improved auth UI ([b552f2a](https://github.com/ResakaGit/trymellon-js/commit/b552f2a7ab380c137a6f2fc61d5ae292a2275423))
 
 ### Chore
 
-* **audit:ci:** Add npm override for `flatted` (>=3.4.0) to fix GHSA-25h7-pfq9-p65f (DoS in parse). Enables `npm run audit:ci` to pass without allowlisting.
-* **coverage:** Lower Vitest thresholds to 93/92/86/93 (lines/functions/branches/statements) so `test:coverage` passes.
+- **audit:ci:** Add npm override for `flatted` (>=3.4.0) to fix GHSA-25h7-pfq9-p65f (DoS in parse). Enables `npm run audit:ci` to pass without allowlisting.
+- **coverage:** Lower Vitest thresholds to 93/92/86/93 (lines/functions/branches/statements) so `test:coverage` passes.
+- **lint:** Prettier format fix for CHANGELOG.md so `format:check` passes in CI.
 
 # [2.3.0](https://github.com/ResakaGit/trymellon-js/compare/v2.2.1...v2.3.0) (2026-03-16)
 
