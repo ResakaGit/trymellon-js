@@ -1,9 +1,8 @@
 ## [2.3.1](https://github.com/ResakaGit/trymellon-js/compare/v2.3.0...v2.3.1) (2026-03-16)
 
-
 ### Bug Fixes
 
-* improve angular adapter and logging ([0b5c9eb](https://github.com/ResakaGit/trymellon-js/commit/0b5c9eb422cbd81c10da0747d200e4658894f8d9))
+- improve angular adapter and logging ([0b5c9eb](https://github.com/ResakaGit/trymellon-js/commit/0b5c9eb422cbd81c10da0747d200e4658894f8d9))
 
 # [2.3.0](https://github.com/ResakaGit/trymellon-js/compare/v2.2.1...v2.3.0) (2026-03-16)
 
