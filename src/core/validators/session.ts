@@ -50,9 +50,9 @@ export function validateSessionValidateResponse(
 
   return ok({
     valid,
-    user_id,
-    external_user_id,
-    tenant_id,
-    app_id,
+    userId: user_id,
+    externalUserId: external_user_id,
+    tenantId: tenant_id,
+    appId: app_id,
   });
 }

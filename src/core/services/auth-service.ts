@@ -75,7 +75,7 @@ export class AuthService {
     if (result.ok && this.telemetrySender) {
       this.telemetrySender
         .send(buildTelemetryPayload('register', Date.now() - start))
-        .catch(() => {});
+        .catch((e) => console.warn('[TryMellon] Telemetry send failed', e));
     }
     return result;
   }
@@ -101,7 +101,7 @@ export class AuthService {
     if (result.ok && this.telemetrySender) {
       this.telemetrySender
         .send(buildTelemetryPayload('authenticate', Date.now() - start))
-        .catch(() => {});
+        .catch((e) => console.warn('[TryMellon] Telemetry send failed', e));
     }
     return result;
   }

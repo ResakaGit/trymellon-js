@@ -1,11 +1,6 @@
 import type { ApiClient } from './api';
 import type { EventEmitter } from './events';
-import type {
-  RecoverAccountOptions,
-  RecoverAccountResult,
-  RecoveryVerifyResponse,
-  RegisterStartResponse,
-} from '../types';
+import type { RecoverAccountOptions, RecoverAccountResult, RecoveryVerifyResponse } from '../types';
 import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import type { TryMellonError } from '../errors';
@@ -44,8 +39,20 @@ export async function recoverAccount(
     operation: 'register',
     eventEmitter,
     start: () => apiClient.verifyAccountRecoveryOtp(extId, options.otp),
-    createOptions: (startResult) =>
-      createRegistrationOptions(startResult.challenge as RegisterStartResponse['challenge']),
+    createOptions: (startResult) => {
+      const c = startResult.challenge;
+      if (
+        !c ||
+        typeof c !== 'object' ||
+        !('rp' in c) ||
+        !('user' in c) ||
+        !('challenge' in c) ||
+        !('pubKeyCredParams' in c)
+      ) {
+        return err(createInvalidArgumentError('challenge', 'invalid recovery challenge structure'));
+      }
+      return createRegistrationOptions(c as Parameters<typeof createRegistrationOptions>[0]);
+    },
     invoke: async (ceremonyOptions) => navigator.credentials.create(ceremonyOptions),
     finish: async (startResult, credential) => {
       const finishResult = await apiClient.completeAccountRecovery(

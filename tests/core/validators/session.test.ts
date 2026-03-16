@@ -10,12 +10,15 @@ describe('validateSessionValidateResponse', () => {
     app_id: 'app_1',
   };
 
-  it('should return ok for valid payload', () => {
+  it('should return ok for valid payload and map to camelCase', () => {
     const result = validateSessionValidateResponse(validPayload);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.valid).toBe(true);
-      expect(result.value.app_id).toBe('app_1');
+      expect(result.value.appId).toBe('app_1');
+      expect(result.value.userId).toBe('u1');
+      expect(result.value.externalUserId).toBe('ext1');
+      expect(result.value.tenantId).toBe('tenant_1');
     }
   });
 

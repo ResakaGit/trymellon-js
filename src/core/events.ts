@@ -38,9 +38,8 @@ export class EventEmitter {
       for (const handler of handlersSet) {
         try {
           handler(payload);
-        } catch {
-          // Silently ignore handler errors to prevent one handler from breaking others
-          // Handler errors are the responsibility of the handler implementation
+        } catch (e) {
+          console.warn('[TryMellon] Event handler threw:', e);
         }
       }
     }

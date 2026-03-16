@@ -1,22 +1,17 @@
 import { Injectable, InjectionToken, inject } from '@angular/core';
-import { TryMellon } from '../core/trymellon';
-import type { TryMellonConfig } from '../types';
+import type { TryMellon } from '../core/trymellon';
 
-export const TRYMELLON_CONFIG = new InjectionToken<TryMellonConfig>('TRYMELLON_CONFIG');
+export const TRYMELLON_CLIENT = new InjectionToken<TryMellon>('TRYMELLON_CLIENT');
 
 @Injectable({ providedIn: 'root' })
 export class TryMellonService {
-  private readonly config = inject(TRYMELLON_CONFIG, { optional: true });
-  private _client: TryMellon | null = null;
+  private readonly _client = inject(TRYMELLON_CLIENT, { optional: true });
 
   get client(): TryMellon {
     if (this._client == null) {
-      if (this.config == null) {
-        throw new Error(
-          'TryMellonService: provide TRYMELLON_CONFIG (e.g. via provideTryMellonConfig(config))'
-        );
-      }
-      this._client = new TryMellon(this.config);
+      throw new Error(
+        'TryMellonService: provide TRYMELLON_CLIENT (e.g. via provideTryMellon(client))'
+      );
     }
     return this._client;
   }

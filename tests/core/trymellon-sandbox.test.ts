@@ -154,8 +154,8 @@ describe('TryMellon sandbox mode', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.valid).toBe(true);
-        expect(result.value.user_id).toBe('sandbox-user');
-        expect(result.value.external_user_id).toBe('sandbox');
+        expect(result.value.userId).toBe('sandbox-user');
+        expect(result.value.externalUserId).toBe('sandbox');
       }
     });
   });

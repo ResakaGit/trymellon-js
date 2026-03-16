@@ -9,24 +9,28 @@ import {
   BrowserDynamicTestingModule,
   platformBrowserDynamicTesting,
 } from '@angular/platform-browser-dynamic/testing';
-import { TryMellonService, provideTryMellonConfig } from '@trymellon/js/angular';
+import { TryMellonService, provideTryMellon } from '@trymellon/js/angular';
+import { TryMellon } from '@trymellon/js';
 
 beforeAll(() => {
   TestBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
 });
 
 describe('Angular adapter', () => {
+  let client: TryMellon;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    const result = TryMellon.create({
+      appId: 'app_test',
+      publishableKey: 'key_test',
+      apiBaseUrl: 'https://api.example.com',
+    });
+    if (!result.ok) throw new Error('expected ok');
+    client = result.value;
+
     TestBed.configureTestingModule({
-      providers: [
-        provideTryMellonConfig({
-          appId: 'app_test',
-          publishableKey: 'key_test',
-          apiBaseUrl: 'https://api.example.com',
-        }),
-        TryMellonService,
-      ],
+      providers: [provideTryMellon(client), TryMellonService],
     });
   });
 

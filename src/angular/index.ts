@@ -1,9 +1,9 @@
 import type { Provider } from '@angular/core';
-import type { TryMellonConfig } from '../types';
-import { TRYMELLON_CONFIG } from './trymellon.service';
+import type { TryMellon } from '../core/trymellon';
+import { TRYMELLON_CLIENT } from './trymellon.service';
 
-export { TryMellonService, TRYMELLON_CONFIG } from './trymellon.service';
+export { TryMellonService, TRYMELLON_CLIENT } from './trymellon.service';
 
-export function provideTryMellonConfig(config: TryMellonConfig): Provider {
-  return { provide: TRYMELLON_CONFIG, useValue: config } as Provider;
+export function provideTryMellon(client: TryMellon): Provider {
+  return { provide: TRYMELLON_CLIENT, useValue: client } as Provider;
 }

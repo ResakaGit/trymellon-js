@@ -35,7 +35,5 @@ export function base64UrlDecode(s: string): Uint8Array {
 /** Decodes base64url to ArrayBuffer (delegates to base64UrlDecode). */
 export function base64UrlDecodeToArrayBuffer(s: string): ArrayBuffer {
   const bytes = base64UrlDecode(s);
-  const buffer = new ArrayBuffer(bytes.length);
-  new Uint8Array(buffer).set(bytes);
-  return buffer;
+  return bytes.buffer as ArrayBuffer;
 }

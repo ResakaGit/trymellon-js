@@ -11,22 +11,11 @@ export type { TryMellonError };
 export type Branded<T, B> = T & { __brand: B };
 
 export type AppId = Branded<string, 'AppId'>;
-export type TenantId = Branded<string, 'TenantId'>;
 export type ExternalUserId = Branded<string, 'ExternalUserId'>;
 export type UserId = Branded<string, 'UserId'>;
-export type SessionId = Branded<string, 'SessionId'>;
-export type SessionToken = Branded<string, 'SessionToken'>;
 
 /** 64-character hex string (SHA-256). Used to bind enrollment ticket to browser context. */
 export type ContextHash = Branded<string, 'ContextHash'>;
-
-export function asAppId(value: string): AppId {
-  return value as AppId;
-}
-
-export function asExternalUserId(value: string): ExternalUserId {
-  return value as ExternalUserId;
-}
 
 // ============================================================================
 // Configuration Types
@@ -34,7 +23,7 @@ export function asExternalUserId(value: string): ExternalUserId {
 
 export type TryMellonConfig = {
   /** Application identifier (tenant). Required for API requests. */
-  appId: string | AppId;
+  appId: string;
   /** API key for authentication. Required for API requests. */
   publishableKey: string;
   apiBaseUrl?: string;
@@ -602,10 +591,10 @@ export interface AuthenticateResult {
 
 export type SessionValidateResponse = {
   valid: boolean;
-  user_id: string;
-  external_user_id: string;
-  tenant_id: string;
-  app_id: string;
+  userId: string;
+  externalUserId: string;
+  tenantId: string;
+  appId: string;
 };
 
 // ============================================================================

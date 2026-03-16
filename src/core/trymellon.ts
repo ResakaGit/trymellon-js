@@ -67,38 +67,34 @@ export class TryMellon {
   private readonly bridgeManager: BridgeManager;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
 
-  /**
-   * Creates a new TryMellon instance.
-   * Validates config and returns a Result.
-   * @param config SDK configuration
-   */
+  private static validateConfig(config: TryMellonConfig): void {
+    const { appId, publishableKey } = config;
+
+    if (!appId || typeof appId !== 'string' || appId.trim() === '') {
+      throw createInvalidArgumentError('appId', 'must be a non-empty string');
+    }
+    if (!publishableKey || typeof publishableKey !== 'string' || publishableKey.trim() === '') {
+      throw createInvalidArgumentError('publishableKey', 'must be a non-empty string');
+    }
+
+    const apiBaseUrl = config.apiBaseUrl ?? DEFAULT_API_BASE_URL;
+    validateUrl(apiBaseUrl, 'apiBaseUrl');
+
+    const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    validateRange(timeoutMs, 'timeoutMs', MIN_TIMEOUT_MS, MAX_TIMEOUT_MS);
+
+    if (config.maxRetries !== undefined) {
+      validateRange(config.maxRetries, 'maxRetries', MIN_MAX_RETRIES, MAX_MAX_RETRIES);
+    }
+
+    if (config.retryDelayMs !== undefined) {
+      validateRange(config.retryDelayMs, 'retryDelayMs', MIN_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS);
+    }
+  }
+
   static create(config: TryMellonConfig): Result<TryMellon, TryMellonError> {
     try {
-      const appId = config.appId;
-      const publishableKey = config.publishableKey;
-
-      if (!appId || typeof appId !== 'string' || appId.trim() === '') {
-        return err(createInvalidArgumentError('appId', 'must be a non-empty string'));
-      }
-      if (!publishableKey || typeof publishableKey !== 'string' || publishableKey.trim() === '') {
-        return err(createInvalidArgumentError('publishableKey', 'must be a non-empty string'));
-      }
-
-      const apiBaseUrl = config.apiBaseUrl ?? DEFAULT_API_BASE_URL;
-      validateUrl(apiBaseUrl, 'apiBaseUrl');
-
-      const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-      validateRange(timeoutMs, 'timeoutMs', MIN_TIMEOUT_MS, MAX_TIMEOUT_MS);
-
-      if (config.maxRetries !== undefined) {
-        validateRange(config.maxRetries, 'maxRetries', MIN_MAX_RETRIES, MAX_MAX_RETRIES);
-      }
-
-      if (config.retryDelayMs !== undefined) {
-        validateRange(config.retryDelayMs, 'retryDelayMs', MIN_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS);
-      }
-
-      // Safe to instantiate now
+      TryMellon.validateConfig(config);
       return ok(new TryMellon(config));
     } catch (e) {
       if (isTryMellonError(e)) {
@@ -119,33 +115,12 @@ export class TryMellon {
         ? config.sandboxToken
         : SANDBOX_SESSION_TOKEN;
 
-    const appId = config.appId;
-    const publishableKey = config.publishableKey;
+    TryMellon.validateConfig(config);
 
-    // Legacy validation for direct constructor usage (still throws to maintain behavior for legacy code,
-    // but create() handles this safely before calling constructor)
-    if (!appId || typeof appId !== 'string' || appId.trim() === '') {
-      throw createInvalidArgumentError('appId', 'must be a non-empty string');
-    }
-    if (!publishableKey || typeof publishableKey !== 'string' || publishableKey.trim() === '') {
-      throw createInvalidArgumentError('publishableKey', 'must be a non-empty string');
-    }
-
+    const appId = config.appId as string;
+    const publishableKey = config.publishableKey as string;
     const apiBaseUrl = config.apiBaseUrl ?? DEFAULT_API_BASE_URL;
-    // validateUrl throws, which is expected for the constructor. create() catches it.
-    validateUrl(apiBaseUrl, 'apiBaseUrl');
-
     const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-    validateRange(timeoutMs, 'timeoutMs', MIN_TIMEOUT_MS, MAX_TIMEOUT_MS);
-
-    if (config.maxRetries !== undefined) {
-      validateRange(config.maxRetries, 'maxRetries', MIN_MAX_RETRIES, MAX_MAX_RETRIES);
-    }
-
-    if (config.retryDelayMs !== undefined) {
-      validateRange(config.retryDelayMs, 'retryDelayMs', MIN_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS);
-    }
-
     const maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
     const retryDelayMs = config.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
     const httpClient = new FetchHttpClient(timeoutMs, maxRetries, retryDelayMs, config.logger);
@@ -264,10 +239,10 @@ export class TryMellon {
       return Promise.resolve(
         ok({
           valid: true,
-          user_id: 'sandbox-user',
-          external_user_id: 'sandbox',
-          tenant_id: 'sandbox-tenant',
-          app_id: 'sandbox-app',
+          userId: 'sandbox-user',
+          externalUserId: 'sandbox',
+          tenantId: 'sandbox-tenant',
+          appId: 'sandbox-app',
         })
       );
     }
