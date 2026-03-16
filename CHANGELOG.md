@@ -1,5 +1,12 @@
 # [2.3.0](https://github.com/ResakaGit/trymellon-js/compare/v2.2.1...v2.3.0) (2026-03-16)
 
+
+### Features
+
+* **sdk+ui:** onboarding v1 paths, enrollment/bridge managers and improved auth UI ([b552f2a](https://github.com/ResakaGit/trymellon-js/commit/b552f2a7ab380c137a6f2fc61d5ae292a2275423))
+
+# [2.3.0](https://github.com/ResakaGit/trymellon-js/compare/v2.2.1...v2.3.0) (2026-03-16)
+
 ### Changed
 
 - **API paths (onboarding):** All onboarding endpoints now use base path `/v1/onboarding/*`. The SDK calls `POST /v1/onboarding/start`, `GET /v1/onboarding/:session_id/status`, etc. If you integrate against the API directly, use `/v1/onboarding/*` (breaking for custom clients using old paths).
