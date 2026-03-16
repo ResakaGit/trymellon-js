@@ -1,6 +1,6 @@
 {
   "name": "@trymellon/js",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "SDK oficial de TryMellon para integrar autenticación passwordless con Passkeys / WebAuthn",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -135,8 +135,14 @@
     "@angular/core": "^17.0.0 || ^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true },
-    "vue": { "optional": true },
-    "@angular/core": { "optional": true }
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "@angular/core": {
+      "optional": true
+    }
   }
 }
