@@ -88,6 +88,121 @@ export function validatePubKeyCredParams(
   return ok(true);
 }
 
+/**
+ * Parsed shape of a "register start" challenge (shared by register and enrollment validators).
+ * Single source of truth for the validation sequence; avoids duplicating challenge validation.
+ */
+export interface ParsedRegisterChallengeShape {
+  rp: { name: string; id: string };
+  user: { id: string; name: string; displayName: string };
+  challenge: string;
+  pubKeyCredParams: Array<{ type: string; alg: number }>;
+  timeout?: number;
+  excludeCredentials?: Array<{ type: string; id: string }>;
+  authenticatorSelection?: Record<string, unknown>;
+}
+
+/**
+ * Pure, stateless validation of "start response with register challenge".
+ * Used by validateRegisterStartResponse and validateEnrollmentStartResponse (DRY).
+ */
+export function validateRegisterStartShape(
+  data: unknown
+): Result<{ session_id: string; challenge: ParsedRegisterChallengeShape }, TryMellonError> {
+  if (!isObject(data)) {
+    return validationError('Invalid API response: expected object', { originalData: data });
+  }
+
+  const session_id = required(data, 'session_id');
+  if (!isString(session_id)) {
+    return validationError('Invalid API response: session_id must be string', {
+      field: 'session_id',
+      originalData: data,
+    });
+  }
+
+  const challenge = required(data, 'challenge');
+  if (!isObject(challenge)) {
+    return validationError('Invalid API response: challenge must be object', {
+      field: 'challenge',
+      originalData: data,
+    });
+  }
+
+  const rpResult = validateChallengeRP(required(challenge, 'rp'), data);
+  if (!rpResult.ok) return rpResult;
+
+  const userResult = validateChallengeUser(required(challenge, 'user'), data);
+  if (!userResult.ok) return userResult;
+
+  const challengeStr = required(challenge, 'challenge');
+  if (!isString(challengeStr)) {
+    return validationError('Invalid API response: challenge.challenge must be string', {
+      originalData: data,
+    });
+  }
+
+  const pubKeyCredParamsResult = validatePubKeyCredParams(
+    required(challenge, 'pubKeyCredParams'),
+    data
+  );
+  if (!pubKeyCredParamsResult.ok) return pubKeyCredParamsResult;
+
+  const timeout = challenge.timeout;
+  if (timeout !== undefined && !isNumber(timeout)) {
+    return validationError('Invalid API response: challenge.timeout must be number', {
+      originalData: data,
+    });
+  }
+
+  const excludeCredentials = challenge.excludeCredentials;
+  if (excludeCredentials !== undefined) {
+    if (!isArray(excludeCredentials)) {
+      return validationError('Invalid API response: excludeCredentials must be array', {
+        originalData: data,
+      });
+    }
+    for (const c of excludeCredentials) {
+      if (
+        !isObject(c) ||
+        (c as Record<string, unknown>).type !== 'public-key' ||
+        !isString((c as Record<string, unknown>).id)
+      ) {
+        return validationError(
+          'Invalid API response: excludeCredentials items must have id and type',
+          { originalData: data }
+        );
+      }
+    }
+  }
+
+  const authenticatorSelection = challenge.authenticatorSelection;
+  if (authenticatorSelection !== undefined && !isObject(authenticatorSelection)) {
+    return validationError('Invalid API response: authenticatorSelection must be object', {
+      originalData: data,
+    });
+  }
+
+  return ok({
+    session_id,
+    challenge: {
+      rp: challenge.rp as ParsedRegisterChallengeShape['rp'],
+      user: challenge.user as ParsedRegisterChallengeShape['user'],
+      challenge: challengeStr,
+      pubKeyCredParams:
+        challenge.pubKeyCredParams as ParsedRegisterChallengeShape['pubKeyCredParams'],
+      ...(timeout !== undefined && { timeout }),
+      ...(excludeCredentials !== undefined && {
+        excludeCredentials:
+          excludeCredentials as ParsedRegisterChallengeShape['excludeCredentials'],
+      }),
+      ...(authenticatorSelection !== undefined && {
+        authenticatorSelection,
+      }),
+    },
+  });
+}
+
 export function validateUserEntity(
   user: unknown,
   data: unknown

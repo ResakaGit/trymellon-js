@@ -97,12 +97,20 @@ export abstract class AuthElementBase extends HTMLElement {
   }
 
   protected _onMellonSuccess = (): void => {
-    this._controller.handleAuthSuccess();
+    if (this._controller.currentState === 'ENROLLING') {
+      this._controller.handleEnrollSuccess();
+    } else {
+      this._controller.handleAuthSuccess();
+    }
     this.scheduleRenderIfNeeded();
   };
 
   protected _onMellonError = (): void => {
-    this._controller.handleAuthError();
+    if (this._controller.currentState === 'ENROLLING') {
+      this._controller.handleEnrollError();
+    } else {
+      this._controller.handleAuthError();
+    }
     this.scheduleRenderIfNeeded();
   };
 

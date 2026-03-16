@@ -17,6 +17,9 @@ export type UserId = Branded<string, 'UserId'>;
 export type SessionId = Branded<string, 'SessionId'>;
 export type SessionToken = Branded<string, 'SessionToken'>;
 
+/** 64-character hex string (SHA-256). Used to bind enrollment ticket to browser context. */
+export type ContextHash = Branded<string, 'ContextHash'>;
+
 export function asAppId(value: string): AppId {
   return value as AppId;
 }
@@ -62,6 +65,14 @@ export type TryMellonConfig = {
    * Set this in Node or when the document origin is not the correct one (e.g. SSR).
    */
   origin?: string;
+  /**
+   * Optional storage for context hash (e.g. sessionStorage). If not set, browser sessionStorage or in-memory fallback is used.
+   * Injected for testability and SSR; must implement getItem/setItem.
+   */
+  contextHashStorage?: {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+  };
 };
 
 // ============================================================================
@@ -119,19 +130,19 @@ export type SuccessEventUserInfo = {
 /** Success payload: token always present (03-eventos-seguridad). Nonce when flow generates it. */
 export type SuccessEventPayload = {
   type: 'success';
-  operation: 'register' | 'authenticate';
+  operation: 'register' | 'authenticate' | 'enroll';
   token: string;
   user?: SuccessEventUserInfo;
   nonce?: string;
 };
 
 export type EventPayload =
-  | { type: 'start'; operation: 'register' | 'authenticate'; nonce?: string }
+  | { type: 'start'; operation: 'register' | 'authenticate' | 'enroll'; nonce?: string }
   | SuccessEventPayload
   | {
       type: 'error';
       error: TryMellonError;
-      operation?: 'register' | 'authenticate';
+      operation?: 'register' | 'authenticate' | 'enroll';
       nonce?: string;
     }
   | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
@@ -154,6 +165,39 @@ export type EmailFallbackVerifyResult = {
   sessionToken: string;
   /** Set when successUrl was passed and allowed by application allowlist */
   redirectUrl?: string;
+};
+
+// ============================================================================
+// Enrollment Types (KP-SDK-01)
+// ============================================================================
+
+export type EnrollOptions = {
+  ticketId: string;
+  signal?: AbortSignal;
+};
+
+/** Result of finish enrollment; aligns with backend envelope (session_token). */
+export type EnrollmentResult = {
+  sessionToken: string;
+};
+
+/** Backend response for POST /v1/enrollment/register/options. Validators use this shape. */
+export type EnrollmentStartResponse = {
+  session_id: string;
+  challenge: RegisterStartResponse['challenge'];
+};
+
+/** Backend response for POST /v1/enrollment/register. Validators use this shape. */
+export type EnrollmentFinishResponse = {
+  credential_id: string;
+  status: string;
+  session_token: string;
+  user: {
+    user_id: string;
+    external_user_id?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
 };
 
 // ============================================================================
@@ -321,6 +365,76 @@ export type CrossDeviceVerifyRequest = {
 export type CrossDeviceVerifyRegistrationRequest = {
   session_id: string;
   credential: RegisterFinishRequest['credential'];
+};
+
+// ============================================================================
+// Bridge Types (KP-BRIDGE-04)
+// ============================================================================
+
+/** Response from GET context/:sessionId (auth or registration). Aligns with backend unwrapped result. */
+export type BridgeContextResponse = {
+  type: 'auth' | 'registration';
+  options: Record<string, unknown>;
+  application_name?: string;
+};
+
+/** Response from POST verify/:sessionId (challenge / options for WebAuthn). */
+export type BridgeChallengeResponse = {
+  session_id: string;
+  challenge?: string;
+  registration_options?: Record<string, unknown>;
+  authentication_options?: Record<string, unknown>;
+};
+
+/** Backend result of POST complete (enrollment). Validators use this shape. */
+export type BridgeCompleteEnrollmentResult = {
+  credential_id: string;
+  entity_id: string;
+  user_id: string;
+  session_token: string;
+};
+
+/** Backend result of POST complete (auth). */
+export type BridgeCompleteAuthResult = {
+  session_token: string;
+};
+
+/** Options for bridge flows: PIN callback, optional preset PIN, abort signal. */
+export type BridgeOptions = {
+  onPinRequired?: () => Promise<string>;
+  presencePin?: string;
+  signal?: AbortSignal;
+};
+
+/** Public result of bridge enrollment: sessionToken and optional credential/user/entity ids. */
+export type BridgeEnrollmentResult = {
+  sessionToken: string;
+  credentialId?: string;
+  userId?: string;
+  entityId?: string;
+};
+
+/** Public result of bridge auth: sessionToken only. */
+export type BridgeAuthResult = {
+  sessionToken: string;
+};
+
+/** Union: bridge completion returns enrollment or auth result. */
+export type BridgeResult = BridgeEnrollmentResult | BridgeAuthResult;
+
+/** Status snapshot from GET .../status/:sessionId (polling or SSE event). Terminal: pin_verified | pin_locked | completed. */
+export type BridgeStatusSnapshot = {
+  status: 'pending' | 'pin_verified' | 'pin_locked' | 'completed';
+  ts?: string;
+};
+
+/** Options for complete(): BridgeOptions plus kind and enrollment-only fields. */
+export type BridgeCompleteOptions = BridgeOptions & {
+  kind: 'enrollment' | 'auth';
+  /** Required when completing enrollment bridge. */
+  ticketId?: string;
+  /** Required when completing enrollment bridge. */
+  entityId?: string;
 };
 
 // ============================================================================

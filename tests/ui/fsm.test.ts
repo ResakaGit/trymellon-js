@@ -137,6 +137,10 @@ describe('UI FSM', () => {
         'FALLBACK',
         'FALLBACK_EMAIL',
         'FALLBACK_QR',
+        'ENROLLMENT_READY',
+        'ENROLLING',
+        'ENROLLMENT_SUCCESS',
+        'ENROLLMENT_ERROR',
       ];
       for (const s of states) {
         expect(getNextState(s, { type: 'RESET' })).toBe('IDLE');
@@ -279,6 +283,38 @@ describe('UI FSM', () => {
     it('should return IDLE when event is undefined', () => {
       const next = getNextState('AUTHENTICATING', undefined as unknown as FSMEvent);
       expect(next).toBe('IDLE');
+    });
+  });
+
+  describe('enrollment flow (KP-SDK-02)', () => {
+    it('should transition IDLE → ENROLLMENT_READY on ENROLLMENT_READY_SET', () => {
+      const next = getNextState('IDLE', { type: 'ENROLLMENT_READY_SET' });
+      expect(next).toBe('ENROLLMENT_READY');
+    });
+
+    it('should transition ENROLLMENT_READY → ENROLLING on START_ENROLL', () => {
+      const next = getNextState('ENROLLMENT_READY', { type: 'START_ENROLL' });
+      expect(next).toBe('ENROLLING');
+    });
+
+    it('should transition ENROLLING → ENROLLMENT_SUCCESS on ENROLL_SUCCESS', () => {
+      const next = getNextState('ENROLLING', { type: 'ENROLL_SUCCESS' });
+      expect(next).toBe('ENROLLMENT_SUCCESS');
+    });
+
+    it('should transition ENROLLING → ENROLLMENT_ERROR on ENROLL_ERROR', () => {
+      const next = getNextState('ENROLLING', { type: 'ENROLL_ERROR' });
+      expect(next).toBe('ENROLLMENT_ERROR');
+    });
+
+    it('should transition ENROLLMENT_ERROR → ENROLLMENT_READY on ENROLL_RETRY', () => {
+      const next = getNextState('ENROLLMENT_ERROR', { type: 'ENROLL_RETRY' });
+      expect(next).toBe('ENROLLMENT_READY');
+    });
+
+    it('should not transition READY to enrollment on START_AUTH (register/login unchanged)', () => {
+      const next = getNextState('READY', { type: 'START_AUTH' });
+      expect(next).toBe('AUTHENTICATING');
     });
   });
 

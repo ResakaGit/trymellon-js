@@ -26,6 +26,17 @@ export type {
   OnboardingRegisterPasskeyResult,
   OnboardingCompleteOptions,
   OnboardingCompleteResult,
+  EnrollOptions,
+  EnrollmentResult,
+  ContextHash,
+  BridgeContextResponse,
+  BridgeChallengeResponse,
+  BridgeResult,
+  BridgeOptions,
+  BridgeCompleteOptions,
+  BridgeEnrollmentResult,
+  BridgeAuthResult,
+  BridgeStatusSnapshot,
 } from './types';
 
 export {

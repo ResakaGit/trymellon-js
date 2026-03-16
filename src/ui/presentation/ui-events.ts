@@ -8,12 +8,14 @@ import {
   MELLON_CANCELLED,
   MELLON_FALLBACK,
   MELLON_TAB_CHANGE,
+  MELLON_CONTEXT_READY,
 } from '../adapters/infra/event-bridge.adapter';
 import type {
   MellonErrorDetail,
   MellonFallbackDetail,
   MellonOperationDetail,
   MellonSuccessDetail,
+  MellonContextReadyDetail,
 } from '../ports/core-events.port';
 import type { MellonCloseDetail, MellonOpenDetail } from '../ports';
 
@@ -27,6 +29,7 @@ export {
   MELLON_CANCELLED,
   MELLON_FALLBACK,
   MELLON_TAB_CHANGE,
+  MELLON_CONTEXT_READY,
 };
 
 export function createMellonOpenEvent(detail: MellonOpenDetail): CustomEvent<MellonOpenDetail> {
@@ -97,6 +100,17 @@ export function createMellonErrorEvent(detail: MellonErrorDetail): CustomEvent<M
   return new CustomEvent<MellonErrorDetail>(MELLON_ERROR, {
     detail,
     bubbles: true,
+    composed: true,
+  });
+}
+
+/** Context-ready event: crosses shadow DOM (composed: true). Emit when SDK context is ready. */
+export function createContextReadyEvent(
+  detail: MellonContextReadyDetail
+): CustomEvent<MellonContextReadyDetail> {
+  return new CustomEvent<MellonContextReadyDetail>(MELLON_CONTEXT_READY, {
+    detail,
+    bubbles: false,
     composed: true,
   });
 }

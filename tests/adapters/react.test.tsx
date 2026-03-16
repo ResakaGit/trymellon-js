@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { TryMellonProvider, useRegister, useAuthenticate } from '../../src/react';
+import { TryMellonProvider, useRegister, useAuthenticate, useEnroll } from '../../src/react';
 
 function TestComponent() {
   const { execute, loading, result } = useRegister();
@@ -151,6 +151,64 @@ describe('React adapter', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('auth-error').textContent).toBe('Network error');
+    });
+  });
+
+  it('TryMellonProvider and useEnroll: execute calls client.enroll, contextHash from getContextHash', async () => {
+    const mockEnroll = vi.fn();
+    const mockGetContextHash = vi.fn().mockReturnValue('ctx_hash_abc');
+    const mockClient = {
+      register: vi.fn(),
+      authenticate: vi.fn(),
+      enroll: mockEnroll,
+      getContextHash: mockGetContextHash,
+      validateSession: vi.fn(),
+      getStatus: vi.fn(),
+      on: vi.fn(),
+      version: vi.fn(() => '0.1.0'),
+      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      onboarding: {},
+    } as never;
+
+    mockEnroll.mockResolvedValue({
+      ok: true,
+      value: { sessionToken: 'st_enroll_1' },
+    });
+
+    function EnrollComponent() {
+      const { execute, loading, result, contextHash } = useEnroll();
+      return (
+        <div>
+          <span data-testid="context-hash">{contextHash}</span>
+          <button
+            type="button"
+            onClick={() => execute({ ticketId: 'ticket_1' })}
+            disabled={loading}
+          >
+            Enroll
+          </button>
+          {result?.ok && <span data-testid="enroll-success">OK</span>}
+        </div>
+      );
+    }
+
+    render(
+      <TryMellonProvider client={mockClient}>
+        <EnrollComponent />
+      </TryMellonProvider>
+    );
+
+    expect(screen.getByTestId('context-hash').textContent).toBe('ctx_hash_abc');
+    expect(mockGetContextHash).toHaveBeenCalled();
+
+    const button = screen.getByRole('button', { name: /enroll/i });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(mockEnroll).toHaveBeenCalledWith({ ticketId: 'ticket_1' });
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('enroll-success').textContent).toBe('OK');
     });
   });
 });

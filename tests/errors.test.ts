@@ -6,6 +6,8 @@ import {
   isTryMellonError,
   createNotSupportedError,
   createUserCancelledError,
+  createTicketNotFoundError,
+  createTicketExpiredError,
   createNetworkError,
   createTimeoutError,
   createInvalidArgumentError,
@@ -167,6 +169,24 @@ describe('createUserCancelledError', () => {
   });
 });
 
+describe('createTicketNotFoundError', () => {
+  it('should create TICKET_NOT_FOUND error', () => {
+    const error = createTicketNotFoundError();
+    expect(error).toBeInstanceOf(TryMellonError);
+    expect(error.code).toBe('TICKET_NOT_FOUND');
+    expect(error.message).toBeTruthy();
+  });
+});
+
+describe('createTicketExpiredError', () => {
+  it('should create TICKET_EXPIRED error', () => {
+    const error = createTicketExpiredError();
+    expect(error).toBeInstanceOf(TryMellonError);
+    expect(error.code).toBe('TICKET_EXPIRED');
+    expect(error.message).toBeTruthy();
+  });
+});
+
 describe('createNetworkError', () => {
   it('should create NETWORK_FAILURE error', () => {
     const error = createNetworkError();
@@ -224,6 +244,32 @@ describe('mapBackendErrorCodeToTryMellon', () => {
     expect(mapBackendErrorCodeToTryMellon('validation_error')).toBe('INVALID_ARGUMENT');
     expect(mapBackendErrorCodeToTryMellon('user_not_found')).toBe('SESSION_EXPIRED');
     expect(mapBackendErrorCodeToTryMellon('passkey_not_found')).toBe('PASSKEY_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('ticket_not_found')).toBe('TICKET_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('ticket_expired')).toBe('TICKET_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('ticket_already_consumed')).toBe('TICKET_ALREADY_USED');
+  });
+
+  it('maps backend enrollment codes (uppercase NOT_FOUND/EXPIRED/ALREADY_CONSUMED) to TICKET_*', () => {
+    expect(mapBackendErrorCodeToTryMellon('NOT_FOUND')).toBe('TICKET_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('EXPIRED')).toBe('TICKET_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('ALREADY_CONSUMED')).toBe('TICKET_ALREADY_USED');
+    expect(mapBackendErrorCodeToTryMellon('not_found')).toBe('TICKET_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('expired')).toBe('TICKET_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('already_consumed')).toBe('TICKET_ALREADY_USED');
+  });
+
+  it('maps enrollment validation and context codes to CHALLENGE_MISMATCH or INVALID_ARGUMENT', () => {
+    expect(mapBackendErrorCodeToTryMellon('context_mismatch')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('challenge_not_found')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('invalid_ticket_id')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('invalid_context_hash')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('invalid_config')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('enrollment_not_enabled')).toBe('INVALID_ARGUMENT');
+  });
+
+  it('maps bridge session codes to BRIDGE_SESSION_EXPIRED', () => {
+    expect(mapBackendErrorCodeToTryMellon('bridge_session_expired')).toBe('BRIDGE_SESSION_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('session_not_found')).toBe('BRIDGE_SESSION_EXPIRED');
   });
 
   it('returns UNKNOWN_ERROR for unknown backend codes', () => {

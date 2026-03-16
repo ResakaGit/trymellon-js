@@ -1,4 +1,5 @@
 import type { HttpClient } from './http-client';
+import { BRIDGE_PATH_ENROLLMENT, BRIDGE_PATH_AUTH } from './constants';
 import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import type { TryMellonError } from '../errors';
@@ -20,6 +21,13 @@ import {
   validateCrossDeviceVerifyResponse,
   validateRecoveryVerifyResponse,
   validateRecoveryCompleteResponse,
+  validateEnrollmentStartResponse,
+  validateEnrollmentFinishResponse,
+  validateBridgeContextResponse,
+  validateBridgeVerifyResponse,
+  validateBridgeCompleteEnrollmentResponse,
+  validateBridgeCompleteAuthResponse,
+  validateBridgeStatusResponse,
 } from './validators';
 import type {
   RegisterStartRequest,
@@ -45,8 +53,18 @@ import type {
   CrossDeviceVerifyRegistrationRequest,
   RecoveryVerifyResponse,
   RecoveryCompleteResponse,
+  EnrollmentStartResponse,
+  EnrollmentFinishResponse,
+  BridgeContextResponse,
+  BridgeChallengeResponse,
+  BridgeCompleteEnrollmentResult,
+  BridgeCompleteAuthResult,
+  BridgeStatusSnapshot,
 } from '../types';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
+
+/** Bridge kind: enrollment-bridge (registration flow) or auth-bridge (auth flow). */
+export type BridgeKind = 'enrollment' | 'auth';
 
 export class ApiClient {
   constructor(
@@ -62,10 +80,11 @@ export class ApiClient {
   private async post<Req, Res>(
     path: string,
     body: Req,
-    validate: (data: unknown) => Result<Res, TryMellonError>
+    validate: (data: unknown) => Result<Res, TryMellonError>,
+    extraHeaders?: Record<string, string>
   ): Promise<Result<Res, TryMellonError>> {
     const url = `${this.baseUrl}${path}`;
-    const result = await this.httpClient.post<unknown>(url, body, this.mergeHeaders());
+    const result = await this.httpClient.post<unknown>(url, body, this.mergeHeaders(extraHeaders));
 
     if (!result.ok) {
       return err(result.error);
@@ -265,6 +284,134 @@ export class ApiClient {
       '/v1/users/recovery/complete',
       { recovery_session_id: recoverySessionId, credential },
       validateRecoveryCompleteResponse
+    );
+  }
+
+  async startEnrollment(
+    ticketId: string,
+    contextHash: string,
+    headers?: Record<string, string>
+  ): Promise<Result<EnrollmentStartResponse, TryMellonError>> {
+    return this.post(
+      '/v1/enrollment/register/options',
+      { ticket_id: ticketId, context_hash: contextHash },
+      validateEnrollmentStartResponse,
+      headers
+    );
+  }
+
+  async finishEnrollment(
+    ticketId: string,
+    body: { credential: unknown; context_hash: string },
+    headers?: Record<string, string>
+  ): Promise<Result<EnrollmentFinishResponse, TryMellonError>> {
+    return this.post(
+      '/v1/enrollment/register',
+      { ...body, ticket_id: ticketId },
+      validateEnrollmentFinishResponse,
+      headers
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Bridge (KP-BRIDGE-04): enrollment-bridge and auth-bridge
+  // -------------------------------------------------------------------------
+
+  private bridgePrefix(kind: BridgeKind): string {
+    return kind === 'enrollment' ? BRIDGE_PATH_ENROLLMENT : BRIDGE_PATH_AUTH;
+  }
+
+  async getBridgeContext(
+    sessionId: string,
+    kind: BridgeKind,
+    headers?: Record<string, string>
+  ): Promise<Result<BridgeContextResponse, TryMellonError>> {
+    return this.get(
+      `${this.bridgePrefix(kind)}/context/${sessionId}`,
+      validateBridgeContextResponse,
+      headers
+    );
+  }
+
+  async verifyBridgePin(
+    sessionId: string,
+    pin: string,
+    kind: BridgeKind,
+    headers?: Record<string, string>
+  ): Promise<Result<BridgeChallengeResponse, TryMellonError>> {
+    return this.post(
+      `${this.bridgePrefix(kind)}/verify/${sessionId}`,
+      { pin },
+      validateBridgeVerifyResponse,
+      headers
+    );
+  }
+
+  async completeBridgeEnrollment(
+    body: {
+      session_id: string;
+      ticket_id: string;
+      entity_id: string;
+      context_hash: string;
+      registration_response: {
+        id: string;
+        rawId: string;
+        response: { clientDataJSON: string; attestationObject: string };
+        type: string;
+      };
+    },
+    headers?: Record<string, string>
+  ): Promise<Result<BridgeCompleteEnrollmentResult, TryMellonError>> {
+    return this.post(
+      `${this.bridgePrefix('enrollment')}/complete`,
+      body,
+      validateBridgeCompleteEnrollmentResponse,
+      headers
+    );
+  }
+
+  async completeBridgeAuth(
+    body: {
+      session_id: string;
+      credential: {
+        id: string;
+        rawId: string;
+        response: {
+          authenticatorData: string;
+          clientDataJSON: string;
+          signature: string;
+          userHandle?: string;
+        };
+        type: string;
+      };
+    },
+    headers?: Record<string, string>
+  ): Promise<Result<BridgeCompleteAuthResult, TryMellonError>> {
+    return this.post(
+      `${this.bridgePrefix('auth')}/complete`,
+      body,
+      validateBridgeCompleteAuthResponse,
+      headers
+    );
+  }
+
+  /**
+   * Full URL for GET bridge status (polling or EventSource). Same path as getBridgeStatus.
+   * Used by BridgeManager for SSE when EventSource is available (browser only; Node has no EventSource).
+   */
+  getBridgeStatusUrl(sessionId: string, kind: BridgeKind): string {
+    return `${this.baseUrl}${this.bridgePrefix(kind)}/status/${sessionId}`;
+  }
+
+  async getBridgeStatus(
+    sessionId: string,
+    kind: BridgeKind,
+    headers?: Record<string, string>
+  ): Promise<Result<BridgeStatusSnapshot, TryMellonError>> {
+    return this.get(
+      `${this.bridgePrefix(kind)}/status/${sessionId}`,
+      validateBridgeStatusResponse,
+      headers
     );
   }
 }

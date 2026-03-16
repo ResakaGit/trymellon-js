@@ -1,9 +1,22 @@
-## [2.2.1](https://github.com/ResakaGit/trymellon-js/compare/v2.2.0...v2.2.1) (2026-03-15)
+# [2.3.0](https://github.com/ResakaGit/trymellon-js/compare/v2.2.1...v2.3.0) (2026-03-16)
 
+### Changed
+
+- **API paths (onboarding):** All onboarding endpoints now use base path `/v1/onboarding/*`. The SDK calls `POST /v1/onboarding/start`, `GET /v1/onboarding/:session_id/status`, etc. If you integrate against the API directly, use `/v1/onboarding/*` (breaking for custom clients using old paths).
+
+### Docs
+
+- **Backend:** Init cross-device admite JWT con scope `auth_link` (sin Origin) para flujos IA/backend; ver guía en monorepo `docs/epic-auth-ia-link/guia-auth-link-ia.md`. El SDK sigue usando publishable key + Origin en desktop; para init desde backend usar la API directamente con token obtenido de `POST /oauth/token` con `scope=auth_link`.
+
+### Chore
+
+- **Iteration cleanup:** Replace `forEach` with `for...of` in `src/core/events.ts` (emit), `tests/core/events.test.ts`, `scripts/run-actionlint.cjs`, and `documentation/EXAMPLES.md` (Vue onUnmounted) for consistency and Yanagi-style clarity.
+
+## [2.2.1](https://github.com/ResakaGit/trymellon-js/compare/v2.2.0...v2.2.1) (2026-03-15)
 
 ### Bug Fixes
 
-* **ui:** clear cross-device slot on modal open to prevent stacked QRs ([57678d1](https://github.com/ResakaGit/trymellon-js/commit/57678d1944aaec5ac068660f868be00c357c75c7))
+- **ui:** clear cross-device slot on modal open to prevent stacked QRs ([57678d1](https://github.com/ResakaGit/trymellon-js/commit/57678d1944aaec5ac068660f868be00c357c75c7))
 
 # [2.2.0](https://github.com/ResakaGit/trymellon-js/compare/v2.1.0...v2.2.0) (2026-03-12)
 
@@ -91,20 +104,6 @@
 ### Bug Fixes
 
 - **cross-device:** accept envelope { ok, resultado } in init validator (v1.6.2) ([bb7fb20](https://github.com/ResakaGit/trymellon-js/commit/bb7fb207daea3c4198c7cad0b2d80f42e35c758f))
-
-# [Unreleased]
-
-### Changed
-
-- **API paths (onboarding):** All onboarding endpoints now use base path `/v1/onboarding/*`. The SDK calls `POST /v1/onboarding/start`, `GET /v1/onboarding/:session_id/status`, etc. If you integrate against the API directly, use `/v1/onboarding/*` (breaking for custom clients using old paths).
-
-### Docs
-
-- **Backend:** Init cross-device admite JWT con scope `auth_link` (sin Origin) para flujos IA/backend; ver guía en monorepo `docs/epic-auth-ia-link/guia-auth-link-ia.md`. El SDK sigue usando publishable key + Origin en desktop; para init desde backend usar la API directamente con token obtenido de `POST /oauth/token` con `scope=auth_link`.
-
-### Chore
-
-- **Iteration cleanup:** Replace `forEach` with `for...of` in `src/core/events.ts` (emit), `tests/core/events.test.ts`, `scripts/run-actionlint.cjs`, and `documentation/EXAMPLES.md` (Vue onUnmounted) for consistency and Yanagi-style clarity.
 
 ## [1.6.2](https://github.com/ResakaGit/trymellon-js/compare/v1.6.1...v1.6.2) (2026-02-23)
 

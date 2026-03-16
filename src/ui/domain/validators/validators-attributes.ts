@@ -24,7 +24,8 @@ export function isParsedAttributes(value: unknown): value is ParsedAttributes {
     isThemeKind(o.theme) &&
     isButtonAction(o.action) &&
     typeof o.triggerOnly === 'boolean' &&
-    isButtonVariant(o.buttonVariant)
+    isButtonVariant(o.buttonVariant) &&
+    (o.ticketId === undefined || o.ticketId === null || typeof o.ticketId === 'string')
   );
 }
 

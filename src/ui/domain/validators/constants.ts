@@ -22,6 +22,10 @@ export const UI_STATES: readonly UIState[] = [
   'FALLBACK',
   'FALLBACK_EMAIL',
   'FALLBACK_QR',
+  'ENROLLMENT_READY',
+  'ENROLLING',
+  'ENROLLMENT_SUCCESS',
+  'ENROLLMENT_ERROR',
 ];
 
 export const UI_MODES = ['login', 'register', 'auto'] as const;

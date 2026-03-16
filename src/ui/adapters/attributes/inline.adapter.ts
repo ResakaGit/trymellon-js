@@ -33,6 +33,7 @@ export function parseAttributesFromElement(element: HTMLElement): ParsedAttribut
     ),
     buttonLabel: parseOptionalString(element.getAttribute('button-label')),
     buttonAriaLabel: parseOptionalString(element.getAttribute('button-aria-label')),
+    ticketId: parseOptionalString(element.getAttribute('ticket-id')),
   };
   return ensureParsedAttributes(raw);
 }

@@ -4,6 +4,7 @@
 import type { UIState, UIMode, TabKind } from '../domain/types';
 import type { FSMEvent } from '../domain/types';
 import type { CoreAuthPort, CoreAuthOptions } from '../ports/core-events.port';
+import type { EnrollOptions } from '../../types';
 import { applyTransition } from './transition.use-case';
 import { runEnvEval, type RunEnvEvalParams } from './evaluate-env.use-case';
 
@@ -27,17 +28,11 @@ export interface AuthUiApplicationService {
     options?: CoreAuthOptions
   ): UIState;
 
-  /** AUTH_SUCCESS transition. */
-  handleAuthSuccess(currentState: UIState): UIState;
-
-  /** AUTH_ERROR transition. */
-  handleAuthError(currentState: UIState): UIState;
-
-  /** Applies AUTH_SUCCESS only if state is AUTHENTICATING. Returns new state or null (avoids duplicating guard in WCs). */
-  tryHandleAuthSuccess(currentState: UIState): UIState | null;
-
-  /** Applies AUTH_ERROR only if state is AUTHENTICATING. Returns new state or null (avoids duplicating guard in WCs). */
-  tryHandleAuthError(currentState: UIState): UIState | null;
+  /**
+   * Applies AUTH_SUCCESS or AUTH_ERROR only if currentState === 'AUTHENTICATING'.
+   * Returns new state or null (single guard for auth outcome).
+   */
+  handleAuthOutcome(currentState: UIState, outcome: 'success' | 'error'): UIState | null;
 
   /** AUTH_FALLBACK[_EMAIL|_QR] transition by channel. */
   handleFallback(currentState: UIState, fallbackKind?: 'email' | 'qr'): UIState;
@@ -47,6 +42,22 @@ export interface AuthUiApplicationService {
 
   /** RESET → IDLE transition. */
   reset(currentState: UIState): UIState;
+
+  /** START_ENROLL transition and core delegation (enroll). Fire-and-forget; WC subscribes to core events. */
+  startEnrollment(
+    currentState: UIState,
+    coreAuthPort: CoreAuthPort,
+    options: EnrollOptions
+  ): UIState;
+
+  /**
+   * Applies ENROLL_SUCCESS or ENROLL_ERROR only if currentState === 'ENROLLING'.
+   * Returns new state or null (single guard for enroll outcome).
+   */
+  handleEnrollOutcome(currentState: UIState, outcome: 'success' | 'error'): UIState | null;
+
+  /** ENROLL_RETRY transition (ENROLLMENT_ERROR → ENROLLMENT_READY). */
+  enrollRetry(currentState: UIState): UIState;
 }
 
 /**
@@ -71,6 +82,37 @@ function applyStartAuthAndInvokeCore(
     coreAuthPort.authenticate(options);
   }
   return nextState;
+}
+
+function applyStartEnrollAndInvokeCore(
+  currentState: UIState,
+  coreAuthPort: CoreAuthPort,
+  options: EnrollOptions
+): UIState {
+  let state = currentState;
+  if (state !== 'ENROLLMENT_READY') {
+    state = applyTransition(state, {
+      type: 'ENROLLMENT_READY_SET',
+      payload: { ticketId: options.ticketId },
+    });
+  }
+  const nextState = applyTransition(state, { type: 'START_ENROLL' });
+  coreAuthPort.enroll(options);
+  return nextState;
+}
+
+/** Shared outcome handler: guard state + apply success/error transition. Stateless. */
+function handleOutcome(
+  currentState: UIState,
+  expectedState: UIState,
+  successEvent: FSMEvent['type'],
+  errorEvent: FSMEvent['type'],
+  outcome: 'success' | 'error'
+): UIState | null {
+  if (currentState !== expectedState) return null;
+  return applyTransition(currentState, {
+    type: outcome === 'success' ? successEvent : errorEvent,
+  });
 }
 
 /** Fallback kind → FSM event. One lookup; generic is the default key. */
@@ -100,22 +142,8 @@ export const authUiApplicationService: AuthUiApplicationService = {
     return applyStartAuthAndInvokeCore(currentState, mode, coreAuthPort, options);
   },
 
-  handleAuthSuccess(currentState) {
-    return applyTransition(currentState, { type: 'AUTH_SUCCESS' });
-  },
-
-  handleAuthError(currentState) {
-    return applyTransition(currentState, { type: 'AUTH_ERROR' });
-  },
-
-  tryHandleAuthSuccess(currentState) {
-    if (currentState !== 'AUTHENTICATING') return null;
-    return applyTransition(currentState, { type: 'AUTH_SUCCESS' });
-  },
-
-  tryHandleAuthError(currentState) {
-    if (currentState !== 'AUTHENTICATING') return null;
-    return applyTransition(currentState, { type: 'AUTH_ERROR' });
+  handleAuthOutcome(currentState, outcome) {
+    return handleOutcome(currentState, 'AUTHENTICATING', 'AUTH_SUCCESS', 'AUTH_ERROR', outcome);
   },
 
   handleFallback(currentState, fallbackKind) {
@@ -128,5 +156,17 @@ export const authUiApplicationService: AuthUiApplicationService = {
 
   reset(currentState) {
     return applyTransition(currentState, { type: 'RESET' });
+  },
+
+  startEnrollment(currentState, coreAuthPort, options) {
+    return applyStartEnrollAndInvokeCore(currentState, coreAuthPort, options);
+  },
+
+  handleEnrollOutcome(currentState, outcome) {
+    return handleOutcome(currentState, 'ENROLLING', 'ENROLL_SUCCESS', 'ENROLL_ERROR', outcome);
+  },
+
+  enrollRetry(currentState) {
+    return applyTransition(currentState, { type: 'ENROLL_RETRY' });
   },
 };

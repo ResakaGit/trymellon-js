@@ -23,7 +23,7 @@ import { MELLON_CLOSE, MELLON_SUCCESS } from '../adapters/infra/event-bridge.ada
 import { AuthElementBase } from './auth-element-base';
 import { TryMellonAuthModalElement } from './trymellon-auth-modal.element';
 import { OBSERVED_ATTRIBUTES_AUTH } from './constants';
-import { MELLON_OPEN_REQUEST } from './ui-events';
+import { MELLON_OPEN_REQUEST, createContextReadyEvent } from './ui-events';
 
 export class TryMellonAuthElement extends AuthElementBase {
   static get observedAttributes(): string[] {
@@ -31,6 +31,13 @@ export class TryMellonAuthElement extends AuthElementBase {
   }
 
   protected _parsed: ParsedAttributes = { ...DEFAULT_PARSED_ATTRIBUTES };
+
+  /** When set, WC is in enrollment mode: emits context-ready and exposes enroll(). */
+  get ticketId(): string | null {
+    const id = this._parsed.ticketId;
+    return id === undefined ? null : id;
+  }
+
   private _internalModal: TryMellonAuthModalElement | null = null;
   /** Element that opened the modal; single source for focus restore on close. */
   private _focusRestoreTarget: Element | null = null;
@@ -60,12 +67,28 @@ export class TryMellonAuthElement extends AuthElementBase {
     (el as HTMLElement).focus();
   }
 
+  /** When ticket-id is set and core is attached, emits mellon:context-ready with contextHash (composed: true). */
+  private _emitContextReadyIfEnrollment(): void {
+    if (!this._core || !this.ticketId) return;
+    this.dispatchEvent(createContextReadyEvent({ contextHash: this._core.getContextHash() }));
+  }
+
+  /**
+   * Starts enrollment (only when ticket-id is set). No-op if no ticketId or core. Success/error re-dispatched via mellon:success / mellon:error.
+   */
+  enroll(): void {
+    const tid = this.ticketId;
+    if (!tid || !this._core) return;
+    this._controller.startEnrollment(this._core, { ticketId: tid });
+  }
+
   connectedCallback(): void {
     if (this.shadowRoot) {
       this._registerInteractions();
       if (this._core !== null && this._unsubscribeBridge === null) {
         this.attachCore(this._core);
       }
+      this._emitContextReadyIfEnrollment();
       this._syncInternalModalAttributes();
       this._ensureInternalModal();
       return;
@@ -86,6 +109,7 @@ export class TryMellonAuthElement extends AuthElementBase {
     this._registerInteractions();
     this._render();
     this._reconcileCoreFromConfig();
+    this._emitContextReadyIfEnrollment();
     this._ensureInternalModal();
   }
 
@@ -107,6 +131,9 @@ export class TryMellonAuthElement extends AuthElementBase {
     }
     if (name === 'app-id' || name === 'publishable-key') {
       this._reconcileCoreFromConfig();
+    }
+    if (name === 'ticket-id' || name === 'app-id' || name === 'publishable-key') {
+      this._emitContextReadyIfEnrollment();
     }
     if (name === 'mode' && (this._parsed.mode === 'register' || this._parsed.mode === 'login')) {
       const tab = this._parsed.mode;

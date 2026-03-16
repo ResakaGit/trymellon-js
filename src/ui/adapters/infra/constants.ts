@@ -29,3 +29,6 @@ export const MELLON_FALLBACK = 'mellon:fallback';
 
 /** Event name when tab changes (register ↔ login) in the modal. */
 export const MELLON_TAB_CHANGE = 'mellon:tab-change';
+
+/** Event name when SDK context is ready (WC lifecycle). bubbles: true, composed: true (crosses shadow DOM). */
+export const MELLON_CONTEXT_READY = 'mellon:context-ready';

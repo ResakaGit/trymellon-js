@@ -110,6 +110,8 @@ describe('ui/presentation/auth-controller', () => {
       register: vi.fn(),
       authenticate: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
+      enroll: vi.fn(),
+      getContextHash: vi.fn().mockReturnValue(''),
     };
     const c = new AuthController();
     c.setState('IDLE');
@@ -123,6 +125,8 @@ describe('ui/presentation/auth-controller', () => {
       register: vi.fn(),
       authenticate: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
+      enroll: vi.fn(),
+      getContextHash: vi.fn().mockReturnValue(''),
     };
     const c = new AuthController();
     c.setState('READY_LOGIN');
@@ -136,6 +140,8 @@ describe('ui/presentation/auth-controller', () => {
       register: vi.fn(),
       authenticate: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
+      enroll: vi.fn(),
+      getContextHash: vi.fn().mockReturnValue(''),
     };
     const c = new AuthController();
     c.setState('READY_REGISTER');

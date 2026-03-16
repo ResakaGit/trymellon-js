@@ -55,6 +55,7 @@ export function getNextState(currentState: UIState, event: FSMEvent): UIState {
   switch (currentState) {
     case 'IDLE':
       if (event.type === 'ENV_EVAL_START') return 'EVALUATING_ENV';
+      if (event.type === 'ENROLLMENT_READY_SET') return 'ENROLLMENT_READY';
       break;
 
     case 'EVALUATING_ENV':
@@ -75,6 +76,19 @@ export function getNextState(currentState: UIState, event: FSMEvent): UIState {
       if (event.type === 'AUTH_FALLBACK') return 'FALLBACK';
       if (event.type === 'AUTH_FALLBACK_EMAIL') return 'FALLBACK_EMAIL';
       if (event.type === 'AUTH_FALLBACK_QR') return 'FALLBACK_QR';
+      break;
+
+    case 'ENROLLMENT_READY':
+      if (event.type === 'START_ENROLL') return 'ENROLLING';
+      break;
+
+    case 'ENROLLING':
+      if (event.type === 'ENROLL_SUCCESS') return 'ENROLLMENT_SUCCESS';
+      if (event.type === 'ENROLL_ERROR') return 'ENROLLMENT_ERROR';
+      break;
+
+    case 'ENROLLMENT_ERROR':
+      if (event.type === 'ENROLL_RETRY') return 'ENROLLMENT_READY';
       break;
 
     default:

@@ -118,6 +118,11 @@ export function isFSMEvent(value: unknown): value is FSMEvent {
     case 'AUTH_FALLBACK':
     case 'AUTH_FALLBACK_EMAIL':
     case 'AUTH_FALLBACK_QR':
+    case 'ENROLLMENT_READY_SET':
+    case 'START_ENROLL':
+    case 'ENROLL_SUCCESS':
+    case 'ENROLL_ERROR':
+    case 'ENROLL_RETRY':
       return true;
     case 'ENV_RESOLVED':
       return isEnvResolvedPayload(o.payload);

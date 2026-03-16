@@ -1,7 +1,10 @@
 import { ApiClient } from './api';
 import { FetchHttpClient } from './fetch-client';
 import { OnboardingManager } from './onboarding-manager';
+import { EnrollmentManager } from './enrollment-manager';
 import { CrossDeviceManager } from './cross-device-manager';
+import { BridgeManager } from './bridge-manager';
+import { getOrCreateContextHash } from './context-hash';
 import { EventEmitter } from './events';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
 import { validateUrl, validateRange, createInvalidArgumentError } from '../errors';
@@ -35,6 +38,13 @@ import type {
   EmailFallbackVerifyResult,
   SessionValidateResponse,
   RecoverAccountOptions,
+  EnrollOptions,
+  EnrollmentResult,
+  BridgeContextResponse,
+  BridgeChallengeResponse,
+  BridgeResult,
+  BridgeCompleteOptions,
+  BridgeStatusSnapshot,
 } from '../types';
 import { ok, err, type Result } from '../utils/result';
 import { type TryMellonError, isTryMellonError } from '../errors';
@@ -53,6 +63,9 @@ export class TryMellon {
   private authService: AuthService;
   private recoveryService: RecoveryService;
   public onboarding: OnboardingManager;
+  private readonly enrollmentManager: EnrollmentManager;
+  private readonly bridgeManager: BridgeManager;
+  private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
 
   /**
    * Creates a new TryMellon instance.
@@ -166,8 +179,42 @@ export class TryMellon {
       this.telemetrySender
     );
     this.recoveryService = new RecoveryService(this.apiClient, this.eventEmitter);
+    this.contextHashStorage = config.contextHashStorage;
     this.onboarding = new OnboardingManager(this.apiClient);
+    this.enrollmentManager = new EnrollmentManager(this.apiClient, this.contextHashStorage);
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
+    this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
+  }
+
+  /**
+   * Bridge (KP-BRIDGE-04): complete enrollment or auth from a second device (e.g. mobile scanning desktop QR).
+   * Use kind 'enrollment' for enrollment-bridge sessions, 'auth' for auth-bridge sessions.
+   */
+  get bridge(): {
+    getContext(
+      sessionId: string,
+      kind: 'enrollment' | 'auth'
+    ): Promise<import('../utils/result').Result<BridgeContextResponse, TryMellonError>>;
+    verifyPin(
+      sessionId: string,
+      pin: string,
+      kind: 'enrollment' | 'auth'
+    ): Promise<import('../utils/result').Result<BridgeChallengeResponse, TryMellonError>>;
+    complete(
+      sessionId: string,
+      options?: BridgeCompleteOptions
+    ): Promise<import('../utils/result').Result<BridgeResult, TryMellonError>>;
+    waitForResult(
+      sessionId: string,
+      options?: { useSse?: boolean; kind?: 'enrollment' | 'auth'; timeoutMs?: number }
+    ): Promise<import('../utils/result').Result<BridgeStatusSnapshot, TryMellonError>>;
+  } {
+    return {
+      getContext: (sessionId, kind) => this.bridgeManager.getContext(sessionId, kind),
+      verifyPin: (sessionId, pin, kind) => this.bridgeManager.verifyPin(sessionId, pin, kind),
+      complete: (sessionId, options) => this.bridgeManager.complete(sessionId, options),
+      waitForResult: (sessionId, options) => this.bridgeManager.waitForResult(sessionId, options),
+    };
   }
 
   static isSupported(): boolean {
@@ -182,6 +229,32 @@ export class TryMellon {
     options: AuthenticateOptions
   ): Promise<Result<AuthenticateResult, TryMellonError>> {
     return this.authService.authenticate(options);
+  }
+
+  async enroll(options: EnrollOptions): Promise<Result<EnrollmentResult, TryMellonError>> {
+    this.eventEmitter.emit('start', { type: 'start', operation: 'enroll' });
+    const result = await this.enrollmentManager.enroll(options);
+    if (result.ok) {
+      this.eventEmitter.emit('success', {
+        type: 'success',
+        operation: 'enroll',
+        token: result.value.sessionToken,
+      });
+    } else {
+      this.eventEmitter.emit('error', {
+        type: 'error',
+        operation: 'enroll',
+        error: result.error,
+      });
+    }
+    return result;
+  }
+
+  getContextHash(): string {
+    const storage =
+      this.contextHashStorage ??
+      (typeof sessionStorage !== 'undefined' ? sessionStorage : undefined);
+    return getOrCreateContextHash(storage);
   }
 
   async validateSession(

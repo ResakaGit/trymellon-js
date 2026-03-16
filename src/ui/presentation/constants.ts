@@ -1,13 +1,13 @@
 /**
  * Centralized constants for the presentation layer (WC elements).
  * Attribute names, modal DOM selectors, close reasons. Single source — no magic strings.
- * Selector class names must match render layer (styles.adapter, modal-structure.adapter).
+ * Modal class names: single source of truth in render/constants; re-exported here for selectors.
  */
-
-// --- Modal DOM selectors (class names aligned with render/constants WRAPPER_CLASS, etc.) ---
-const MODAL_WRAPPER_CLASS = 'mellon-modal-wrapper';
-const MODAL_OVERLAY_CLASS = 'mellon-modal-overlay';
-const MODAL_PANEL_CLASS = 'mellon-modal-panel';
+import {
+  WRAPPER_CLASS as MODAL_WRAPPER_CLASS,
+  OVERLAY_CLASS as MODAL_OVERLAY_CLASS,
+  PANEL_CLASS as MODAL_PANEL_CLASS,
+} from '../adapters/render/constants.js';
 
 // --- Observed attribute names (public API) ---
 
@@ -22,6 +22,7 @@ export const OBSERVED_ATTRIBUTES_AUTH = [
   'button-variant',
   'button-label',
   'button-aria-label',
+  'ticket-id',
 ] as const;
 
 export const OBSERVED_ATTRIBUTES_MODAL = [

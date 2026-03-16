@@ -29,6 +29,8 @@ export type ParsedAttributes = {
   buttonLabel?: string | null;
   /** Optional aria-label for the trigger button (default = TRIGGER_ARIA_LABEL). */
   buttonAriaLabel?: string | null;
+  /** When set, WC runs in enrollment mode: emits context-ready and exposes enroll(). */
+  ticketId?: string | null;
 };
 
 /** Modal display mode: overlay vs inline. */

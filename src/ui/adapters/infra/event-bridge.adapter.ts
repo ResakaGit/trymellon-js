@@ -17,6 +17,7 @@ import type {
   MellonSuccessDetail,
   MellonSuccessUserInfo,
 } from '../../ports/core-events.port';
+import { mapBackendErrorCodeToTryMellon } from '../../../errors';
 import {
   MELLON_OPEN,
   MELLON_OPEN_REQUEST,
@@ -27,6 +28,7 @@ import {
   MELLON_CANCELLED,
   MELLON_FALLBACK,
   MELLON_TAB_CHANGE,
+  MELLON_CONTEXT_READY,
 } from './constants';
 
 export {
@@ -39,6 +41,7 @@ export {
   MELLON_CANCELLED,
   MELLON_FALLBACK,
   MELLON_TAB_CHANGE,
+  MELLON_CONTEXT_READY,
 };
 
 export type {
@@ -64,9 +67,11 @@ function dispatchCustomEvent<T>(
   );
 }
 
-/** Map core operation to public contract ('login' | 'register'). */
-function toPublicOperation(op: 'register' | 'authenticate'): AuthOperation {
-  return op === 'authenticate' ? 'login' : 'register';
+/** Map core operation to public contract ('login' | 'register' | 'enroll'). */
+function toPublicOperation(op: 'register' | 'authenticate' | 'enroll'): AuthOperation {
+  if (op === 'authenticate') return 'login';
+  if (op === 'enroll') return 'enroll';
+  return 'register';
 }
 
 /**
@@ -93,7 +98,8 @@ function isCoreStartPayload(raw: unknown): raw is CoreStartPayload {
     typeof raw === 'object' &&
     (raw as CoreStartPayload).type === 'start' &&
     ((raw as CoreStartPayload).operation === 'register' ||
-      (raw as CoreStartPayload).operation === 'authenticate')
+      (raw as CoreStartPayload).operation === 'authenticate' ||
+      (raw as CoreStartPayload).operation === 'enroll')
   );
 }
 
@@ -104,7 +110,7 @@ function isCoreSuccessPayload(raw: unknown): raw is CoreSuccessPayload {
     typeof raw === 'object' &&
     o.type === 'success' &&
     typeof o.token === 'string' &&
-    (o.operation === 'register' || o.operation === 'authenticate')
+    (o.operation === 'register' || o.operation === 'authenticate' || o.operation === 'enroll')
   );
 }
 
@@ -118,7 +124,8 @@ function isCoreCancelledPayload(raw: unknown): raw is CoreCancelledPayload {
     typeof raw === 'object' &&
     (raw as CoreCancelledPayload).type === 'cancelled' &&
     ((raw as CoreCancelledPayload).operation === 'register' ||
-      (raw as CoreCancelledPayload).operation === 'authenticate')
+      (raw as CoreCancelledPayload).operation === 'authenticate' ||
+      (raw as CoreCancelledPayload).operation === 'enroll')
   );
 }
 
@@ -129,7 +136,7 @@ const eventBridgeAdapter: CoreEventsPort = {
       throw new TypeError('eventBridgeAdapter.subscribe: core and host are required');
     }
     const unsubscribes: Array<() => void> = [];
-    let lastOperation: 'register' | 'authenticate' = 'authenticate';
+    let lastOperation: 'register' | 'authenticate' | 'enroll' = 'authenticate';
     let successEmittedThisCeremony = false;
 
     const offStart = core.on('start', (payload: unknown) => {
@@ -171,7 +178,10 @@ const eventBridgeAdapter: CoreEventsPort = {
     const offError = core.on('error', (payload: unknown) => {
       if (!isCoreErrorPayload(payload)) return;
       if (successEmittedThisCeremony) return;
-      const code = payload.error?.code ?? 'UNKNOWN_ERROR';
+      const rawCode = payload.error?.code ?? 'UNKNOWN_ERROR';
+      const code = mapBackendErrorCodeToTryMellon(
+        typeof rawCode === 'string' ? rawCode : String(rawCode)
+      );
       const detail: MellonErrorDetail = {
         operation: toPublicOperation(payload.operation ?? lastOperation),
         code,

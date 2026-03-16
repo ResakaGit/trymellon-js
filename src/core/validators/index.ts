@@ -20,4 +20,12 @@ export {
   validateCrossDeviceVerifyResponse,
 } from './cross-device';
 export { validateRecoveryVerifyResponse, validateRecoveryCompleteResponse } from './recovery';
+export { validateEnrollmentStartResponse, validateEnrollmentFinishResponse } from './enrollment';
+export {
+  validateBridgeContextResponse,
+  validateBridgeVerifyResponse,
+  validateBridgeCompleteEnrollmentResponse,
+  validateBridgeCompleteAuthResponse,
+  validateBridgeStatusResponse,
+} from './bridge';
 export type { OnboardingRegisterResponseWithChallenge } from './onboarding';

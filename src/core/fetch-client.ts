@@ -8,6 +8,7 @@ import {
   type TryMellonError,
   type TryMellonErrorCode,
 } from '../errors';
+import { RETRY_DELAY_CAP_MS } from './constants';
 
 /** Fintech success envelope: { ok: true, resultado: T } */
 function isEnvelopeSuccess(data: unknown): data is { ok: true; resultado: unknown } {
@@ -69,8 +70,6 @@ export function parseHttpErrorBody(
         : mapBackendErrorCodeToTryMellon(String(rawCode));
   return { message, code };
 }
-
-const RETRY_DELAY_CAP_MS = 30_000;
 
 /**
  * Generates a unique request ID. Uses globalThis.crypto.randomUUID only (Elite: no Node crypto).

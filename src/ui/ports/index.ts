@@ -10,6 +10,7 @@ export type {
   MellonFallbackDetail,
   MellonOpenDetail,
   MellonCloseDetail,
+  MellonContextReadyDetail,
   CoreEventsPort,
   CoreAuthPort,
   CoreAuthOptions,

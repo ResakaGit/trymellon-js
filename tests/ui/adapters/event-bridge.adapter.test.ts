@@ -80,6 +80,21 @@ describe('event-bridge adapter', () => {
       expect(received[0].detail.operation).toBe('login');
       expect(received[0].detail.nonce).toBeUndefined();
     });
+
+    it('emits mellon:start with operation enroll when core emits start (enroll)', () => {
+      const core = createCore();
+      const host = document.createElement('div');
+      const received: CustomEvent<MellonOperationDetail>[] = [];
+      host.addEventListener(MELLON_START, ((e: CustomEvent<MellonOperationDetail>) => {
+        received.push(e);
+      }) as EventListener);
+
+      eventBridgeAdapter.subscribe(core, host);
+      core.emit('start', { type: 'start', operation: 'enroll' });
+
+      expect(received).toHaveLength(1);
+      expect(received[0].detail.operation).toBe('enroll');
+    });
   });
 
   describe('mellon:success', () => {
@@ -154,6 +169,26 @@ describe('event-bridge adapter', () => {
 
       expect(received).toHaveLength(1);
       expect(received[0].detail.token).toBe('jwt-first');
+    });
+
+    it('emits mellon:success with operation enroll when core emits success (enroll)', () => {
+      const core = createCore();
+      const host = document.createElement('div');
+      const received: CustomEvent<MellonSuccessDetail>[] = [];
+      host.addEventListener(MELLON_SUCCESS, ((e: CustomEvent<MellonSuccessDetail>) => {
+        received.push(e);
+      }) as EventListener);
+
+      eventBridgeAdapter.subscribe(core, host);
+      core.emit('success', {
+        type: 'success',
+        operation: 'enroll',
+        token: 'st_enroll_123',
+      });
+
+      expect(received).toHaveLength(1);
+      expect(received[0].detail.operation).toBe('enroll');
+      expect(received[0].detail.token).toBe('st_enroll_123');
     });
 
     it('omits redirectUrl from detail when core sends non-string (e.g. number)', () => {

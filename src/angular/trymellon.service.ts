@@ -20,4 +20,12 @@ export class TryMellonService {
     }
     return this._client;
   }
+
+  enroll(options: Parameters<TryMellon['enroll']>[0]): ReturnType<TryMellon['enroll']> {
+    return this.client.enroll(options);
+  }
+
+  getContextHash(): string {
+    return this.client.getContextHash();
+  }
 }

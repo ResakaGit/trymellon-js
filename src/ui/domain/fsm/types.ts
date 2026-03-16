@@ -13,7 +13,11 @@ export type UIState =
   | 'ERROR'
   | 'FALLBACK'
   | 'FALLBACK_EMAIL'
-  | 'FALLBACK_QR';
+  | 'FALLBACK_QR'
+  | 'ENROLLMENT_READY'
+  | 'ENROLLING'
+  | 'ENROLLMENT_SUCCESS'
+  | 'ENROLLMENT_ERROR';
 
 /** Component mode (mode attribute). */
 export type UIMode = 'login' | 'register' | 'auto';
@@ -54,4 +58,9 @@ export type FSMEvent =
   | { type: 'AUTH_ERROR' }
   | { type: 'AUTH_FALLBACK' }
   | { type: 'AUTH_FALLBACK_EMAIL' }
-  | { type: 'AUTH_FALLBACK_QR' };
+  | { type: 'AUTH_FALLBACK_QR' }
+  | { type: 'ENROLLMENT_READY_SET'; payload?: { ticketId?: string } }
+  | { type: 'START_ENROLL' }
+  | { type: 'ENROLL_SUCCESS' }
+  | { type: 'ENROLL_ERROR' }
+  | { type: 'ENROLL_RETRY' };

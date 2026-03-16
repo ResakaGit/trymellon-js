@@ -67,13 +67,25 @@ export class AuthController {
   }
 
   handleAuthSuccess(): void {
-    const next = authUiApplicationService.tryHandleAuthSuccess(this._currentState);
+    const next = authUiApplicationService.handleAuthOutcome(this._currentState, 'success');
     if (next === null) return;
     this.setState(next);
   }
 
   handleAuthError(): void {
-    const next = authUiApplicationService.tryHandleAuthError(this._currentState);
+    const next = authUiApplicationService.handleAuthOutcome(this._currentState, 'error');
+    if (next === null) return;
+    this.setState(next);
+  }
+
+  handleEnrollSuccess(): void {
+    const next = authUiApplicationService.handleEnrollOutcome(this._currentState, 'success');
+    if (next === null) return;
+    this.setState(next);
+  }
+
+  handleEnrollError(): void {
+    const next = authUiApplicationService.handleEnrollOutcome(this._currentState, 'error');
     if (next === null) return;
     this.setState(next);
   }
@@ -94,6 +106,12 @@ export class AuthController {
       core,
       options
     );
+    this.setState(next);
+  }
+
+  startEnrollment(core: CoreAuthPort | null, options: { ticketId: string }): void {
+    if (!core) return;
+    const next = authUiApplicationService.startEnrollment(this._currentState, core, options);
     this.setState(next);
   }
 

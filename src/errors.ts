@@ -9,6 +9,12 @@ export type TryMellonErrorCode =
   | 'ABORTED'
   | 'ABORT_ERROR'
   | 'CHALLENGE_MISMATCH'
+  | 'TICKET_NOT_FOUND'
+  | 'TICKET_EXPIRED'
+  | 'TICKET_ALREADY_USED'
+  | 'PIN_MISMATCH'
+  | 'PIN_LOCKED'
+  | 'BRIDGE_SESSION_EXPIRED'
   | 'UNKNOWN_ERROR';
 
 export class TryMellonError extends Error {
@@ -39,6 +45,12 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   ABORTED: 'Operation was aborted',
   ABORT_ERROR: 'Operation aborted by user or timeout',
   CHALLENGE_MISMATCH: 'This link was already used or expired. Please try again from your computer.',
+  TICKET_NOT_FOUND: 'Enrollment ticket not found or invalid',
+  TICKET_EXPIRED: 'Enrollment ticket has expired',
+  TICKET_ALREADY_USED: 'Enrollment ticket was already used',
+  PIN_MISMATCH: 'PIN does not match',
+  PIN_LOCKED: 'PIN is locked due to too many failed attempts',
+  BRIDGE_SESSION_EXPIRED: 'Bridge session has expired',
   UNKNOWN_ERROR: 'An unknown error occurred',
 };
 
@@ -66,6 +78,14 @@ export function createNotSupportedError(): TryMellonError {
 
 export function createUserCancelledError(): TryMellonError {
   return createError('USER_CANCELLED');
+}
+
+export function createTicketNotFoundError(): TryMellonError {
+  return createError('TICKET_NOT_FOUND');
+}
+
+export function createTicketExpiredError(): TryMellonError {
+  return createError('TICKET_EXPIRED');
 }
 
 export function createNetworkError(cause?: Error): TryMellonError {
@@ -149,6 +169,7 @@ const DOM_EXCEPTION_ERROR_MAP: Record<string, TryMellonErrorCode> = {
  * Maps backend API error codes (fintech envelope) to TryMellonErrorCode.
  * Pure, testable. Unknown codes map to UNKNOWN_ERROR.
  * Defensive: non-string input returns UNKNOWN_ERROR (no throw).
+ * Backend may send UPPERCASE (e.g. NOT_FOUND, EXPIRED) or snake_case (ticket_not_found); both normalized.
  */
 export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonErrorCode {
   if (typeof backendCode !== 'string') return 'UNKNOWN_ERROR';
@@ -161,6 +182,26 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     invalid_argument: 'INVALID_ARGUMENT',
     user_not_found: 'SESSION_EXPIRED',
     passkey_not_found: 'PASSKEY_NOT_FOUND',
+    ticket_not_found: 'TICKET_NOT_FOUND',
+    ticket_expired: 'TICKET_EXPIRED',
+    ticket_already_consumed: 'TICKET_ALREADY_USED',
+    // Backend enrollment domain codes (UPPERCASE → normalized)
+    not_found: 'TICKET_NOT_FOUND',
+    expired: 'TICKET_EXPIRED',
+    already_consumed: 'TICKET_ALREADY_USED',
+    context_mismatch: 'CHALLENGE_MISMATCH',
+    challenge_not_found: 'CHALLENGE_MISMATCH',
+    invalid_ticket_id: 'INVALID_ARGUMENT',
+    invalid_context_hash: 'INVALID_ARGUMENT',
+    invalid_ticket_status: 'INVALID_ARGUMENT',
+    invalid_config: 'INVALID_ARGUMENT',
+    enrollment_not_enabled: 'INVALID_ARGUMENT',
+    // Bridge (KP-BRIDGE)
+    pin_mismatch: 'PIN_MISMATCH',
+    pin_locked: 'PIN_LOCKED',
+    bridge_not_enabled: 'UNKNOWN_ERROR',
+    bridge_session_expired: 'BRIDGE_SESSION_EXPIRED',
+    session_not_found: 'BRIDGE_SESSION_EXPIRED',
   };
   return map[normalized] ?? 'UNKNOWN_ERROR';
 }

@@ -1,7 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
-import { provideTryMellon, useTryMellon, useRegister, useAuthenticate } from '../../src/vue';
+import {
+  provideTryMellon,
+  useTryMellon,
+  useRegister,
+  useAuthenticate,
+  useEnroll,
+} from '../../src/vue';
 
 describe('Vue adapter', () => {
   const mockRegister = vi.fn();
@@ -157,6 +163,58 @@ describe('Vue adapter', () => {
       expect(wrapper.find('[data-testid="auth-error"]').exists()).toBe(true);
     });
     expect(wrapper.find('[data-testid="auth-error"]').text()).toBe('Auth failed');
+  });
+
+  it('provideTryMellon and useEnroll: execute calls client.enroll, contextHash from getContextHash', async () => {
+    const mockEnroll = vi.fn();
+    const mockGetContextHash = vi.fn().mockReturnValue('vue_ctx_hash');
+    const mockClient = {
+      register: vi.fn(),
+      authenticate: vi.fn(),
+      enroll: mockEnroll,
+      getContextHash: mockGetContextHash,
+      validateSession: vi.fn(),
+      getStatus: vi.fn(),
+      on: vi.fn(),
+      version: vi.fn(() => '0.1.0'),
+      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      onboarding: {},
+    } as never;
+
+    mockEnroll.mockResolvedValue({
+      ok: true,
+      value: { sessionToken: 'st_vue_enroll' },
+    });
+
+    const EnrollChild = defineComponent({
+      setup() {
+        const { execute, result, contextHash } = useEnroll();
+        return () =>
+          h('div', [
+            h('span', { 'data-testid': 'vue-context-hash' }, contextHash.value),
+            h('button', { onClick: () => execute({ ticketId: 'tk_1' }) }, 'Enroll'),
+            result.value?.ok ? h('span', { 'data-testid': 'vue-enroll-ok' }, 'OK') : null,
+          ]);
+      },
+    });
+
+    const TestEnrollComponent = defineComponent({
+      setup() {
+        provideTryMellon(mockClient);
+        return () => h(EnrollChild);
+      },
+    });
+
+    const wrapper = mount(TestEnrollComponent);
+    expect(wrapper.find('[data-testid="vue-context-hash"]').text()).toBe('vue_ctx_hash');
+    expect(mockGetContextHash).toHaveBeenCalled();
+
+    await wrapper.find('button').trigger('click');
+    await wrapper.vm.$nextTick();
+    await vi.waitFor(() => {
+      expect(mockEnroll).toHaveBeenCalledWith({ ticketId: 'tk_1' });
+    });
+    expect(wrapper.find('[data-testid="vue-enroll-ok"]').exists()).toBe(true);
   });
 
   it('useTryMellon throws when used without provideTryMellon', () => {

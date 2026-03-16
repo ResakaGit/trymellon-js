@@ -37,6 +37,7 @@ export const DEFAULT_PARSED_ATTRIBUTES: ParsedAttributes = {
   buttonVariant: DEFAULT_BUTTON_VARIANT,
   buttonLabel: null,
   buttonAriaLabel: null,
+  ticketId: null,
 };
 
 /** Safe default for ParsedModalAttributes. */

@@ -9,6 +9,7 @@ import {
   MELLON_OPEN_REQUEST,
   MELLON_SUCCESS,
 } from '../../src/ui/adapters/infra/event-bridge.adapter';
+import { MELLON_CONTEXT_READY } from '../../src/ui/presentation/ui-events';
 import { MELLON_BTN_SELECTOR } from '../../src/ui/adapters/render/shadow.adapter';
 import * as coreFactory from '../../src/ui/adapters/infra/core-factory.adapter';
 import { TryMellonAuthModalElement } from '../../src/ui/presentation/trymellon-auth-modal.element';
@@ -564,6 +565,12 @@ describe('TryMellonAuthElement integration (E7 click → modal → events)', () 
           },
         };
       },
+      async enroll(_options?: unknown) {
+        return { ok: true as const, value: undefined };
+      },
+      getContextHash(): string {
+        return '';
+      },
     } as ReturnType<typeof coreFactory.createCoreForUI>;
   }
 
@@ -745,6 +752,68 @@ describe('TryMellonAuthElement reset and tab (02-fsm-estado-modal)', () => {
     el.setAttribute('mode', 'register');
     expect(received).toHaveLength(1);
     expect(el.currentState).toBe('READY_REGISTER');
+  });
+});
+
+describe('TryMellonAuthElement enrollment (ticket-id, context-ready, enroll)', () => {
+  let container: HTMLElement;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  it('emits mellon:context-ready with contextHash and composed:true when ticket-id is set and core is attached', () => {
+    const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
+    container.appendChild(el);
+    const core = createValidTryMellonInstance();
+    const contextHash = 'abc64hexcontextHash1234567890123456789012345678901234567890123456';
+    vi.spyOn(core, 'getContextHash').mockReturnValue(contextHash);
+    el.attachCore(core);
+    const received: CustomEvent<{ contextHash?: string }>[] = [];
+    el.addEventListener(MELLON_CONTEXT_READY, ((e: CustomEvent<{ contextHash?: string }>) => {
+      received.push(e);
+    }) as EventListener);
+    el.setAttribute('ticket-id', 'ticket-123');
+    expect(received).toHaveLength(1);
+    expect(received[0].detail.contextHash).toBe(contextHash);
+    expect(received[0].composed).toBe(true);
+  });
+
+  it('enroll() calls core.enroll with ticketId when ticket-id is set and core attached', () => {
+    const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
+    container.appendChild(el);
+    const core = createValidTryMellonInstance();
+    const enrollSpy = vi.spyOn(core, 'enroll').mockResolvedValue(ok({ sessionToken: 'st-enroll' }));
+    el.attachCore(core);
+    el.setAttribute('ticket-id', 'ticket-456');
+    el.enroll();
+    expect(enrollSpy).toHaveBeenCalledTimes(1);
+    expect(enrollSpy).toHaveBeenCalledWith({ ticketId: 'ticket-456' });
+  });
+
+  it('enroll() is no-op when ticket-id is not set', () => {
+    const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
+    container.appendChild(el);
+    const core = createValidTryMellonInstance();
+    const enrollSpy = vi.spyOn(core, 'enroll');
+    el.attachCore(core);
+    el.enroll();
+    expect(enrollSpy).not.toHaveBeenCalled();
+  });
+
+  it('enroll() is no-op when core is not attached', () => {
+    const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
+    el.setAttribute('ticket-id', 'ticket-789');
+    container.appendChild(el);
+    const core = createValidTryMellonInstance();
+    const enrollSpy = vi.spyOn(core, 'enroll');
+    el.enroll();
+    expect(enrollSpy).not.toHaveBeenCalled();
   });
 });
 

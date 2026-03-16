@@ -9,11 +9,13 @@ import type {
   AuthenticateResult,
   RegisterStartResponse,
   AuthStartResponse,
+  RegisterFinishRequest,
 } from '../types';
 import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import type { TryMellonError } from '../errors';
 import { serializeCredentialForAuth, serializeCredentialForRegister } from './webauthn-utils';
+import { validateCredentialStructure } from '../utils/validation';
 import { invokeCeremony } from './ceremony';
 
 /**
@@ -85,6 +87,42 @@ export function createRegistrationOptions(
     };
 
     return ok({ publicKey });
+  } catch (e) {
+    return err(mapWebAuthnError(e));
+  }
+}
+
+/**
+ * Stateless orchestration: create credential (WebAuthn) → validate structure → serialize for register.
+ * Centralizes try/catch and mapWebAuthnError; used by EnrollmentManager and other register flows.
+ */
+export async function createAndSerializeCredentialForRegister(
+  serverChallengePayload: RegisterStartResponse['challenge'],
+  signal?: AbortSignal
+): Promise<Result<RegisterFinishRequest['credential'], TryMellonError>> {
+  const creationOptionsResult = createRegistrationOptions(serverChallengePayload);
+  if (!creationOptionsResult.ok) return err(creationOptionsResult.error);
+
+  const creationOptions: CredentialCreationOptions = {
+    ...creationOptionsResult.value,
+    ...(signal !== undefined && { signal }),
+  };
+
+  let credential: Credential | null;
+  try {
+    credential = await navigator.credentials.create(creationOptions);
+  } catch (e) {
+    return err(mapWebAuthnError(e));
+  }
+
+  try {
+    validateCredentialStructure(credential, 'create');
+  } catch (e) {
+    return err(mapWebAuthnError(e));
+  }
+
+  try {
+    return ok(serializeCredentialForRegister(credential as PublicKeyCredential));
   } catch (e) {
     return err(mapWebAuthnError(e));
   }

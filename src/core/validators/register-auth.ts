@@ -1,5 +1,5 @@
 import type { Result } from '../../utils/result';
-import { ok } from '../../utils/result';
+import { ok, err } from '../../utils/result';
 import type {
   RegisterStartResponse,
   AuthStartResponse,
@@ -15,109 +15,18 @@ import {
   isArray,
   validationError,
   required,
-  validateChallengeRP,
-  validateChallengeUser,
-  validatePubKeyCredParams,
+  validateRegisterStartShape,
   validateUserEntity,
 } from './helpers';
 
 export function validateRegisterStartResponse(
   data: unknown
 ): Result<RegisterStartResponse, TryMellonError> {
-  if (!isObject(data)) {
-    return validationError('Invalid API response: expected object', { originalData: data });
-  }
-
-  const session_id = required(data, 'session_id');
-  if (!isString(session_id)) {
-    return validationError('Invalid API response: session_id must be string', {
-      field: 'session_id',
-      originalData: data,
-    });
-  }
-
-  const challenge = required(data, 'challenge');
-  if (!isObject(challenge)) {
-    return validationError('Invalid API response: challenge must be object', {
-      field: 'challenge',
-      originalData: data,
-    });
-  }
-
-  const rpResult = validateChallengeRP(required(challenge, 'rp'), data);
-  if (!rpResult.ok) return rpResult;
-
-  const userResult = validateChallengeUser(required(challenge, 'user'), data);
-  if (!userResult.ok) return userResult;
-
-  const challengeStr = required(challenge, 'challenge');
-  if (!isString(challengeStr)) {
-    return validationError('Invalid API response: challenge.challenge must be string', {
-      originalData: data,
-    });
-  }
-
-  const pubKeyCredParamsResult = validatePubKeyCredParams(
-    required(challenge, 'pubKeyCredParams'),
-    data
-  );
-  if (!pubKeyCredParamsResult.ok) return pubKeyCredParamsResult;
-
-  const timeout = challenge.timeout;
-  if (timeout !== undefined && !isNumber(timeout)) {
-    return validationError('Invalid API response: challenge.timeout must be number', {
-      originalData: data,
-    });
-  }
-
-  const excludeCredentials = challenge.excludeCredentials;
-  if (excludeCredentials !== undefined) {
-    if (!isArray(excludeCredentials)) {
-      return validationError('Invalid API response: excludeCredentials must be array', {
-        originalData: data,
-      });
-    }
-    for (const c of excludeCredentials) {
-      if (
-        !isObject(c) ||
-        (c as Record<string, unknown>).type !== 'public-key' ||
-        !isString((c as Record<string, unknown>).id)
-      ) {
-        return validationError(
-          'Invalid API response: excludeCredentials items must have id and type',
-          {
-            originalData: data,
-          }
-        );
-      }
-    }
-  }
-
-  const authenticatorSelection = challenge.authenticatorSelection;
-  if (authenticatorSelection !== undefined && !isObject(authenticatorSelection)) {
-    return validationError('Invalid API response: authenticatorSelection must be object', {
-      originalData: data,
-    });
-  }
-
+  const shape = validateRegisterStartShape(data);
+  if (!shape.ok) return shape;
   return ok({
-    session_id,
-    challenge: {
-      rp: challenge.rp as RegisterStartResponse['challenge']['rp'],
-      user: challenge.user as RegisterStartResponse['challenge']['user'],
-      challenge: challengeStr,
-      pubKeyCredParams:
-        challenge.pubKeyCredParams as RegisterStartResponse['challenge']['pubKeyCredParams'],
-      ...(timeout !== undefined && { timeout }),
-      ...(excludeCredentials !== undefined && {
-        excludeCredentials:
-          excludeCredentials as RegisterStartResponse['challenge']['excludeCredentials'],
-      }),
-      ...(authenticatorSelection !== undefined && {
-        authenticatorSelection:
-          authenticatorSelection as RegisterStartResponse['challenge']['authenticatorSelection'],
-      }),
-    },
+    session_id: shape.value.session_id,
+    challenge: shape.value.challenge as RegisterStartResponse['challenge'],
   });
 }
 
@@ -245,7 +154,7 @@ export function validateRegisterFinishResponse(
     });
   }
   const userResult = validateUserEntity(user, data);
-  if (!userResult.ok) return validationError(userResult.error.message, { originalData: data });
+  if (!userResult.ok) return err(userResult.error);
 
   const redirect_url = data.redirect_url;
   if (redirect_url !== undefined && !isString(redirect_url)) {
@@ -288,7 +197,7 @@ export function validateAuthFinishResponse(
     });
   }
   const userResult = validateUserEntity(user, data);
-  if (!userResult.ok) return validationError(userResult.error.message, { originalData: data });
+  if (!userResult.ok) return err(userResult.error);
 
   if (signals !== undefined && !isObject(signals)) {
     return validationError('Invalid API response: signals must be object', {

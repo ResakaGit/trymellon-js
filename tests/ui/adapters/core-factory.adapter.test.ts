@@ -14,6 +14,8 @@ describe('ui/adapters/core-factory.adapter', () => {
       authenticate: vi.fn(),
       register: vi.fn(),
       on: vi.fn(),
+      enroll: vi.fn(),
+      getContextHash: vi.fn(),
     };
     expect(isCoreAuthPort(candidate)).toBe(true);
   });
@@ -22,6 +24,22 @@ describe('ui/adapters/core-factory.adapter', () => {
     expect(isCoreAuthPort({ authenticate: vi.fn(), register: vi.fn() })).toBe(false);
     expect(isCoreAuthPort({ authenticate: vi.fn(), on: vi.fn() })).toBe(false);
     expect(isCoreAuthPort({ register: vi.fn(), on: vi.fn() })).toBe(false);
+    expect(
+      isCoreAuthPort({
+        authenticate: vi.fn(),
+        register: vi.fn(),
+        on: vi.fn(),
+        enroll: vi.fn(),
+      })
+    ).toBe(false);
+    expect(
+      isCoreAuthPort({
+        authenticate: vi.fn(),
+        register: vi.fn(),
+        on: vi.fn(),
+        getContextHash: vi.fn(),
+      })
+    ).toBe(false);
     expect(isCoreAuthPort(null)).toBe(false);
   });
 
@@ -43,6 +61,8 @@ describe('ui/adapters/core-factory.adapter', () => {
       authenticate: vi.fn(),
       register: vi.fn(),
       on: vi.fn(),
+      enroll: vi.fn(),
+      getContextHash: vi.fn(),
     };
     const spy = vi
       .spyOn(TryMellon, 'create')

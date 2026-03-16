@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { authUiApplicationService } from '../../../src/ui/application/auth-ui.application-service';
+import {
+  authUiApplicationService,
+  canStartAuth,
+} from '../../../src/ui/application/auth-ui.application-service';
 import type { CoreAuthPort } from '../../../src/ui/ports/core-events.port';
 
 describe('ui/application/auth-ui.application-service', () => {
@@ -12,6 +15,9 @@ describe('ui/application/auth-ui.application-service', () => {
     const core: CoreAuthPort = {
       register: vi.fn(),
       authenticate: vi.fn(),
+      on: vi.fn().mockReturnValue(() => {}),
+      enroll: vi.fn(),
+      getContextHash: vi.fn().mockReturnValue(''),
     };
 
     const stateAfterRegister = authUiApplicationService.startAuth(
@@ -35,16 +41,16 @@ describe('ui/application/auth-ui.application-service', () => {
     expect(stateAfterLogin).not.toBe('READY_LOGIN');
   });
 
-  it('tryHandleAuthSuccess and tryHandleAuthError return null when not AUTHENTICATING', () => {
-    expect(authUiApplicationService.tryHandleAuthSuccess('READY')).toBeNull();
-    expect(authUiApplicationService.tryHandleAuthError('READY')).toBeNull();
+  it('handleAuthOutcome returns null when not AUTHENTICATING', () => {
+    expect(authUiApplicationService.handleAuthOutcome('READY', 'success')).toBeNull();
+    expect(authUiApplicationService.handleAuthOutcome('READY', 'error')).toBeNull();
   });
 
-  it('tryHandleAuthSuccess and tryHandleAuthError transition when AUTHENTICATING', () => {
-    const successState = authUiApplicationService.tryHandleAuthSuccess('AUTHENTICATING');
+  it('handleAuthOutcome transitions when AUTHENTICATING', () => {
+    const successState = authUiApplicationService.handleAuthOutcome('AUTHENTICATING', 'success');
     expect(successState).toBe('SUCCESS');
 
-    const errorState = authUiApplicationService.tryHandleAuthError('AUTHENTICATING');
+    const errorState = authUiApplicationService.handleAuthOutcome('AUTHENTICATING', 'error');
     expect(errorState).toBe('ERROR');
   });
 
@@ -66,9 +72,53 @@ describe('ui/application/auth-ui.application-service', () => {
     expect(next).toBe('IDLE');
   });
 
-  it('handleAuthSuccess and handleAuthError apply AUTH_SUCCESS / AUTH_ERROR', () => {
-    expect(authUiApplicationService.handleAuthSuccess('AUTHENTICATING')).toBe('SUCCESS');
-    expect(authUiApplicationService.handleAuthError('AUTHENTICATING')).toBe('ERROR');
+  it('canStartAuth returns true only when FSM allows START_AUTH', () => {
+    expect(canStartAuth('READY_LOGIN')).toBe(true);
+    expect(canStartAuth('READY_REGISTER')).toBe(true);
+    expect(canStartAuth('READY')).toBe(true);
+    expect(canStartAuth('IDLE')).toBe(false);
+    expect(canStartAuth('AUTHENTICATING')).toBe(false);
+    expect(canStartAuth('SUCCESS')).toBe(false);
+  });
+
+  it('startEnrollment transitions to ENROLLING and calls core.enroll', () => {
+    const core: CoreAuthPort = {
+      register: vi.fn(),
+      authenticate: vi.fn(),
+      on: vi.fn().mockReturnValue(() => {}),
+      enroll: vi.fn(),
+      getContextHash: vi.fn().mockReturnValue(''),
+    };
+    const next = authUiApplicationService.startEnrollment('ENROLLMENT_READY', core, {
+      ticketId: 'ticket_xyz',
+    });
+    expect(next).toBe('ENROLLING');
+    expect(core.enroll).toHaveBeenCalledWith({ ticketId: 'ticket_xyz' });
+    (core.enroll as ReturnType<typeof vi.fn>).mockClear();
+    const fromIdle = authUiApplicationService.startEnrollment('IDLE', core, {
+      ticketId: 'ticket_xyz',
+    });
+    expect(core.enroll).toHaveBeenCalledWith({ ticketId: 'ticket_xyz' });
+    expect(fromIdle).toBe('ENROLLING');
+  });
+
+  it('enrollRetry transitions ENROLLMENT_ERROR to ENROLLMENT_READY', () => {
+    const next = authUiApplicationService.enrollRetry('ENROLLMENT_ERROR');
+    expect(next).toBe('ENROLLMENT_READY');
+  });
+
+  it('handleEnrollOutcome returns null when not ENROLLING', () => {
+    expect(authUiApplicationService.handleEnrollOutcome('ENROLLMENT_READY', 'success')).toBeNull();
+    expect(authUiApplicationService.handleEnrollOutcome('IDLE', 'error')).toBeNull();
+  });
+
+  it('handleEnrollOutcome transitions when ENROLLING', () => {
+    expect(authUiApplicationService.handleEnrollOutcome('ENROLLING', 'success')).toBe(
+      'ENROLLMENT_SUCCESS'
+    );
+    expect(authUiApplicationService.handleEnrollOutcome('ENROLLING', 'error')).toBe(
+      'ENROLLMENT_ERROR'
+    );
   });
 
   it('evaluateEnv delegates to runEnvEval and returns UIState', async () => {

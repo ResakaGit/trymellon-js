@@ -24,7 +24,7 @@ description: >
 - Every `register` / `authenticate` call should:
   - Inspect `result.ok`.
   - Branch on `result.error.code` when relevant (e.g. `NOT_SUPPORTED`, `PASSKEY_NOT_FOUND`).
-- The `sessionToken` is sent to the backend (e.g. `POST /api/login`); the client never validates the token.
+- The `sessionToken` is always sent to the backend (e.g. `POST /api/login`) so that your server validates it and creates your own session. The optional `client.validateSession(sessionToken)` helper from the main SDK skill is only for lightweight frontend checks and must not replace backend validation in production.
 - Always use the following names:
   - `externalUserId` (camelCase).
   - `sessionToken`.
