@@ -27,26 +27,23 @@
 
 # [2.2.0](https://github.com/ResakaGit/trymellon-js/compare/v2.1.0...v2.2.0) (2026-03-12)
 
-
 ### Features
 
-* **ui:** customizable auth button label ([f16dc0d](https://github.com/ResakaGit/trymellon-js/commit/f16dc0d7860558be5641968d25a1eef84ef0ef6c))
+- **ui:** customizable auth button label ([f16dc0d](https://github.com/ResakaGit/trymellon-js/commit/f16dc0d7860558be5641968d25a1eef84ef0ef6c))
 
 # [2.1.0](https://github.com/ResakaGit/trymellon-js/compare/v2.0.0...v2.1.0) (2026-03-12)
 
-
 ### Features
 
-* **ui:** solid modal background in auth boot (2.0.1) ([92aba05](https://github.com/ResakaGit/trymellon-js/commit/92aba05495c5e61887e191d66cd7d4ee80664513))
+- **ui:** solid modal background in auth boot (2.0.1) ([92aba05](https://github.com/ResakaGit/trymellon-js/commit/92aba05495c5e61887e191d66cd7d4ee80664513))
 
 # [2.0.0](https://github.com/ResakaGit/trymellon-js/compare/v1.7.6...v2.0.0) (2026-03-11)
 
-
 ### Bug Fixes
 
-* **build:** remove 'use client' from main bundle, normalize repository.url ([91be2c0](https://github.com/ResakaGit/trymellon-js/commit/91be2c0b80ed56e8c7893c0fe6ddd0712409f3d9))
-* **release:** major rule glob subject 2.0.0*, remove orphan v1.7.7 tag before release ([22de35e](https://github.com/ResakaGit/trymellon-js/commit/22de35e6465b7136d040c05c7ffbbb6ecedd432c))
-* **validators:** cross-device and recovery validation, api and formatting ([d6dbb39](https://github.com/ResakaGit/trymellon-js/commit/d6dbb3917ba19b00ecdc339175e6308f568da294))
+- **build:** remove 'use client' from main bundle, normalize repository.url ([91be2c0](https://github.com/ResakaGit/trymellon-js/commit/91be2c0b80ed56e8c7893c0fe6ddd0712409f3d9))
+- **release:** major rule glob subject 2.0.0\*, remove orphan v1.7.7 tag before release ([22de35e](https://github.com/ResakaGit/trymellon-js/commit/22de35e6465b7136d040c05c7ffbbb6ecedd432c))
+- **validators:** cross-device and recovery validation, api and formatting ([d6dbb39](https://github.com/ResakaGit/trymellon-js/commit/d6dbb3917ba19b00ecdc339175e6308f568da294))
 
 ## [2.0.0](https://github.com/ResakaGit/trymellon-js/compare/v1.7.7...v2.0.0) (unreleased)
 
