@@ -165,6 +165,16 @@ const DOM_EXCEPTION_ERROR_MAP: Record<string, TryMellonErrorCode> = {
   UnknownError: 'UNKNOWN_ERROR',
 };
 
+/** Backend codes that mean "origin not allowed for application". Single source for SDK contract. */
+export const BACKEND_ORIGIN_NOT_ALLOWED_CODES: readonly string[] = [
+  'origin_not_allowed',
+  'origin_not_allowed_for_application',
+];
+
+export function isOriginNotAllowedBackendCode(code: string): boolean {
+  return BACKEND_ORIGIN_NOT_ALLOWED_CODES.includes(code);
+}
+
 /**
  * Maps backend API error codes (fintech envelope) to TryMellonErrorCode.
  * Pure, testable. Unknown codes map to UNKNOWN_ERROR.
@@ -202,6 +212,8 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     bridge_not_enabled: 'UNKNOWN_ERROR',
     bridge_session_expired: 'BRIDGE_SESSION_EXPIRED',
     session_not_found: 'BRIDGE_SESSION_EXPIRED',
+    origin_not_allowed: 'INVALID_ARGUMENT',
+    origin_not_allowed_for_application: 'INVALID_ARGUMENT',
   };
   return map[normalized] ?? 'UNKNOWN_ERROR';
 }

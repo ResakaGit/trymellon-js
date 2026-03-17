@@ -313,6 +313,36 @@ describe('FetchHttpClient', () => {
       }
     });
 
+    it('calls console.warn with hint and docs_url when envelope error is origin_not_allowed', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const client = new FetchHttpClient(5000, 0, baseDelayMs);
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: {
+              code: 'origin_not_allowed',
+              message: "Origin 'https://evil.com' is not allowed.",
+              hint: "Add 'https://evil.com' to allowed origins in TryMellon dashboard.",
+              docs_url: 'https://trymellon.com/docs/getting-started#allowed-origins',
+            },
+          }),
+          { status: 403, statusText: 'Forbidden' }
+        )
+      );
+
+      const result = await client.get<unknown>('https://api.example.com/foo');
+
+      expect(result.ok).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(
+        "[TryMellon] Add 'https://evil.com' to allowed origins in TryMellon dashboard. See: https://trymellon.com/docs/getting-started#allowed-origins"
+      );
+      if (!result.ok) {
+        expect(result.error.code).toBe('INVALID_ARGUMENT');
+      }
+      warnSpy.mockRestore();
+    });
+
     it('parses fintech error envelope for challenge_mismatch', async () => {
       const client = new FetchHttpClient(5000, 0, baseDelayMs);
       mockFetch.mockResolvedValue(

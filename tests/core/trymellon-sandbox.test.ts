@@ -1,16 +1,38 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from 'vitest';
 import { TryMellon } from '../../src/core/trymellon';
 import { SANDBOX_SESSION_TOKEN } from '../../src/core/constants';
 import * as webauthnModule from '../../src/core/webauthn';
 
 vi.mock('../../src/core/api');
 
+const MINIMAL_CONFIG = { appId: 'sandbox', publishableKey: 'sandbox' } as const;
+
+function setWindowOrigin(origin: string): void {
+  Object.defineProperty(window, 'location', {
+    value: { ...window.location, origin },
+    writable: true,
+    configurable: true,
+  });
+}
+
 describe('TryMellon sandbox mode', () => {
   const registerPasskeySpy = vi.spyOn(webauthnModule, 'registerPasskey');
   const authenticatePasskeySpy = vi.spyOn(webauthnModule, 'authenticatePasskey');
 
+  let locationDescriptor: PropertyDescriptor | undefined;
+
+  beforeAll(() => {
+    locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    if (locationDescriptor) {
+      Object.defineProperty(window, 'location', locationDescriptor);
+    }
   });
 
   describe('SANDBOX_SESSION_TOKEN', () => {
@@ -157,6 +179,45 @@ describe('TryMellon sandbox mode', () => {
         expect(result.value.userId).toBe('sandbox-user');
         expect(result.value.externalUserId).toBe('sandbox');
       }
+    });
+  });
+
+  describe('sandbox console warning (warnIfSandboxOnProd)', () => {
+    it('calls console.warn with message containing "Sandbox mode is ON" when sandbox true and origin is production', () => {
+      setWindowOrigin('https://myapp.com');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = TryMellon.create({
+        ...MINIMAL_CONFIG,
+        sandbox: true,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Sandbox mode is ON'));
+    });
+
+    it('does not call console.warn when sandbox true and origin is localhost', () => {
+      setWindowOrigin('http://localhost:3000');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      TryMellon.create({
+        ...MINIMAL_CONFIG,
+        sandbox: true,
+      });
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not call console.warn when sandbox false', () => {
+      setWindowOrigin('https://myapp.com');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      TryMellon.create({
+        ...MINIMAL_CONFIG,
+        sandbox: false,
+      });
+
+      expect(warnSpy).not.toHaveBeenCalled();
     });
   });
 });

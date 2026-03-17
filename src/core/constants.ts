@@ -23,6 +23,9 @@ export const RETRY_DELAY_CAP_MS = 30_000;
  */
 export const SANDBOX_SESSION_TOKEN = 'trymellon_sandbox_session_token_v1';
 
+/** Docs URL for sandbox mode (DX: warn when sandbox ON in non-localhost). Single source of truth. */
+export const SANDBOX_DOCS_URL = 'https://trymellon.com/docs/getting-started#sandbox';
+
 /** API path prefix for enrollment-bridge (KP-BRIDGE-04). Single source of truth. */
 export const BRIDGE_PATH_ENROLLMENT = '/v1/enrollment-bridge';
 

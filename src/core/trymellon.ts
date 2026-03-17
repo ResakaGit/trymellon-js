@@ -21,6 +21,7 @@ import {
   MIN_RETRY_DELAY_MS,
   MAX_RETRY_DELAY_MS,
   SANDBOX_SESSION_TOKEN,
+  SANDBOX_DOCS_URL,
 } from './constants';
 import { createDefaultTelemetrySender } from './adapters/telemetry-sender';
 import type { TelemetrySender } from './ports/telemetry';
@@ -52,6 +53,20 @@ import { AuthService } from './services/auth-service';
 import { RecoveryService } from './services/recovery-service';
 
 declare const __VERSION__: string;
+
+/**
+ * Pure helper: true if origin's hostname is localhost or 127.0.0.1.
+ * Does not consider [::1] or other formats unless explicitly required.
+ */
+function isLocalhost(origin: string): boolean {
+  if (typeof origin !== 'string' || origin === '') return false;
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
 
 export class TryMellon {
   private readonly sandbox: boolean;
@@ -159,6 +174,21 @@ export class TryMellon {
     this.enrollmentManager = new EnrollmentManager(this.apiClient, this.contextHashStorage);
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
+    this.warnIfSandboxOnProd();
+  }
+
+  /**
+   * DX: warn when sandbox is ON and origin is not localhost/127.0.0.1 (e.g. production).
+   * No-op in non-browser (SSR/Node). No exceptions; only console.warn.
+   */
+  private warnIfSandboxOnProd(): void {
+    if (typeof window === 'undefined') return;
+    if (!this.sandbox) return;
+    const origin = window.location.origin;
+    if (isLocalhost(origin)) return;
+    console.warn(
+      `[TryMellon] Sandbox mode is ON but origin is not localhost (current: ${origin}). Use sandbox: false in production. See: ${SANDBOX_DOCS_URL}`
+    );
   }
 
   /**

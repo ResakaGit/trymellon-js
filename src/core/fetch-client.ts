@@ -4,6 +4,7 @@ import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import {
   createError,
+  isOriginNotAllowedBackendCode,
   mapBackendErrorCodeToTryMellon,
   type TryMellonError,
   type TryMellonErrorCode,
@@ -20,15 +21,29 @@ function isEnvelopeSuccess(data: unknown): data is { ok: true; resultado: unknow
   );
 }
 
-/** Fintech error envelope: { ok: false, error: { code, message } } */
-function isEnvelopeError(
-  data: unknown
-): data is { ok: false; error: { code: string; message: string; details?: unknown } } {
+/** Fintech error envelope: { ok: false, error: { code, message, hint?, docs_url? } } */
+function isEnvelopeError(data: unknown): data is {
+  ok: false;
+  error: { code: string; message: string; details?: unknown; hint?: string; docs_url?: string };
+} {
   if (typeof data !== 'object' || data === null) return false;
   const o = data as Record<string, unknown>;
   if (o.ok !== false || !o.error || typeof o.error !== 'object') return false;
   const err = o.error as Record<string, unknown>;
   return typeof err.code === 'string' && typeof err.message === 'string';
+}
+
+/** Fallback when backend does not send hint/docs_url. Must stay in sync with backend docs. */
+const ORIGIN_NOT_ALLOWED_DOCS_URL = 'https://trymellon.com/docs/getting-started#allowed-origins';
+const ORIGIN_NOT_ALLOWED_HINT_FALLBACK =
+  'Add your origin to allowed origins in the TryMellon dashboard.';
+function warnOriginNotAllowed(raw: {
+  ok: false;
+  error: { hint?: string; docs_url?: string };
+}): void {
+  const hint = raw.error.hint ?? ORIGIN_NOT_ALLOWED_HINT_FALLBACK;
+  const docsUrl = raw.error.docs_url ?? ORIGIN_NOT_ALLOWED_DOCS_URL;
+  console.warn(`[TryMellon] ${hint} See: ${docsUrl}`);
 }
 
 /**
@@ -155,6 +170,9 @@ export class FetchHttpClient implements HttpClient {
               // Ignore JSON parse error
             }
 
+            if (isEnvelopeError(errorData) && isOriginNotAllowedBackendCode(errorData.error.code)) {
+              warnOriginNotAllowed(errorData);
+            }
             const { message, code } = parseHttpErrorBody(errorData, response.statusText);
             const errResult = createError(code, message, {
               requestId,
@@ -191,6 +209,9 @@ export class FetchHttpClient implements HttpClient {
             return ok(undefined as T);
           }
           if (isEnvelopeError(raw)) {
+            if (isOriginNotAllowedBackendCode(raw.error.code)) {
+              warnOriginNotAllowed(raw);
+            }
             const { message, code } = parseHttpErrorBody(raw, response.statusText);
             return err(
               createError(code, message, {

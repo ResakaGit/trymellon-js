@@ -19,6 +19,8 @@ import {
   validateRange,
   mapWebAuthnError,
   mapBackendErrorCodeToTryMellon,
+  BACKEND_ORIGIN_NOT_ALLOWED_CODES,
+  isOriginNotAllowedBackendCode,
 } from '../src/errors';
 
 describe('TryMellonError', () => {
@@ -270,6 +272,22 @@ describe('mapBackendErrorCodeToTryMellon', () => {
   it('maps bridge session codes to BRIDGE_SESSION_EXPIRED', () => {
     expect(mapBackendErrorCodeToTryMellon('bridge_session_expired')).toBe('BRIDGE_SESSION_EXPIRED');
     expect(mapBackendErrorCodeToTryMellon('session_not_found')).toBe('BRIDGE_SESSION_EXPIRED');
+  });
+
+  it('maps origin_not_allowed and origin_not_allowed_for_application to INVALID_ARGUMENT', () => {
+    expect(mapBackendErrorCodeToTryMellon('origin_not_allowed')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('origin_not_allowed_for_application')).toBe(
+      'INVALID_ARGUMENT'
+    );
+  });
+
+  it('BACKEND_ORIGIN_NOT_ALLOWED_CODES and isOriginNotAllowedBackendCode are the single contract', () => {
+    expect(BACKEND_ORIGIN_NOT_ALLOWED_CODES).toContain('origin_not_allowed');
+    expect(BACKEND_ORIGIN_NOT_ALLOWED_CODES).toContain('origin_not_allowed_for_application');
+    for (const code of BACKEND_ORIGIN_NOT_ALLOWED_CODES) {
+      expect(isOriginNotAllowedBackendCode(code)).toBe(true);
+    }
+    expect(isOriginNotAllowedBackendCode('other_code')).toBe(false);
   });
 
   it('returns UNKNOWN_ERROR for unknown backend codes', () => {

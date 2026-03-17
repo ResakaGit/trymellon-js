@@ -1,3 +1,9 @@
+## [2.3.2](https://github.com/ResakaGit/trymellon-js/compare/v2.3.1...v2.3.2) (2026-03-17)
+
+### Chore
+
+- **lint/format:** Alineación con Prettier de `fetch-client` y ajuste menor en `trymellon-sandbox.test` para que `lint` y `format:check` pasen sin cambios de comportamiento.
+
 ## [2.3.1](https://github.com/ResakaGit/trymellon-js/compare/v2.3.0...v2.3.1) (2026-03-16)
 
 ### Bug Fixes
