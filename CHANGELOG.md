@@ -1,5 +1,12 @@
 ## [2.3.2](https://github.com/ResakaGit/trymellon-js/compare/v2.3.1...v2.3.2) (2026-03-17)
 
+
+### Bug Fixes
+
+* **core:** align SDK with SaaS quotas and logging ([cea91f9](https://github.com/ResakaGit/trymellon-js/commit/cea91f904c2da1fcfc8e968dbf2435a06e6a2a80))
+
+## [2.3.2](https://github.com/ResakaGit/trymellon-js/compare/v2.3.1...v2.3.2) (2026-03-17)
+
 ### Chore
 
 - **lint/format:** Alineación con Prettier de `fetch-client` y ajuste menor en `trymellon-sandbox.test` para que `lint` y `format:check` pasen sin cambios de comportamiento.
