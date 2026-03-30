@@ -1,3 +1,10 @@
+## [2.3.4](https://github.com/ResakaGit/trymellon-js/compare/v2.3.3...v2.3.4) (2026-03-30)
+
+
+### Bug Fixes
+
+* **security:** resolve audit-ci failures — upgrade deps and allowlist devDep vulns ([d1070b8](https://github.com/ResakaGit/trymellon-js/commit/d1070b816d6de411524fb3618afe6ddc10525e9f))
+
 ## [2.3.3](https://github.com/ResakaGit/trymellon-js/compare/v2.3.2...v2.3.3) (2026-03-17)
 
 ## [2.3.2](https://github.com/ResakaGit/trymellon-js/compare/v2.3.1...v2.3.2) (2026-03-17)
