@@ -5,6 +5,19 @@
 
 * **security:** resolve audit-ci failures — upgrade deps and allowlist devDep vulns ([d1070b8](https://github.com/ResakaGit/trymellon-js/commit/d1070b816d6de411524fb3618afe6ddc10525e9f))
 
+## [2.3.5] - 2026-04-06
+
+### Added
+
+- **Docs structure (local):** carpetas `docs/PM/`, `docs/TL/`, `docs/arquitectura/ADRs/`, `docs/sprints/` organizadas (no trackeadas en git — `docs/` en `.gitignore`).
+- **Technical Specifications (`docs/TL/TS.md`):** Arquitectura interna del SDK, zero-deps design (APIs nativas por archivo), ceremony flow, bundle size targets, P95 de ceremony (3s — OS dialog fuera del control del SDK), testing strategy.
+- **ADRs (`docs/arquitectura/ADRs/`):** ADR-001 (zero-deps), ADR-002 (tsup), ADR-003 (multi-entry-points), ADR-004 (Result pattern), ADR-005 (Web Components), ADR-006 (sandbox mode). Basados en código real (`tsup.config.ts`, `result.ts`, `ceremony.ts`, etc.).
+- **`SPRINT-MAP.md`** en `docs/sprints/` con historial de épicas del SDK.
+
+### Changed
+
+- **README:** Reescrito completo. Entry points por framework, tabla de configuración del cliente, tabla de env vars solo para integration tests, dependencias externas, sandbox mode explicado. Sin valores hardcodeados.
+
 ## [2.3.3](https://github.com/ResakaGit/trymellon-js/compare/v2.3.2...v2.3.3) (2026-03-17)
 
 ## [2.3.2](https://github.com/ResakaGit/trymellon-js/compare/v2.3.1...v2.3.2) (2026-03-17)
