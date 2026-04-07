@@ -1,6 +1,6 @@
 # @trymellon/js — TryMellon JavaScript SDK
 
-SDK cliente para integrar autenticación passwordless (WebAuthn/Passkeys) en cualquier aplicación web.
+**v2.3.6** — SDK cliente para integrar autenticación passwordless (WebAuthn/Passkeys) en cualquier aplicación web.
 
 **Zero runtime dependencies · Framework-agnostic · TypeScript strict**
 
@@ -33,8 +33,9 @@ const client = new TryMellon({
   apiBaseUrl: 'https://api.trymellonauth.com'
 })
 
-const result = await client.register({ email: 'user@example.com' })
+const result = await client.register({ externalUserId: 'user_123' })
 if (result.ok) console.log(result.value.sessionToken)
+else console.error(result.error.code, result.error.message)
 ```
 
 ---
@@ -48,6 +49,7 @@ El SDK se configura por instancia — sin variables de entorno en runtime.
 | `appId` | ✅ | UUID de la Application en WebAuthSaas. Se obtiene desde el dashboard → Applications. |
 | `publishableKey` | ✅ | Publishable key de la app — Bearer token para las rutas de passkeys del API. |
 | `apiBaseUrl` | ✅ | URL base del backend WebAuthSaas. Prod: `https://api.trymellonauth.com` |
+| `timeoutMs` | ❌ | Timeout HTTP en ms. Default: `30000`. Rango: 1000–300000. |
 | `sandbox` | ❌ | `true` activa sandbox mode — retorna token fijo sin llamar al API. Solo desarrollo y CI. |
 
 ---
@@ -107,6 +109,27 @@ npm run type-check     # tsc --noEmit
 **Release:** semantic-release — conventional commits → version bump + CHANGELOG + npm publish automático
 
 Pre-publish checklist: lint ✓ · tests ✓ · build ✓ · coverage ≥ thresholds (lines 94, functions 95, branches 88)
+
+---
+
+## Utilidades Exportadas
+
+Además del cliente principal, el SDK exporta utilidades standalone:
+
+| Export | Descripción |
+|--------|-------------|
+| `resolveCredentialName(aaguid)` | Devuelve el nombre human-readable del authenticator dado su AAGUID (FIDO MDS). Ej: `'iCloud Keychain'`, `'YubiKey 5 NFC'`. |
+| `getDeviceName(aaguid)` | Alias de `resolveCredentialName` — mismo lookup, naming alternativo. |
+| `TryMellonError` | Clase de error con `.code: TryMellonErrorCode` e `.isTryMellonError: true`. |
+| `isTryMellonError(e)` | Type guard para distinguir errores del SDK de errores genéricos. |
+| `ConsoleLogger` | Logger implementado sobre `console.*` — útil para debugging en desarrollo. |
+
+```typescript
+import { resolveCredentialName } from '@trymellon/js'
+
+const name = resolveCredentialName('dd4ec289-e01d-41c9-bb89-70fa845d4bf2')
+// → 'iCloud Keychain'
+```
 
 ---
 
