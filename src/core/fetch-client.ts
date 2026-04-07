@@ -11,13 +11,13 @@ import {
 } from '../errors';
 import { RETRY_DELAY_CAP_MS } from './constants';
 
-/** Fintech success envelope: { ok: true, resultado: T } */
-function isEnvelopeSuccess(data: unknown): data is { ok: true; resultado: unknown } {
+/** Fintech success envelope: { ok: true, data: T } */
+function isEnvelopeSuccess(data: unknown): data is { ok: true; data: unknown } {
   return (
     typeof data === 'object' &&
     data !== null &&
     (data as Record<string, unknown>).ok === true &&
-    'resultado' in (data as Record<string, unknown>)
+    'data' in (data as Record<string, unknown>)
   );
 }
 
@@ -202,10 +202,10 @@ export class FetchHttpClient implements HttpClient {
           }
           const raw = (await response.json()) as unknown;
           if (isEnvelopeSuccess(raw)) {
-            return ok((raw as { ok: true; resultado: T }).resultado);
+            return ok((raw as { ok: true; data: T }).data);
           }
           const o = raw as Record<string, unknown>;
-          if (typeof raw === 'object' && raw !== null && o.ok === true && !('resultado' in o)) {
+          if (typeof raw === 'object' && raw !== null && o.ok === true && !('data' in o)) {
             return ok(undefined as T);
           }
           if (isEnvelopeError(raw)) {

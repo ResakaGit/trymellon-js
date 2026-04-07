@@ -1,3 +1,17 @@
+## [2.3.6] - 2026-04-07
+
+### Added
+
+- **`resolveCredentialName` / `getDeviceName`:** New exports for AAGUID → human-readable device name lookup (sourced from FIDO Alliance MDS). Covers Apple, Google, Windows Hello, YubiKey and privacy-preserving passkeys.
+- **E2E scaffold:** `e2e/` directory with Playwright specs (`sdk.spec.ts`, `virtual-auth.spec.ts`) and `webauthn.html` fixture for headless passkey testing.
+- **`@trymellon/testing` package:** `packages/testing/` scaffold for the Node-only test helper package.
+
+### Fixed
+
+- **Response envelope:** `fetch-client` now reads `{ ok: true, data }` field (was `resultado`) — aligns with WebAuthSaas v1.6.0 response format.
+- **Cross-device validator:** Minor type-narrowing corrections in `cross-device.ts`.
+- **Examples tests:** `timeoutMs: 3_000` on test clients so `README Quickstart` Result-shape tests complete within CI timeout instead of hanging for 30 s.
+
 ## [2.3.4](https://github.com/ResakaGit/trymellon-js/compare/v2.3.3...v2.3.4) (2026-03-30)
 
 

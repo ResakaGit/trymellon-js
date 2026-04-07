@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TryMellon SDK — Virtual Auth E2E</title>
+</head>
+<body>
+  <script src="../dist/index.global.js"></script>
+  <script>
+    /**
+     * Exposes SDK factory functions for Playwright's page.evaluate().
+     * Only used in E2E virtual-auth tests — never in production.
+     */
+    window.__sdk = {
+      register: async function (config, options) {
+        var sdk = new window.TryMellon.TryMellon(config);
+        return sdk.register(options);
+      },
+      authenticate: async function (config, options) {
+        var sdk = new window.TryMellon.TryMellon(config);
+        return sdk.authenticate(options);
+      },
+    };
+  </script>
+</body>
+</html>

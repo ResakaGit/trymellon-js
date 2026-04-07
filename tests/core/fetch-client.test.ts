@@ -249,15 +249,15 @@ describe('FetchHttpClient', () => {
     });
   });
 
-  describe('fintech envelope (ok / resultado / error)', () => {
-    it('unwraps resultado on success when body is { ok: true, resultado }', async () => {
+  describe('fintech envelope (ok / data / error)', () => {
+    it('unwraps data on success when body is { ok: true, data }', async () => {
       const client = new FetchHttpClient(5000, 0, baseDelayMs);
       const payload = {
         session_id: 'sess_1',
         challenge: { rp: { name: 'App', id: 'example.com' } },
       };
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ ok: true, resultado: payload }), {
+        new Response(JSON.stringify({ ok: true, data: payload }), {
           status: 200,
           headers: new Headers({ 'Content-Type': 'application/json' }),
         })
@@ -385,10 +385,10 @@ describe('FetchHttpClient', () => {
       }
     });
 
-    it('treats 200 with { ok: true, resultado: undefined } as ok(undefined)', async () => {
+    it('treats 200 with { ok: true, data: undefined } as ok(undefined)', async () => {
       const client = new FetchHttpClient(5000, 0, baseDelayMs);
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ ok: true, resultado: undefined }), {
+        new Response(JSON.stringify({ ok: true, data: undefined }), {
           status: 200,
           headers: new Headers({ 'Content-Type': 'application/json' }),
         })
@@ -402,7 +402,7 @@ describe('FetchHttpClient', () => {
       }
     });
 
-    it('treats 200 with { ok: true } without resultado as ok(undefined)', async () => {
+    it('treats 200 with { ok: true } without data as ok(undefined)', async () => {
       const client = new FetchHttpClient(5000, 0, baseDelayMs);
       mockFetch.mockResolvedValue(
         new Response(JSON.stringify({ ok: true }), {

@@ -125,11 +125,13 @@ describe('Examples Syntax Validation', () => {
 
   describe('README Quickstart / EXAMPLES API contract (Result, session_token, error.code)', () => {
     const SLOW_CI_MS = 15_000;
+    // Short HTTP timeout so the request fails fast (before the 15s test timeout)
+    const TEST_CLIENT_CFG = { appId: 'app_test', publishableKey: 'key_test', timeoutMs: 3_000 };
 
     it(
       'register returns Result with value.session_token on success',
       async () => {
-        const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
+        const client = new TryMellon(TEST_CLIENT_CFG);
         const result = await client.register({ externalUserId: 'user_123' });
         expect(result).toBeDefined();
         expect(typeof result.ok).toBe('boolean');
@@ -148,7 +150,7 @@ describe('Examples Syntax Validation', () => {
     it(
       'authenticate returns Result with value.session_token on success',
       async () => {
-        const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
+        const client = new TryMellon(TEST_CLIENT_CFG);
         const result = await client.authenticate({ externalUserId: 'user_123' });
         expect(result).toBeDefined();
         expect(typeof result.ok).toBe('boolean');
@@ -166,7 +168,7 @@ describe('Examples Syntax Validation', () => {
     it(
       'fallback.email.verify returns Result with value.sessionToken',
       async () => {
-        const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
+        const client = new TryMellon(TEST_CLIENT_CFG);
         const result = await client.fallback.email.verify({
           userId: 'user_123',
           code: '123456',

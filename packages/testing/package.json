@@ -1,0 +1,31 @@
+{
+  "name": "@trymellon/testing",
+  "version": "1.0.0",
+  "description": "Test utilities for TryMellon WebAuthn test mode (Node.js CI/integration testing only)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "trymellon",
+    "webauthn",
+    "testing",
+    "ci"
+  ],
+  "author": "TryMellon",
+  "license": "MIT"
+}

@@ -55,3 +55,5 @@ export type { TryMellonErrorCode } from './errors';
 
 export type { Logger, LogLevel } from './core/ports/logger';
 export { ConsoleLogger } from './core/adapters/console-logger';
+
+export { getDeviceName, resolveCredentialName } from './core/aaguid-lookup';

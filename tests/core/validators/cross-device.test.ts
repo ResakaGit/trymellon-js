@@ -25,10 +25,10 @@ describe('validateCrossDeviceInitResponse', () => {
     }
   });
 
-  it('should return ok for fintech envelope { ok: true, resultado: payload }', () => {
+  it('should return ok for fintech envelope { ok: true, data: payload }', () => {
     const result = validateCrossDeviceInitResponse({
       ok: true,
-      resultado: validPayload,
+      data: validPayload,
     });
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -276,10 +276,10 @@ describe('validateCrossDeviceStatusResponse', () => {
     }
   });
 
-  it('should return ok when envelope resultado contains status payload with redirect_url', () => {
+  it('should return ok when envelope data contains status payload with redirect_url', () => {
     const result = validateCrossDeviceStatusResponse({
       ok: true,
-      resultado: {
+      data: {
         status: 'completed',
         user_id: 'u2',
         session_token: 'st2',

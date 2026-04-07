@@ -46,7 +46,7 @@ function isRequestOptionsShape(opts: unknown): opts is Record<string, unknown> {
 
 /**
  * Accepts either the unwrapped payload { session_id, qr_url, expires_at } or the fintech
- * envelope { ok: true, resultado: { session_id, qr_url, expires_at } } so the flow works
+ * envelope { ok: true, data: { session_id, qr_url, expires_at } } so the flow works
  * regardless of whether the fetch-client unwraps before calling this validator.
  */
 export function validateCrossDeviceInitResponse(
@@ -57,8 +57,8 @@ export function validateCrossDeviceInitResponse(
   }
 
   const payload =
-    'resultado' in data && isObject((data as { resultado: unknown }).resultado)
-      ? (data as { resultado: Record<string, unknown> }).resultado
+    'data' in data && isObject((data as { data: unknown }).data)
+      ? (data as { data: Record<string, unknown> }).data
       : data;
 
   const session_id = payload.session_id;
@@ -89,7 +89,7 @@ export function validateCrossDeviceInitResponse(
 
 /**
  * Accepts either the unwrapped payload { status, user_id?, session_token?, redirect_url? } or the
- * fintech envelope { ok: true, resultado: { ... } } so the flow works regardless of unwrapping.
+ * fintech envelope { ok: true, data: { ... } } so the flow works regardless of unwrapping.
  */
 export function validateCrossDeviceStatusResponse(
   data: unknown
@@ -99,8 +99,8 @@ export function validateCrossDeviceStatusResponse(
   }
 
   const payload =
-    'resultado' in data && isObject((data as { resultado: unknown }).resultado)
-      ? (data as { resultado: Record<string, unknown> }).resultado
+    'data' in data && isObject((data as { data: unknown }).data)
+      ? (data as { data: Record<string, unknown> }).data
       : data;
 
   const status = payload.status;
