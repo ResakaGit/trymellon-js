@@ -175,6 +175,41 @@ describe('CrossDeviceManager', () => {
       expect(result.ok).toBe(false);
     });
 
+    it('should back off and retry when backend returns RATE_LIMIT_EXCEEDED, then succeed', async () => {
+      vi.useFakeTimers();
+      mockApiClient.getCrossDeviceStatus
+        .mockResolvedValueOnce(err(createError('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded for cross-device-status. Try again later.')))
+        .mockResolvedValueOnce(ok({ status: 'completed', session_token: 'st_rl', user_id: 'u_rl' }));
+
+      const resultPromise = manager.waitForSession('sess_rl');
+      // Advance past the rate-limit backoff (8000ms)
+      await vi.advanceTimersByTimeAsync(8001);
+      const result = await resultPromise;
+      vi.useRealTimers();
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.session_token).toBe('st_rl');
+      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledTimes(2);
+    });
+
+    it('should abort during rate-limit backoff when signal fires', async () => {
+      vi.useFakeTimers();
+      const controller = new AbortController();
+      mockApiClient.getCrossDeviceStatus.mockResolvedValue(
+        err(createError('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded'))
+      );
+
+      const resultPromise = manager.waitForSession('sess_rl_abort', controller.signal);
+      await vi.advanceTimersByTimeAsync(100);
+      controller.abort();
+      await vi.advanceTimersByTimeAsync(8001);
+      const result = await resultPromise;
+      vi.useRealTimers();
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('ABORT_ERROR');
+    });
+
     it('should return err when signal is already aborted', async () => {
       const controller = new AbortController();
       controller.abort();

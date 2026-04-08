@@ -15,6 +15,7 @@ import { waitWithAbort } from './polling-utils';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 60; // ~2 minutes
+const RATE_LIMIT_BACKOFF_MS = 8000; // wait longer when backend asks to slow down
 
 export class CrossDeviceManager {
   constructor(private readonly apiClient: ApiClient) {}
@@ -48,7 +49,7 @@ export class CrossDeviceManager {
     signal?: AbortSignal,
     pollingToken?: string | null
   ): Promise<
-    Result<{ session_token: string; user_id: string; redirectUrl?: string }, TryMellonError>
+    Result<{ sessionToken: string; userId: string; redirectUrl?: string }, TryMellonError>
   > {
     if (signal?.aborted) {
       return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
@@ -56,7 +57,16 @@ export class CrossDeviceManager {
 
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId, pollingToken);
-      if (!statusResult.ok) return err(statusResult.error);
+      if (!statusResult.ok) {
+        // Backend rate-limited this poller — back off and retry instead of failing the session.
+        if (statusResult.error.code === 'RATE_LIMIT_EXCEEDED') {
+          const waitResult = await waitWithAbort(RATE_LIMIT_BACKOFF_MS, signal);
+          if (waitResult === 'aborted')
+            return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+          continue;
+        }
+        return err(statusResult.error);
+      }
 
       if (statusResult.value.status === 'completed') {
         if (!statusResult.value.session_token || !statusResult.value.user_id) {
@@ -67,8 +77,8 @@ export class CrossDeviceManager {
             ? statusResult.value.redirect_url
             : undefined;
         return ok({
-          session_token: statusResult.value.session_token,
-          user_id: statusResult.value.user_id,
+          sessionToken: statusResult.value.session_token,
+          userId: statusResult.value.user_id,
           ...(redirectUrl !== undefined && { redirectUrl }),
         });
       }

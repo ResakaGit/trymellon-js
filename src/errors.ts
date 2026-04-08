@@ -15,6 +15,7 @@ export type TryMellonErrorCode =
   | 'PIN_MISMATCH'
   | 'PIN_LOCKED'
   | 'BRIDGE_SESSION_EXPIRED'
+  | 'RATE_LIMIT_EXCEEDED'
   | 'UNKNOWN_ERROR';
 
 export class TryMellonError extends Error {
@@ -51,6 +52,7 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   PIN_MISMATCH: 'PIN does not match',
   PIN_LOCKED: 'PIN is locked due to too many failed attempts',
   BRIDGE_SESSION_EXPIRED: 'Bridge session has expired',
+  RATE_LIMIT_EXCEEDED: 'Too many requests. Please slow down and try again.',
   UNKNOWN_ERROR: 'An unknown error occurred',
 };
 
@@ -211,6 +213,8 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     pin_locked: 'PIN_LOCKED',
     bridge_not_enabled: 'UNKNOWN_ERROR',
     bridge_session_expired: 'BRIDGE_SESSION_EXPIRED',
+    rate_limit_exceeded: 'RATE_LIMIT_EXCEEDED',
+    too_many_requests: 'RATE_LIMIT_EXCEEDED',
     session_not_found: 'BRIDGE_SESSION_EXPIRED',
     origin_not_allowed: 'INVALID_ARGUMENT',
     origin_not_allowed_for_application: 'INVALID_ARGUMENT',
