@@ -219,6 +219,18 @@ export class ApiClient {
     );
   }
 
+  /**
+   * Full URL for GET cross-device status (polling or EventSource).
+   * pollingToken is appended as query param when present — EventSource cannot send custom headers.
+   */
+  getCrossDeviceStatusUrl(sessionId: string, pollingToken?: string | null): string {
+    const base = `${this.baseUrl}/v1/auth/cross-device/status/${sessionId}`;
+    if (typeof pollingToken === 'string' && pollingToken.length > 0) {
+      return `${base}?polling_token=${encodeURIComponent(pollingToken)}`;
+    }
+    return base;
+  }
+
   async getCrossDeviceStatus(
     sessionId: string,
     pollingToken?: string | null

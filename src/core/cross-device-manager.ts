@@ -13,7 +13,7 @@ import { serializeCredentialForAuth, serializeCredentialForRegister } from './we
 import { validateCredentialStructure } from '../utils/validation';
 import { waitWithAbort } from './polling-utils';
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 60; // ~2 minutes
 const RATE_LIMIT_BACKOFF_MS = 8000; // wait longer when backend asks to slow down
 
@@ -40,14 +40,17 @@ export class CrossDeviceManager {
   }
 
   /**
-   * High-level helper to poll for session status until it is completed.
-   * Typically called by the desktop side after showing the QR code.
-   * Pass pollingToken from init() result so the backend can verify the poller is the initiator.
+   * High-level helper to wait for a cross-device session to complete.
+   * In browser: uses SSE (EventSource) when available; falls back to polling on SSE error.
+   * In Node.js (no EventSource): uses polling only.
+   * Pass pollingToken from init() so the backend can verify the poller is the initiator.
+   * opts.useSse defaults to true; set to false to force polling (testing/debugging).
    */
   async waitForSession(
     sessionId: string,
     signal?: AbortSignal,
-    pollingToken?: string | null
+    pollingToken?: string | null,
+    opts?: { useSse?: boolean }
   ): Promise<
     Result<{ sessionToken: string; userId: string; redirectUrl?: string }, TryMellonError>
   > {
@@ -55,41 +58,119 @@ export class CrossDeviceManager {
       return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
     }
 
-    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-      const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId, pollingToken);
-      if (!statusResult.ok) {
-        // Backend rate-limited this poller — back off and retry instead of failing the session.
-        if (statusResult.error.code === 'RATE_LIMIT_EXCEEDED') {
-          const waitResult = await waitWithAbort(RATE_LIMIT_BACKOFF_MS, signal);
-          if (waitResult === 'aborted')
-            return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
-          continue;
-        }
-        return err(statusResult.error);
-      }
+    type CompletedResult = Result<
+      { sessionToken: string; userId: string; redirectUrl?: string },
+      TryMellonError
+    >;
 
-      if (statusResult.value.status === 'completed') {
-        if (!statusResult.value.session_token || !statusResult.value.user_id) {
-          return err(createError('UNKNOWN_ERROR', 'Missing data in completed session'));
-        }
-        const redirectUrl =
-          statusResult.value.redirect_url != null && statusResult.value.redirect_url !== ''
-            ? statusResult.value.redirect_url
-            : undefined;
-        return ok({
-          sessionToken: statusResult.value.session_token,
-          userId: statusResult.value.user_id,
-          ...(redirectUrl !== undefined && { redirectUrl }),
-        });
+    /** Maps a completed status payload to the public result. Pure — single source of truth for both paths. */
+    const toCompletedResult = (value: {
+      session_token?: string;
+      user_id?: string;
+      redirect_url?: string;
+    }): CompletedResult => {
+      if (!value.session_token || !value.user_id) {
+        return err(createError('UNKNOWN_ERROR', 'Missing data in completed session'));
       }
+      const redirectUrl =
+        value.redirect_url != null && value.redirect_url !== '' ? value.redirect_url : undefined;
+      return ok({
+        sessionToken: value.session_token,
+        userId: value.user_id,
+        ...(redirectUrl !== undefined && { redirectUrl }),
+      });
+    };
 
-      const waitResult = await waitWithAbort(POLL_INTERVAL_MS, signal);
-      if (waitResult === 'aborted') {
-        return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+    const pollUntilCompleted = async (): Promise<CompletedResult> => {
+      for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+        const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId, pollingToken);
+        if (!statusResult.ok) {
+          if (statusResult.error.code === 'RATE_LIMIT_EXCEEDED') {
+            const waitResult = await waitWithAbort(RATE_LIMIT_BACKOFF_MS, signal);
+            if (waitResult === 'aborted')
+              return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+            continue;
+          }
+          return err(statusResult.error);
+        }
+
+        if (statusResult.value.status === 'completed') {
+          return toCompletedResult(statusResult.value);
+        }
+
+        const waitResult = await waitWithAbort(POLL_INTERVAL_MS, signal);
+        if (waitResult === 'aborted') {
+          return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+        }
       }
+      return err(createError('TIMEOUT', 'Cross-device authentication timed out'));
+    };
+
+    const useSse = opts?.useSse !== false;
+
+    if (useSse && typeof EventSource !== 'undefined') {
+      return new Promise<CompletedResult>((resolve) => {
+        const url = this.apiClient.getCrossDeviceStatusUrl(sessionId, pollingToken);
+        let resolved = false;
+
+        const onDone = (result: CompletedResult) => {
+          if (resolved) return;
+          resolved = true;
+          try {
+            es.close();
+          } catch {
+            /* ignore */
+          }
+          signal?.removeEventListener('abort', onAbort);
+          resolve(result);
+        };
+
+        const onAbort = () =>
+          onDone(err(createError('ABORT_ERROR', 'Operation aborted by user or timeout')));
+        signal?.addEventListener('abort', onAbort, { once: true });
+
+        let es: EventSource;
+        try {
+          es = new EventSource(url);
+        } catch {
+          signal?.removeEventListener('abort', onAbort);
+          pollUntilCompleted().then(resolve);
+          return;
+        }
+
+        es.onmessage = (event: MessageEvent) => {
+          try {
+            const raw = typeof event.data === 'string' ? event.data : String(event.data);
+            const parsed = JSON.parse(raw) as unknown;
+            if (parsed === null || typeof parsed !== 'object') return;
+            const p = parsed as Record<string, unknown>;
+            if (p.status !== 'completed') return;
+            onDone(
+              toCompletedResult({
+                session_token: typeof p.session_token === 'string' ? p.session_token : undefined,
+                user_id: typeof p.user_id === 'string' ? p.user_id : undefined,
+                redirect_url: typeof p.redirect_url === 'string' ? p.redirect_url : undefined,
+              })
+            );
+          } catch {
+            /* ignore malformed events */
+          }
+        };
+
+        es.onerror = () => {
+          if (resolved) return;
+          try {
+            es.close();
+          } catch {
+            /* ignore */
+          }
+          signal?.removeEventListener('abort', onAbort);
+          pollUntilCompleted().then(onDone);
+        };
+      });
     }
 
-    return err(createError('TIMEOUT', 'Cross-device authentication timed out'));
+    return pollUntilCompleted();
   }
 
   /**

@@ -1,14 +1,42 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CrossDeviceManager } from '../../src/core/cross-device-manager';
 import type { ApiClient } from '../../src/core/api';
 import { ok, err } from '../../src/utils/result';
 import { createError } from '../../src/errors';
+
+// ---------------------------------------------------------------------------
+// MockEventSource — manual stub; no jest.mock of modules
+// ---------------------------------------------------------------------------
+class MockEventSource {
+  static instances: MockEventSource[] = [];
+  onmessage: ((e: MessageEvent) => void) | null = null;
+  onerror: (() => void) | null = null;
+  closeCalled = false;
+
+  constructor(public readonly url: string) {
+    MockEventSource.instances.push(this);
+  }
+
+  close() {
+    this.closeCalled = true;
+  }
+
+  /** Triggers onmessage with serialized data — simulates a server push. */
+  emit(data: unknown) {
+    this.onmessage?.(new MessageEvent('message', { data: JSON.stringify(data) }));
+  }
+
+  triggerError() {
+    this.onerror?.();
+  }
+}
 
 describe('CrossDeviceManager', () => {
   const mockApiClient = {
     initCrossDeviceAuth: vi.fn(),
     initCrossDeviceRegistration: vi.fn(),
     getCrossDeviceStatus: vi.fn(),
+    getCrossDeviceStatusUrl: vi.fn().mockReturnValue('https://api.example.com/v1/auth/cross-device/status/sess_1'),
     getCrossDeviceContext: vi.fn(),
     verifyCrossDeviceAuth: vi.fn(),
     verifyCrossDeviceRegistration: vi.fn(),
@@ -17,7 +45,9 @@ describe('CrossDeviceManager', () => {
   let manager: CrossDeviceManager;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    // Re-set default after resetAllMocks wipes implementation set at declaration time
+    mockApiClient.getCrossDeviceStatusUrl.mockReturnValue('https://api.example.com/v1/auth/cross-device/status/sess_1');
     manager = new CrossDeviceManager(mockApiClient as unknown as ApiClient);
   });
 
@@ -105,6 +135,14 @@ describe('CrossDeviceManager', () => {
   });
 
   describe('waitForSession', () => {
+    beforeEach(() => {
+      // Polling tests run without EventSource — SSE path is covered separately in 'waitForSession — SSE path'
+      vi.stubGlobal('EventSource', undefined);
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
     it('should return ok when status is completed on first poll', async () => {
       mockApiClient.getCrossDeviceStatus.mockResolvedValue(
         ok({
@@ -229,13 +267,17 @@ describe('CrossDeviceManager', () => {
     });
 
     it('should poll until completed then return ok', async () => {
+      vi.useFakeTimers();
       mockApiClient.getCrossDeviceStatus
         .mockResolvedValueOnce(ok({ status: 'pending' }))
         .mockResolvedValueOnce(ok({ status: 'pending' }))
         .mockResolvedValueOnce(
           ok({ status: 'completed', session_token: 'st_2', user_id: 'user_2' })
         );
-      const result = await manager.waitForSession('sess_2');
+      const resultPromise = manager.waitForSession('sess_2');
+      await vi.advanceTimersByTimeAsync(3000 * 3);
+      const result = await resultPromise;
+      vi.useRealTimers();
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.sessionToken).toBe('st_2');
@@ -248,7 +290,7 @@ describe('CrossDeviceManager', () => {
       vi.useFakeTimers();
       mockApiClient.getCrossDeviceStatus.mockResolvedValue(ok({ status: 'pending' }));
       const resultPromise = manager.waitForSession('sess_3');
-      await vi.advanceTimersByTimeAsync(2000 * 61);
+      await vi.advanceTimersByTimeAsync(3000 * 61);
       const result = await resultPromise;
       vi.useRealTimers();
       expect(result.ok).toBe(false);
@@ -372,6 +414,172 @@ describe('CrossDeviceManager', () => {
       } finally {
         navigator.credentials.create = originalCreate;
       }
+    });
+  });
+
+  describe('waitForSession — SSE path', () => {
+    beforeEach(() => {
+      MockEventSource.instances = [];
+      vi.stubGlobal('EventSource', MockEventSource);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      MockEventSource.instances = [];
+    });
+
+    it('Given EventSource available and backend sends completed event, when waitForSession is called, then resolves ok with sessionToken and userId', async () => {
+      const resultPromise = manager.waitForSession('sess_1');
+
+      const es = MockEventSource.instances[0];
+      expect(es).toBeDefined();
+      expect(es.url).toContain('/v1/auth/cross-device/status/sess_1');
+
+      es.emit({ status: 'completed', session_token: 'tok_sse', user_id: 'usr_sse' });
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.sessionToken).toBe('tok_sse');
+        expect(result.value.userId).toBe('usr_sse');
+        expect(result.value.redirectUrl).toBeUndefined();
+      }
+      expect(es.closeCalled).toBe(true);
+      expect(mockApiClient.getCrossDeviceStatus).not.toHaveBeenCalled();
+    });
+
+    it('Given completed event includes redirect_url, when received, then redirectUrl is set', async () => {
+      const resultPromise = manager.waitForSession('sess_1');
+      const es = MockEventSource.instances[0];
+
+      es.emit({
+        status: 'completed',
+        session_token: 'tok_redir',
+        user_id: 'usr_redir',
+        redirect_url: 'https://app.example.com/landing',
+      });
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.redirectUrl).toBe('https://app.example.com/landing');
+    });
+
+    it('Given completed event without session_token, when received, then resolves err UNKNOWN_ERROR', async () => {
+      const resultPromise = manager.waitForSession('sess_1');
+      const es = MockEventSource.instances[0];
+
+      es.emit({ status: 'completed', user_id: 'usr_1' }); // no session_token
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('UNKNOWN_ERROR');
+    });
+
+    it('Given pending events before completed, when SSE streams them, then does not resolve early', async () => {
+      const resultPromise = manager.waitForSession('sess_1');
+      const es = MockEventSource.instances[0];
+
+      es.emit({ status: 'pending' });
+      es.emit({ status: 'authenticated' });
+      es.emit({ status: 'completed', session_token: 'tok_late', user_id: 'usr_late' });
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('tok_late');
+    });
+
+    it('Given malformed JSON in SSE event, when received, then ignores it and continues waiting', async () => {
+      mockApiClient.getCrossDeviceStatus.mockResolvedValue(
+        ok({ status: 'completed', session_token: 'tok_poll', user_id: 'usr_poll' })
+      );
+      const resultPromise = manager.waitForSession('sess_1');
+      const es = MockEventSource.instances[0];
+
+      // Emit malformed data then trigger error to fall back to polling
+      es.onmessage?.(new MessageEvent('message', { data: 'not valid json {{{' }));
+      es.triggerError();
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('tok_poll');
+    });
+
+    it('Given SSE onerror fires, when it does, then falls back to polling and resolves', async () => {
+      mockApiClient.getCrossDeviceStatus.mockResolvedValue(
+        ok({ status: 'completed', session_token: 'tok_fallback', user_id: 'usr_fallback' })
+      );
+      const resultPromise = manager.waitForSession('sess_1');
+      const es = MockEventSource.instances[0];
+
+      es.triggerError();
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('tok_fallback');
+      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalled();
+    });
+
+    it('Given EventSource is undefined (Node.js env), when waitForSession is called, then uses polling', async () => {
+      vi.unstubAllGlobals(); // remove EventSource stub
+      mockApiClient.getCrossDeviceStatus.mockResolvedValue(
+        ok({ status: 'completed', session_token: 'tok_node', user_id: 'usr_node' })
+      );
+
+      const result = await manager.waitForSession('sess_1');
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('tok_node');
+      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalled();
+    });
+
+    it('Given opts.useSse is false, when called, then skips EventSource and uses polling', async () => {
+      mockApiClient.getCrossDeviceStatus.mockResolvedValue(
+        ok({ status: 'completed', session_token: 'tok_forced_poll', user_id: 'usr_p' })
+      );
+
+      const result = await manager.waitForSession('sess_1', undefined, undefined, { useSse: false });
+      expect(result.ok).toBe(true);
+      expect(MockEventSource.instances).toHaveLength(0);
+      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalled();
+    });
+
+    it('Given signal already aborted, when waitForSession is called, then resolves err ABORT_ERROR before opening EventSource', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      const result = await manager.waitForSession('sess_1', controller.signal);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('ABORT_ERROR');
+      expect(MockEventSource.instances).toHaveLength(0);
+    });
+
+    it('Given signal aborts while waiting for SSE, when abort fires, then resolves err ABORT_ERROR and closes EventSource', async () => {
+      const controller = new AbortController();
+      const resultPromise = manager.waitForSession('sess_1', controller.signal);
+
+      const es = MockEventSource.instances[0];
+      expect(es).toBeDefined();
+
+      controller.abort();
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('ABORT_ERROR');
+      expect(es.closeCalled).toBe(true);
+    });
+
+    it('Given pollingToken provided, when SSE opens, then URL includes polling_token as query param', async () => {
+      mockApiClient.getCrossDeviceStatusUrl.mockReturnValue(
+        'https://api.example.com/v1/auth/cross-device/status/sess_1?polling_token=tok_pt'
+      );
+
+      const resultPromise = manager.waitForSession('sess_1', undefined, 'tok_pt');
+      const es = MockEventSource.instances[0];
+
+      expect(mockApiClient.getCrossDeviceStatusUrl).toHaveBeenCalledWith('sess_1', 'tok_pt');
+      expect(es.url).toContain('polling_token=tok_pt');
+
+      es.emit({ status: 'completed', session_token: 'tok_ok', user_id: 'usr_ok' });
+      await resultPromise;
     });
   });
 });
