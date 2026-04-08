@@ -1,5 +1,8 @@
 import { test as base } from '@playwright/test';
-import { createVirtualAuthenticator, removeVirtualAuthenticator } from '../utils/virtual-authenticator.js';
+import {
+  createVirtualAuthenticator,
+  removeVirtualAuthenticator,
+} from '../utils/virtual-authenticator.js';
 
 /**
  * Extends the base Playwright test with a virtual FIDO2 authenticator fixture.

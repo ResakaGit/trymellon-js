@@ -661,8 +661,19 @@ type TryMellonEvent = 'start' | 'success' | 'error' | 'cancelled';
 ```typescript
 type EventPayload =
   | { type: 'start'; operation: 'register' | 'authenticate' | 'enroll'; nonce?: string }
-  | { type: 'success'; operation: 'register' | 'authenticate' | 'enroll'; token: string; user?: SuccessEventUserInfo; nonce?: string }
-  | { type: 'error'; error: TryMellonError; operation?: 'register' | 'authenticate' | 'enroll'; nonce?: string }
+  | {
+      type: 'success';
+      operation: 'register' | 'authenticate' | 'enroll';
+      token: string;
+      user?: SuccessEventUserInfo;
+      nonce?: string;
+    }
+  | {
+      type: 'error';
+      error: TryMellonError;
+      operation?: 'register' | 'authenticate' | 'enroll';
+      nonce?: string;
+    }
   | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
 ```
 

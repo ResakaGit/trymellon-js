@@ -93,7 +93,10 @@
   "overrides": {
     "flatted": ">=3.4.2",
     "picomatch": ">=4.0.4",
-    "minimatch": ">=3.1.4"
+    "minimatch": ">=3.1.4",
+    "test-exclude": {
+      "minimatch": "^3.1.4"
+    }
   },
   "browserslist": [
     ">0.5%",

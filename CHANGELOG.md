@@ -1,9 +1,8 @@
 ## [2.3.7](https://github.com/ResakaGit/trymellon-js/compare/v2.3.6...v2.3.7) (2026-04-08)
 
-
 ### Bug Fixes
 
-* **types:** align TelemetryEvent and CeremonyOperation to renamed API surface ([2de5420](https://github.com/ResakaGit/trymellon-js/commit/2de5420d23f5404e70501ae9f8ae6156e8b25b2f))
+- **types:** align TelemetryEvent and CeremonyOperation to renamed API surface ([2de5420](https://github.com/ResakaGit/trymellon-js/commit/2de5420d23f5404e70501ae9f8ae6156e8b25b2f))
 
 ## [2.3.6](https://github.com/ResakaGit/trymellon-js/compare/v2.3.5...v2.3.6) (2026-04-08)
 
@@ -15,33 +14,33 @@
 
 #### `TryMellon` class — method renames
 
-| Before | After | Reason |
-|---|---|---|
-| `register(options)` | `signUp(options)` | Intent over ceremony |
-| `authenticate(options)` | `signIn(options)` | Intent over ceremony |
-| `capabilities()` | `getCapabilities()` | `get` prefix — async data fetch, not a getter |
-| `crossDevice.context(sessionId)` | `crossDevice.getContext(sessionId)` | Noun-as-method → verb-prefixed |
-| `bridge.context(sessionId, kind)` | `bridge.getContext(sessionId, kind)` | Same |
-| `bridge.subscribe(sessionId, opts)` | `bridge.waitForResult(sessionId, opts)` | One-shot poll/SSE — not a continuous stream |
-| `invite.accept(options)` | `enroll(options)` | Top-level method, consistent with `signIn`/`signUp`; `invite` implied social flow |
+| Before                              | After                                   | Reason                                                                            |
+| ----------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------- |
+| `register(options)`                 | `signUp(options)`                       | Intent over ceremony                                                              |
+| `authenticate(options)`             | `signIn(options)`                       | Intent over ceremony                                                              |
+| `capabilities()`                    | `getCapabilities()`                     | `get` prefix — async data fetch, not a getter                                     |
+| `crossDevice.context(sessionId)`    | `crossDevice.getContext(sessionId)`     | Noun-as-method → verb-prefixed                                                    |
+| `bridge.context(sessionId, kind)`   | `bridge.getContext(sessionId, kind)`    | Same                                                                              |
+| `bridge.subscribe(sessionId, opts)` | `bridge.waitForResult(sessionId, opts)` | One-shot poll/SSE — not a continuous stream                                       |
+| `invite.accept(options)`            | `enroll(options)`                       | Top-level method, consistent with `signIn`/`signUp`; `invite` implied social flow |
 
 #### Framework adapters — hook/service renames
 
-| Package | Before | After |
-|---|---|---|
-| `@trymellon/js/react` | `useRegister` | `useSignUp` |
-| `@trymellon/js/react` | `useAuthenticate` | `useSignIn` |
-| `@trymellon/js/react` | `useInviteAccept` | `useEnroll` |
-| `@trymellon/js/vue` | `useRegister` | `useSignUp` |
-| `@trymellon/js/vue` | `useAuthenticate` | `useSignIn` |
-| `@trymellon/js/vue` | `useInviteAccept` | `useEnroll` |
-| Angular `TryMellonService` | `inviteAccept()` | `enroll()` |
+| Package                    | Before            | After       |
+| -------------------------- | ----------------- | ----------- |
+| `@trymellon/js/react`      | `useRegister`     | `useSignUp` |
+| `@trymellon/js/react`      | `useAuthenticate` | `useSignIn` |
+| `@trymellon/js/react`      | `useInviteAccept` | `useEnroll` |
+| `@trymellon/js/vue`        | `useRegister`     | `useSignUp` |
+| `@trymellon/js/vue`        | `useAuthenticate` | `useSignIn` |
+| `@trymellon/js/vue`        | `useInviteAccept` | `useEnroll` |
+| Angular `TryMellonService` | `inviteAccept()`  | `enroll()`  |
 
 #### Internal EventEmitter operation strings (SDK consumers using `client.on()`)
 
-| Before | After |
-|---|---|
-| `operation: 'register'` in `start`/`success`/`error` payloads | `operation: 'signUp'` |
+| Before                                                            | After                 |
+| ----------------------------------------------------------------- | --------------------- |
+| `operation: 'register'` in `start`/`success`/`error` payloads     | `operation: 'signUp'` |
 | `operation: 'authenticate'` in `start`/`success`/`error` payloads | `operation: 'signIn'` |
 
 `operation: 'enroll'` is unchanged. Public DOM event contract (`'login' | 'register' | 'enroll'`) is unchanged.
@@ -79,10 +78,9 @@
 
 ## [2.3.4](https://github.com/ResakaGit/trymellon-js/compare/v2.3.3...v2.3.4) (2026-03-30)
 
-
 ### Bug Fixes
 
-* **security:** resolve audit-ci failures — upgrade deps and allowlist devDep vulns ([d1070b8](https://github.com/ResakaGit/trymellon-js/commit/d1070b816d6de411524fb3618afe6ddc10525e9f))
+- **security:** resolve audit-ci failures — upgrade deps and allowlist devDep vulns ([d1070b8](https://github.com/ResakaGit/trymellon-js/commit/d1070b816d6de411524fb3618afe6ddc10525e9f))
 
 ## [2.3.5] - 2026-04-06
 

@@ -125,10 +125,18 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     await page.route('**/v1/passkeys/**', async (route) => {
       const url = route.request().url();
       if (url.includes('/register/start')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: mockRegStartResponse() });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: mockRegStartResponse(),
+        });
       }
       if (url.includes('/register/finish')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: mockRegFinishResponse() });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: mockRegFinishResponse(),
+        });
       }
       return route.abort('failed');
     });
@@ -162,16 +170,32 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     await page.route('**/v1/passkeys/**', async (route) => {
       const url = route.request().url();
       if (url.includes('/register/start')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: mockRegStartResponse() });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: mockRegStartResponse(),
+        });
       }
       if (url.includes('/register/finish')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: mockRegFinishResponse() });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: mockRegFinishResponse(),
+        });
       }
       if (url.includes('/auth/start')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: mockAuthStartResponse() });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: mockAuthStartResponse(),
+        });
       }
       if (url.includes('/auth/finish')) {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: mockAuthFinishResponse() });
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: mockAuthFinishResponse(),
+        });
       }
       return route.abort('failed');
     });

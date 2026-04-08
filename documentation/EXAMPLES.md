@@ -322,7 +322,10 @@ const handleLogin = async () => {
     <script type="module">
       import { TryMellon } from '@trymellon/js';
 
-      const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+      const clientResult = TryMellon.create({
+        appId: 'your-app-id-uuid',
+        publishableKey: 'cli_xxxx',
+      });
       if (!clientResult.ok) throw clientResult.error;
       const client = clientResult.value;
       const statusDiv = document.getElementById('status');
