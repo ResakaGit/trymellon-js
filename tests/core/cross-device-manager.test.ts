@@ -36,7 +36,9 @@ describe('CrossDeviceManager', () => {
     initCrossDeviceAuth: vi.fn(),
     initCrossDeviceRegistration: vi.fn(),
     getCrossDeviceStatus: vi.fn(),
-    getCrossDeviceStatusUrl: vi.fn().mockReturnValue('https://api.example.com/v1/auth/cross-device/status/sess_1'),
+    getCrossDeviceStatusUrl: vi
+      .fn()
+      .mockReturnValue('https://api.example.com/v1/auth/cross-device/status/sess_1'),
     getCrossDeviceContext: vi.fn(),
     verifyCrossDeviceAuth: vi.fn(),
     verifyCrossDeviceRegistration: vi.fn(),
@@ -47,7 +49,9 @@ describe('CrossDeviceManager', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     // Re-set default after resetAllMocks wipes implementation set at declaration time
-    mockApiClient.getCrossDeviceStatusUrl.mockReturnValue('https://api.example.com/v1/auth/cross-device/status/sess_1');
+    mockApiClient.getCrossDeviceStatusUrl.mockReturnValue(
+      'https://api.example.com/v1/auth/cross-device/status/sess_1'
+    );
     manager = new CrossDeviceManager(mockApiClient as unknown as ApiClient);
   });
 
@@ -536,7 +540,9 @@ describe('CrossDeviceManager', () => {
         ok({ status: 'completed', session_token: 'tok_forced_poll', user_id: 'usr_p' })
       );
 
-      const result = await manager.waitForSession('sess_1', undefined, undefined, { useSse: false });
+      const result = await manager.waitForSession('sess_1', undefined, undefined, {
+        useSse: false,
+      });
       expect(result.ok).toBe(true);
       expect(MockEventSource.instances).toHaveLength(0);
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalled();
