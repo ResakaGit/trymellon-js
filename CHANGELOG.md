@@ -1,3 +1,10 @@
+## [2.3.7](https://github.com/ResakaGit/trymellon-js/compare/v2.3.6...v2.3.7) (2026-04-08)
+
+
+### Bug Fixes
+
+* **types:** align TelemetryEvent and CeremonyOperation to renamed API surface ([2de5420](https://github.com/ResakaGit/trymellon-js/commit/2de5420d23f5404e70501ae9f8ae6156e8b25b2f))
+
 ## [2.3.6](https://github.com/ResakaGit/trymellon-js/compare/v2.3.5...v2.3.6) (2026-04-08)
 
 ## [3.0.0] - 2026-04-08
