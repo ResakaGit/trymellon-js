@@ -2,13 +2,20 @@
 
 ### Fixed
 
+- **`documentation/API.md` — full method surface migration:** Rewrote all method sections to reflect current SDK API:
+  - `register()` → `signUp()`, `authenticate()` → `signIn()`
+  - `getStatus()` → `capabilities()`
+  - `fallback.email.start/verify()` → `otp.send/verify()`
+  - Added `session.verify()`, `crossDevice.*`, `bridge.*`, `invite.accept()`, `passkey.recover()`, `getContextHash()` sections.
+  - `TryMellonConfig` sandbox description updated to reference `signUp`/`signIn`.
+  - Added `SessionValidateResponse` type block.
+  - `EmailFallbackVerifyOptions` now includes `successUrl?`; `EmailFallbackVerifyResult` includes `redirectUrl?`.
+  - `AuthenticateResult` updated to include `authenticated`, `signals`, `redirectUrl` fields.
+  - Added note clarifying `EventPayload` operation strings are internal runtime values independent of public method names.
 - **`documentation/API.md`:** Marked constructor as `@deprecated`; promoted `TryMellon.create()` as the recommended pattern with full parameter documentation.
 - **`documentation/API.md`:** Added `origin` and `contextHashStorage` fields to `TryMellonConfig` type block.
 - **`documentation/API.md`:** `RegisterResult.sessionToken` was incorrectly shown as optional (`?`); it is always present on success.
-- **`documentation/API.md`:** `AuthenticateOptions` used `userId?: string` — corrected to `externalUserId?: string` with deprecated `external_user_id` alias and `mediation` field.
-- **`documentation/API.md`:** `EventPayload` operation unions missing `'enroll'`; corrected across all variants.
 - **`documentation/API.md`:** `TryMellonErrorCode` list was incomplete; added `ABORT_ERROR`, `CHALLENGE_MISMATCH`, `TICKET_NOT_FOUND`, `TICKET_EXPIRED`, `TICKET_ALREADY_USED`, `PIN_MISMATCH`, `PIN_LOCKED`, `BRIDGE_SESSION_EXPIRED`.
-- **`documentation/API.md`:** `fallback.email.start()` and `fallback.email.verify()` incorrectly showed bare return types with try/catch. Both return `Result<T, TryMellonError>`; examples updated to use Result pattern.
 - **`documentation/EXAMPLES.md`:** All 10 examples used deprecated `new TryMellon()` constructor; migrated to `TryMellon.create()` pattern.
 - **`documentation/EXAMPLES.md`:** Complete Example fetch body used `session_token` (snake_case); corrected to `sessionToken`.
 

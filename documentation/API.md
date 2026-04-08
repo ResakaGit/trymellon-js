@@ -39,7 +39,7 @@ static create(config: TryMellonConfig): Result<TryMellon, TryMellonError>
 - `config.timeoutMs` (number, optional): HTTP request timeout in ms. Default: `30000`. Valid range: `1000`–`300000`.
 - `config.maxRetries` (number, optional): Max retries for failed requests. Default: `3`. Valid range: `0`–`10`. Only 5xx and transient errors are retried.
 - `config.retryDelayMs` (number, optional): Initial retry delay in ms (exponential backoff). Default: `1000`. Valid range: `100`–`10000`.
-- `config.sandbox` (boolean, optional): When `true`, `register()` and `authenticate()` return a fixed sandbox token immediately — no API or WebAuthn calls. For local development only.
+- `config.sandbox` (boolean, optional): When `true`, `signUp()` and `signIn()` return a fixed sandbox token immediately — no API or WebAuthn calls. For local development only.
 - `config.origin` (string, optional): Explicit origin for API requests. Defaults to `window.location.origin`. Set when running in Node/SSR.
 - `config.contextHashStorage` (object, optional): Custom storage for context hash (e.g. `sessionStorage`). Must implement `getItem`/`setItem`.
 
@@ -59,6 +59,7 @@ if (!clientResult.ok) {
 }
 
 const client = clientResult.value;
+```
 
 ---
 
@@ -88,40 +89,39 @@ if (!TryMellon.isSupported()) {
 
 ## Instance Methods
 
-### `register()`
+### `signUp()`
 
 Registers a new passkey for a user.
 
 ```typescript
-register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>>
+signUp(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>>
 ```
 
 **Parameters:**
 
-- `options.externalUserId` (string, optional): External user ID. Usually required for same-device `register()`; optional for `auth.crossDevice.initRegistration()` (omit for anonymous registration; backend generates an id). Also accepts `external_user_id` (deprecated)
-- `options.authenticatorType` ('platform' | 'cross-platform', optional): Preferred authenticator type
-- `options.signal` (AbortSignal, optional): Signal to cancel the operation
+- `options.externalUserId` (string, optional): External user ID. Omit for anonymous registration — backend creates a user and returns the id. Also accepts `external_user_id` (deprecated).
+- `options.authenticatorType` ('platform' | 'cross-platform', optional): Preferred authenticator type.
+- `options.successUrl` (string, optional): Redirect URL after success (must be in allowlist).
+- `options.signal` (AbortSignal, optional): Signal to cancel the operation.
 
 **Returns:**
 
-- `Promise<Result<RegisterResult, TryMellonError>>`: `ok: true` with `value` (success, sessionToken, user, etc.) or `ok: false` with `error` (TryMellonError)
+- `Promise<Result<RegisterResult, TryMellonError>>`: `ok: true` with `value` (sessionToken, credentialId, user) or `ok: false` with `error`.
 
 **Example:**
 
 ```typescript
-const result = await client.register({
+const result = await client.signUp({
   externalUserId: 'user_123',
   authenticatorType: 'platform',
 });
 
 if (result.ok) {
-  if (result.value.sessionToken) {
-    await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionToken: result.value.sessionToken }),
-    });
-  }
+  await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
+  });
 } else {
   if (result.error.code === 'USER_CANCELLED') {
     console.log('User cancelled registration');
@@ -139,29 +139,30 @@ if (result.ok) {
 
 ---
 
-### `authenticate()`
+### `signIn()`
 
 Authenticates a user with their passkey.
 
 ```typescript
-authenticate(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>>
+signIn(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>>
 ```
 
 **Parameters:**
 
-- `options.externalUserId` (string, optional): External user ID. Also accepts `external_user_id` (deprecated)
-- `options.hint` (string, optional): Hint to help the user select the correct passkey (e.g. email)
-- `options.signal` (AbortSignal, optional): Signal to cancel the operation
-- `options.mediation` ('optional' | 'conditional' | 'required', optional): For conditional UI / autofill
+- `options.externalUserId` (string, optional): External user ID. Omit to trigger discoverable credential flow. Also accepts `external_user_id` (deprecated).
+- `options.hint` (string, optional): Hint to help the user select the correct passkey (e.g. email).
+- `options.successUrl` (string, optional): Redirect URL after success (must be in allowlist).
+- `options.signal` (AbortSignal, optional): Signal to cancel the operation.
+- `options.mediation` ('optional' | 'conditional' | 'required', optional): For conditional UI / autofill.
 
 **Returns:**
 
-- `Promise<Result<AuthenticateResult, TryMellonError>>`: `ok: true` with `value` (sessionToken, user, etc.) or `ok: false` with `error`
+- `Promise<Result<AuthenticateResult, TryMellonError>>`: `ok: true` with `value` (sessionToken, user) or `ok: false` with `error`.
 
 **Example:**
 
 ```typescript
-const result = await client.authenticate({
+const result = await client.signIn({
   externalUserId: 'user_123',
   hint: 'user@example.com',
 });
@@ -189,22 +190,41 @@ if (result.ok) {
 
 ---
 
-### `getStatus()`
+### `session.verify()`
 
-Gets WebAuthn support status on the client.
+Validates a session token against the API. Client-side only; always validate on the backend for access control.
 
 ```typescript
-getStatus(): Promise<ClientStatus>
+session.verify(sessionToken: string): Promise<Result<SessionValidateResponse, TryMellonError>>
 ```
-
-**Returns:**
-
-- `Promise<ClientStatus>`: Object with WebAuthn support information
 
 **Example:**
 
 ```typescript
-const status = await client.getStatus();
+const result = await client.session.verify(sessionToken);
+if (result.ok && result.value.valid) {
+  console.log('User:', result.value.externalUserId);
+}
+```
+
+---
+
+### `capabilities()`
+
+Gets WebAuthn support status on the client device.
+
+```typescript
+capabilities(): Promise<ClientStatus>
+```
+
+**Returns:**
+
+- `Promise<ClientStatus>`: Object with WebAuthn support information.
+
+**Example:**
+
+```typescript
+const status = await client.capabilities();
 
 if (status.isPasskeySupported) {
   console.log('Passkeys available');
@@ -233,7 +253,7 @@ on(event: TryMellonEvent, handler: EventHandler): () => void
 
 **Returns:**
 
-- Function to unsubscribe from the event
+- Function to unsubscribe from the event.
 
 **Example:**
 
@@ -264,10 +284,6 @@ Returns the SDK version.
 version(): string
 ```
 
-**Returns:**
-
-- SDK version as string
-
 **Example:**
 
 ```typescript
@@ -276,25 +292,27 @@ console.log('SDK version:', client.version());
 
 ---
 
-## Email Fallback
+## OTP Fallback
 
-### `fallback.email.start()`
+Email OTP fallback when WebAuthn is not available.
 
-Starts the email fallback flow by sending an OTP code.
+### `otp.send()`
+
+Sends an OTP code to the user's email.
 
 ```typescript
-fallback.email.start(options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>>
+otp.send(options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>>
 ```
 
 **Parameters:**
 
-- `options.userId` (string, required): External user identifier
-- `options.email` (string, required): Email address to send the OTP code to
+- `options.userId` (string, required): External user identifier.
+- `options.email` (string, required): Email address to send the OTP code to.
 
 **Example:**
 
 ```typescript
-const startResult = await client.fallback.email.start({
+const startResult = await client.otp.send({
   userId: 'user_123',
   email: 'user@example.com',
 });
@@ -313,27 +331,28 @@ console.log('OTP code sent by email');
 
 ---
 
-### `fallback.email.verify()`
+### `otp.verify()`
 
 Verifies the OTP code and returns a sessionToken.
 
 ```typescript
-fallback.email.verify(options: EmailFallbackVerifyOptions): Promise<Result<EmailFallbackVerifyResult, TryMellonError>>
+otp.verify(options: EmailFallbackVerifyOptions): Promise<Result<EmailFallbackVerifyResult, TryMellonError>>
 ```
 
 **Parameters:**
 
-- `options.userId` (string, required): User ID
-- `options.code` (string, required): OTP code received by email
+- `options.userId` (string, required): User ID.
+- `options.code` (string, required): OTP code received by email.
+- `options.successUrl` (string, optional): Redirect URL after success (must be in allowlist).
 
 **Returns:**
 
-- `Promise<Result<EmailFallbackVerifyResult, TryMellonError>>`: `ok: true` with `value.sessionToken` on success
+- `Promise<Result<EmailFallbackVerifyResult, TryMellonError>>`: `ok: true` with `value.sessionToken` on success.
 
 **Example:**
 
 ```typescript
-const verifyResult = await client.fallback.email.verify({
+const verifyResult = await client.otp.verify({
   userId: 'user_123',
   code: '123456',
 });
@@ -343,7 +362,6 @@ if (!verifyResult.ok) {
   return;
 }
 
-// Send sessionToken to backend
 await fetch('/api/login', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -351,10 +369,139 @@ await fetch('/api/login', {
 });
 ```
 
-**Errors (result.error.code):**
+---
 
-- `INVALID_ARGUMENT`: Invalid `userId` or `code`
-- `NETWORK_FAILURE`: Network error
+## Cross-Device
+
+QR-based cross-device authentication. Desktop initiates; mobile approves.
+
+### `crossDevice.start()`
+
+Creates a cross-device auth session.
+
+```typescript
+crossDevice.start(): Promise<Result<CrossDeviceInitResult, TryMellonError>>
+```
+
+Returns `{ session_id, qr_url, expires_at, polling_token }`.
+
+### `crossDevice.startRegistration(options?)`
+
+Creates a cross-device registration session.
+
+```typescript
+crossDevice.startRegistration(options?: { externalUserId?: string }): Promise<Result<CrossDeviceInitResult, TryMellonError>>
+```
+
+### `crossDevice.waitForCompletion(sessionId, signal?, pollingToken?)`
+
+Polls until the mobile device approves. Returns `{ status, session_token }`.
+
+```typescript
+crossDevice.waitForCompletion(
+  sessionId: string,
+  signal?: AbortSignal,
+  pollingToken?: string | null
+): Promise<Result<CrossDeviceStatusResult, TryMellonError>>
+```
+
+### `crossDevice.context(sessionId)`
+
+Gets session context (used on the mobile side).
+
+```typescript
+crossDevice.context(sessionId: string): Promise<Result<CrossDeviceContextResult, TryMellonError>>
+```
+
+### `crossDevice.approve(sessionId)`
+
+Approves the cross-device session from the mobile device.
+
+```typescript
+crossDevice.approve(sessionId: string): Promise<Result<unknown, TryMellonError>>
+```
+
+---
+
+## Bridge
+
+Bridge flows for QR-based enrollment and authentication from a second device.
+
+### `bridge.context(sessionId, kind)`
+
+Gets bridge session context.
+
+```typescript
+bridge.context(sessionId: string, kind: 'enrollment' | 'auth'): Promise<Result<BridgeContextResponse, TryMellonError>>
+```
+
+### `bridge.verifyPresence(sessionId, pin, kind)`
+
+Verifies presence PIN and returns WebAuthn options.
+
+```typescript
+bridge.verifyPresence(sessionId: string, pin: string, kind: 'enrollment' | 'auth'): Promise<Result<BridgeChallengeResponse, TryMellonError>>
+```
+
+### `bridge.complete(sessionId, options?)`
+
+Completes the bridge ceremony. `options.kind` is required.
+
+```typescript
+bridge.complete(sessionId: string, options?: BridgeCompleteOptions): Promise<Result<BridgeResult, TryMellonError>>
+```
+
+### `bridge.subscribe(sessionId, options?)`
+
+Polls or listens via SSE until the bridge session reaches a terminal state.
+
+```typescript
+bridge.subscribe(sessionId: string, options?: { useSse?: boolean; kind?: 'enrollment' | 'auth'; timeoutMs?: number }): Promise<Result<BridgeStatusSnapshot, TryMellonError>>
+```
+
+---
+
+## Invite / Enrollment
+
+### `invite.accept(options)`
+
+Enrolls a device or entity using a single-use ticket.
+
+```typescript
+invite.accept(options: EnrollOptions): Promise<Result<EnrollmentResult, TryMellonError>>
+```
+
+**Parameters:**
+
+- `options.ticketId` (string, required): Enrollment ticket ID from `POST /v1/enrollment/tickets`.
+- `options.signal` (AbortSignal, optional): Cancel the operation.
+
+---
+
+## Passkey Recovery
+
+### `passkey.recover(options)`
+
+Recovers an account using an email OTP and registers a new passkey.
+
+```typescript
+passkey.recover(options: RecoverAccountOptions): Promise<Result<RecoverAccountResult, TryMellonError>>
+```
+
+**Parameters:**
+
+- `options.externalUserId` (string, required): The external user ID.
+- `options.otp` (string, required): The 6-digit OTP from the recovery email.
+
+---
+
+## getContextHash()
+
+Returns the context hash bound to the current browser session (64-char hex, SHA-256).
+
+```typescript
+getContextHash(): string
+```
 
 ---
 
@@ -374,7 +521,7 @@ type TryMellonConfig = {
   enableTelemetry?: boolean;
   telemetrySender?: TelemetrySender;
   telemetryEndpoint?: string;
-  /** When true, register() and authenticate() return immediately with a sandbox token (no API/WebAuthn). */
+  /** When true, signUp() and signIn() return immediately with a sandbox token (no API/WebAuthn). */
   sandbox?: boolean;
   /** Custom token for sandbox mode. If not set, SANDBOX_SESSION_TOKEN is used. */
   sandboxToken?: string;
@@ -403,7 +550,7 @@ type TryMellonConfig = {
 - `maxRetries`: Must be between `0` and `10`
 - `retryDelayMs`: Must be between `100` and `10000` milliseconds
 
-**Behavior with `sandbox === true`:** `register()` and `authenticate()` do not perform HTTP or WebAuthn calls; they return immediately with a successful `Result` and `sessionToken` equal to `config.sandboxToken` or the `SANDBOX_SESSION_TOKEN` constant. `validateSession(sessionToken)` returns a valid mock when the token is the sandbox token.
+**Behavior with `sandbox === true`:** `signUp()` and `signIn()` do not perform HTTP or WebAuthn calls; they return immediately with a successful `Result` and `sessionToken` equal to `config.sandboxToken` or the `SANDBOX_SESSION_TOKEN` constant. `session.verify(sessionToken)` returns a valid mock when the token matches the sandbox token.
 
 ### `SANDBOX_SESSION_TOKEN` (exported constant)
 
@@ -421,6 +568,7 @@ type RegisterOptions = {
   externalUserId?: string;
   external_user_id?: string; // deprecated, use externalUserId
   authenticatorType?: 'platform' | 'cross-platform';
+  successUrl?: string;
   signal?: AbortSignal;
 };
 ```
@@ -444,8 +592,6 @@ interface RegisterResult {
 }
 ```
 
-**Note:** `sessionToken` is always present on a successful registration. You can use it immediately to create a session without calling `authenticate()`.
-
 ### `AuthenticateOptions`
 
 ```typescript
@@ -464,15 +610,22 @@ interface AuthenticateOptions {
 ### `AuthenticateResult`
 
 ```typescript
-type AuthenticateResult = {
+interface AuthenticateResult {
+  authenticated: boolean;
   sessionToken: string;
-  user?: {
+  user: {
     userId: string;
-    externalUserId: string;
+    externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
   };
-};
+  signals?: {
+    userVerification?: boolean;
+    backupEligible?: boolean;
+    backupStatus?: boolean;
+  };
+  redirectUrl?: string;
+}
 ```
 
 ### `ClientStatus`
@@ -482,6 +635,18 @@ type ClientStatus = {
   isPasskeySupported: boolean;
   platformAuthenticatorAvailable: boolean;
   recommendedFlow: 'passkey' | 'fallback';
+};
+```
+
+### `SessionValidateResponse`
+
+```typescript
+type SessionValidateResponse = {
+  valid: boolean;
+  userId: string;
+  externalUserId: string;
+  tenantId: string;
+  appId: string;
 };
 ```
 
@@ -501,11 +666,7 @@ type EventPayload =
   | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
 ```
 
-### `EventHandler`
-
-```typescript
-type EventHandler = (payload: EventPayload) => void;
-```
+> Note: `operation` values in `EventPayload` are internal runtime strings (`'register'`, `'authenticate'`) — they do not change when the public method is renamed.
 
 ### `EmailFallbackStartOptions`
 
@@ -522,6 +683,7 @@ type EmailFallbackStartOptions = {
 type EmailFallbackVerifyOptions = {
   userId: string;
   code: string;
+  successUrl?: string;
 };
 ```
 
@@ -530,6 +692,7 @@ type EmailFallbackVerifyOptions = {
 ```typescript
 type EmailFallbackVerifyResult = {
   sessionToken: string;
+  redirectUrl?: string;
 };
 ```
 
@@ -546,25 +709,6 @@ class TryMellonError extends Error {
   readonly code: TryMellonErrorCode;
   readonly details?: unknown;
   readonly isTryMellonError: true;
-}
-```
-
-**Properties:**
-
-- `code`: Error code
-- `details`: Additional error details (optional)
-- `isTryMellonError`: Always `true` for type identification
-
-**Example:**
-
-```typescript
-try {
-  await client.authenticate({ userId: 'user_123' });
-} catch (error) {
-  if (error instanceof TryMellonError) {
-    console.error('Error code:', error.code);
-    console.error('Details:', error.details);
-  }
 }
 ```
 
@@ -590,99 +734,25 @@ Available error codes:
 - `'BRIDGE_SESSION_EXPIRED'`: Bridge session has expired
 - `'UNKNOWN_ERROR'`: Unknown error
 
-**Note on retries:**
-
-The SDK implements automatic retries with exponential backoff for:
-
-- HTTP 5xx errors (server errors)
-- HTTP 429 (rate limiting)
-- Transient network errors (TypeError, connection errors)
-
-Retries are NOT applied to:
-
-- HTTP 4xx errors (client errors, except 429)
-- Timeout errors (thrown immediately)
-- Validation errors
+**Note on retries:** The SDK retries automatically with exponential backoff for HTTP 5xx, HTTP 429, and transient network errors. Not applied to 4xx (except 429), timeout, or validation errors.
 
 ### Error Helper Functions
 
-#### `isTryMellonError()`
-
-Type guard to check if an error is `TryMellonError`.
+#### `isTryMellonError(error)`
 
 ```typescript
 isTryMellonError(error: unknown): error is TryMellonError
 ```
 
-**Example:**
-
-```typescript
-try {
-  await client.authenticate({ userId: 'user_123' });
-} catch (error) {
-  if (isTryMellonError(error)) {
-    console.error('TryMellon error:', error.code);
-  } else {
-    console.error('Unknown error:', error);
-  }
-}
-```
-
-#### `createError()`
-
-Creates a `TryMellonError` with a specific code.
+#### `createError(code, message?, details?)`
 
 ```typescript
 createError(code: TryMellonErrorCode, message?: string, details?: unknown): TryMellonError
 ```
 
-#### `createNotSupportedError()`
+#### Other helpers
 
-Creates a `NOT_SUPPORTED` error.
-
-```typescript
-createNotSupportedError(): TryMellonError
-```
-
-#### `createUserCancelledError()`
-
-Creates a `USER_CANCELLED` error.
-
-```typescript
-createUserCancelledError(): TryMellonError
-```
-
-#### `createNetworkError()`
-
-Creates a `NETWORK_FAILURE` error.
-
-```typescript
-createNetworkError(cause?: Error): TryMellonError
-```
-
-#### `createTimeoutError()`
-
-Creates a `TIMEOUT` error.
-
-```typescript
-createTimeoutError(): TryMellonError
-```
-
-#### `createInvalidArgumentError()`
-
-Creates an `INVALID_ARGUMENT` error.
-
-```typescript
-createInvalidArgumentError(field: string, reason: string): TryMellonError
-```
-
-#### `mapWebAuthnError()`
-
-Maps native WebAuthn errors to `TryMellonError`.
-
-```typescript
-mapWebAuthnError(error: unknown): TryMellonError
-```
+`createNotSupportedError()`, `createUserCancelledError()`, `createNetworkError(cause?)`, `createTimeoutError()`, `createInvalidArgumentError(field, reason)`, `mapWebAuthnError(error)`.
 
 ---
 
