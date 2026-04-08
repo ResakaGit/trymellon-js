@@ -21,48 +21,6 @@ export function validateEnrollmentStartResponse(
   });
 }
 
-function validateEnrollmentUser(
-  user: unknown,
-  data: unknown
-): Result<EnrollmentFinishResponse['user'], TryMellonError> {
-  if (!isObject(user)) {
-    return validationError('Invalid API response: user must be object', {
-      field: 'user',
-      originalData: data,
-    });
-  }
-  const user_id = required(user, 'user_id');
-  if (!isString(user_id)) {
-    return validationError('Invalid API response: user.user_id must be string', {
-      originalData: data,
-    });
-  }
-  const external_user_id = user.external_user_id;
-  if (external_user_id !== undefined && !isString(external_user_id)) {
-    return validationError('Invalid API response: user.external_user_id must be string', {
-      originalData: data,
-    });
-  }
-  const email = user.email;
-  if (email !== undefined && !isString(email)) {
-    return validationError('Invalid API response: user.email must be string', {
-      originalData: data,
-    });
-  }
-  const metadata = user.metadata;
-  if (metadata !== undefined && (typeof metadata !== 'object' || metadata === null)) {
-    return validationError('Invalid API response: user.metadata must be object', {
-      originalData: data,
-    });
-  }
-  return ok({
-    user_id,
-    ...(external_user_id !== undefined && { external_user_id }),
-    ...(email !== undefined && { email }),
-    ...(metadata !== undefined && { metadata: metadata as Record<string, unknown> }),
-  });
-}
-
 export function validateEnrollmentFinishResponse(
   data: unknown
 ): Result<EnrollmentFinishResponse, TryMellonError> {
@@ -71,9 +29,8 @@ export function validateEnrollmentFinishResponse(
   }
 
   const credential_id = required(data, 'credential_id');
-  const status = required(data, 'status');
+  const user_id = required(data, 'user_id');
   const session_token = required(data, 'session_token');
-  const user = required(data, 'user');
 
   if (!isString(credential_id)) {
     return validationError('Invalid API response: credential_id must be string', {
@@ -81,9 +38,9 @@ export function validateEnrollmentFinishResponse(
       originalData: data,
     });
   }
-  if (!isString(status)) {
-    return validationError('Invalid API response: status must be string', {
-      field: 'status',
+  if (!isString(user_id)) {
+    return validationError('Invalid API response: user_id must be string', {
+      field: 'user_id',
       originalData: data,
     });
   }
@@ -93,13 +50,19 @@ export function validateEnrollmentFinishResponse(
       originalData: data,
     });
   }
-  const userResult = validateEnrollmentUser(user, data);
-  if (!userResult.ok) return userResult;
+
+  const entity_id = data.entity_id;
+  if (entity_id !== undefined && !isString(entity_id)) {
+    return validationError('Invalid API response: entity_id must be string when present', {
+      field: 'entity_id',
+      originalData: data,
+    });
+  }
 
   return ok({
     credential_id,
-    status,
+    user_id,
     session_token,
-    user: userResult.value,
+    ...(isString(entity_id) && { entity_id }),
   });
 }

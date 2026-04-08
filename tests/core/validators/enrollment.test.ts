@@ -69,20 +69,25 @@ describe('validateEnrollmentStartResponse', () => {
 describe('validateEnrollmentFinishResponse', () => {
   const validFinishPayload = {
     credential_id: 'cred_1',
-    status: 'verified',
+    user_id: 'user_uuid_1',
     session_token: 'token_1',
-    user: { user_id: 'user_uuid_1' },
   };
 
-  it('returns ok for valid payload (credential_id, status, session_token, user with user_id)', () => {
+  it('returns ok for valid flat payload (credential_id, user_id, session_token)', () => {
     const result = validateEnrollmentFinishResponse(validFinishPayload);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.credential_id).toBe('cred_1');
-      expect(result.value.status).toBe('verified');
+      expect(result.value.user_id).toBe('user_uuid_1');
       expect(result.value.session_token).toBe('token_1');
-      expect(result.value.user.user_id).toBe('user_uuid_1');
+      expect(result.value.entity_id).toBeUndefined();
     }
+  });
+
+  it('returns ok and includes entity_id when present', () => {
+    const result = validateEnrollmentFinishResponse({ ...validFinishPayload, entity_id: 'ent_1' });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.entity_id).toBe('ent_1');
   });
 
   it('returns err for null', () => {
@@ -96,64 +101,41 @@ describe('validateEnrollmentFinishResponse', () => {
   });
 
   it('returns err when credential_id is missing', () => {
-    const result = validateEnrollmentFinishResponse({
-      status: validFinishPayload.status,
-      session_token: validFinishPayload.session_token,
-      user: validFinishPayload.user,
-    });
+    const result = validateEnrollmentFinishResponse({ user_id: 'u', session_token: 't' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain('credential_id');
   });
 
   it('returns err when credential_id is not string', () => {
-    const result = validateEnrollmentFinishResponse({
-      ...validFinishPayload,
-      credential_id: 123,
-    });
+    const result = validateEnrollmentFinishResponse({ ...validFinishPayload, credential_id: 123 });
+    expect(result.ok).toBe(false);
+  });
+
+  it('returns err when user_id is missing', () => {
+    const result = validateEnrollmentFinishResponse({ credential_id: 'c', session_token: 't' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('user_id');
+  });
+
+  it('returns err when user_id is not string', () => {
+    const result = validateEnrollmentFinishResponse({ ...validFinishPayload, user_id: null });
     expect(result.ok).toBe(false);
   });
 
   it('returns err when session_token is missing', () => {
-    const result = validateEnrollmentFinishResponse({
-      credential_id: validFinishPayload.credential_id,
-      status: validFinishPayload.status,
-      user: validFinishPayload.user,
-    });
+    const result = validateEnrollmentFinishResponse({ credential_id: 'c', user_id: 'u' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain('session_token');
   });
 
   it('returns err when session_token is not string', () => {
-    const result = validateEnrollmentFinishResponse({
-      ...validFinishPayload,
-      session_token: null,
-    });
+    const result = validateEnrollmentFinishResponse({ ...validFinishPayload, session_token: null });
     expect(result.ok).toBe(false);
   });
 
-  it('returns err when user is missing', () => {
-    const result = validateEnrollmentFinishResponse({
-      credential_id: validFinishPayload.credential_id,
-      status: validFinishPayload.status,
-      session_token: validFinishPayload.session_token,
-    });
+  it('returns err when entity_id is present but not string', () => {
+    const result = validateEnrollmentFinishResponse({ ...validFinishPayload, entity_id: 42 });
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.message).toContain('user');
-  });
-
-  it('returns err when user is not object', () => {
-    const result = validateEnrollmentFinishResponse({
-      ...validFinishPayload,
-      user: 'x',
-    });
-    expect(result.ok).toBe(false);
-  });
-
-  it('returns err when user lacks user_id', () => {
-    const result = validateEnrollmentFinishResponse({
-      ...validFinishPayload,
-      user: {},
-    });
-    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('entity_id');
   });
 });

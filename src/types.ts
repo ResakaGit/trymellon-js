@@ -179,14 +179,9 @@ export type EnrollmentStartResponse = {
 /** Backend response for POST /v1/enrollment/register. Validators use this shape. */
 export type EnrollmentFinishResponse = {
   credential_id: string;
-  status: string;
+  user_id: string;
   session_token: string;
-  user: {
-    user_id: string;
-    external_user_id?: string;
-    email?: string;
-    metadata?: Record<string, unknown>;
-  };
+  entity_id?: string;
 };
 
 // ============================================================================
@@ -411,9 +406,9 @@ export type BridgeAuthResult = {
 /** Union: bridge completion returns enrollment or auth result. */
 export type BridgeResult = BridgeEnrollmentResult | BridgeAuthResult;
 
-/** Status snapshot from GET .../status/:sessionId (polling or SSE event). Terminal: pin_verified | pin_locked | completed. */
+/** Status snapshot from GET .../status/:sessionId (polling or SSE event). Terminal: pin_verified | pin_locked | completed | expired | cancelled. */
 export type BridgeStatusSnapshot = {
-  status: 'pending' | 'pin_verified' | 'pin_locked' | 'completed';
+  status: 'pending' | 'pin_verified' | 'pin_locked' | 'completed' | 'expired' | 'cancelled';
   ts?: string;
 };
 

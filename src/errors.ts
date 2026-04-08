@@ -15,6 +15,8 @@ export type TryMellonErrorCode =
   | 'PIN_LOCKED'
   | 'BRIDGE_SESSION_EXPIRED'
   | 'RATE_LIMIT_EXCEEDED'
+  | 'FORBIDDEN'
+  | 'SERVER_ERROR'
   | 'UNKNOWN_ERROR';
 
 export class TryMellonError extends Error {
@@ -51,6 +53,8 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   PIN_LOCKED: 'PIN is locked due to too many failed attempts',
   BRIDGE_SESSION_EXPIRED: 'Bridge session has expired',
   RATE_LIMIT_EXCEEDED: 'Too many requests. Please slow down and try again.',
+  FORBIDDEN: 'You do not have permission to perform this action.',
+  SERVER_ERROR: 'A server error occurred. Try again later.',
   UNKNOWN_ERROR: 'An unknown error occurred',
 };
 
@@ -209,7 +213,10 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     // Bridge (KP-BRIDGE)
     pin_mismatch: 'PIN_MISMATCH',
     pin_locked: 'PIN_LOCKED',
-    bridge_not_enabled: 'UNKNOWN_ERROR',
+    bridge_not_enabled: 'FORBIDDEN',
+    user_inactive: 'FORBIDDEN',
+    forbidden: 'FORBIDDEN',
+    internal_error: 'SERVER_ERROR',
     bridge_session_expired: 'BRIDGE_SESSION_EXPIRED',
     rate_limit_exceeded: 'RATE_LIMIT_EXCEEDED',
     too_many_requests: 'RATE_LIMIT_EXCEEDED',

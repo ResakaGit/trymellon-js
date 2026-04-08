@@ -33,6 +33,8 @@ const BRIDGE_TERMINAL_STATUSES: ReadonlySet<BridgeStatusSnapshot['status']> = ne
   'pin_verified',
   'pin_locked',
   'completed',
+  'expired',
+  'cancelled',
 ]);
 
 const BRIDGE_POLL_INTERVAL_MS = 1500;
