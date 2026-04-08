@@ -1,3 +1,21 @@
+# [3.1.0](https://github.com/ResakaGit/trymellon-js/compare/v3.0.1...v3.1.0) (2026-04-08)
+
+
+### Features
+
+* **cross-device:** `waitForSession` uses SSE (EventSource) in browser — server pushes completion event on mobile approval; falls back to polling on SSE error or in Node.js ([a0d8670](https://github.com/ResakaGit/trymellon-js/commit/a0d8670))
+* **cross-device:** `getCrossDeviceStatusUrl` appends `pollingToken` as query param so EventSource connections carry auth without custom headers
+
+### Bug Fixes
+
+* **cross-device:** abort signal stays active during onerror→polling fallback — eliminates race where abort between SSE teardown and polling start was silently dropped ([8b1a95f](https://github.com/ResakaGit/trymellon-js/commit/8b1a95f))
+* **cross-device:** EventSource constructor-throw path routes through `onDone` for symmetric cleanup
+* **api:** extract `crossDeviceStatusPath()` private method — eliminates path string duplication between `getCrossDeviceStatusUrl` and `getCrossDeviceStatus`
+
+### Performance
+
+* **cross-device:** `POLL_INTERVAL_MS` raised 2000→3000 ms; `RATE_LIMIT_BACKOFF_MS` set to 8000 ms — reduces fallback polling load from 30 req/min to 20 req/min
+
 ## [3.0.1](https://github.com/ResakaGit/trymellon-js/compare/v3.0.0...v3.0.1) (2026-04-08)
 
 # [3.0.0](https://github.com/ResakaGit/trymellon-js/compare/v2.3.13...v3.0.0) (2026-04-08)
