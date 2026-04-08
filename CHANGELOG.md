@@ -1,3 +1,11 @@
+## [3.1.3](https://github.com/ResakaGit/trymellon-js/compare/v3.1.2...v3.1.3) (2026-04-08)
+
+
+### Bug Fixes
+
+* **sdk:** audit wave fixes — wire types, bridge statuses, error codes ([573ec7b](https://github.com/ResakaGit/trymellon-js/commit/573ec7b2d2140137275f2715f888611008db4e38))
+* **tests:** update tests to match audit fixes from previous session ([2d445ea](https://github.com/ResakaGit/trymellon-js/commit/2d445eae36679e0c9d73877d0e4bfbba97b4a031))
+
 ## [3.1.2](https://github.com/ResakaGit/trymellon-js/compare/v3.1.1...v3.1.2) (2026-04-08)
 
 # Changelog
