@@ -1,3 +1,10 @@
+## [2.3.12](https://github.com/ResakaGit/trymellon-js/compare/v2.3.11...v2.3.12) (2026-04-08)
+
+
+### Bug Fixes
+
+* **e2e:** use correct API envelope {ok,data} in virtual-auth mocks ([e82db13](https://github.com/ResakaGit/trymellon-js/commit/e82db138e27314ba7a1c28186254764447f3a52f))
+
 ## [2.3.11](https://github.com/ResakaGit/trymellon-js/compare/v2.3.10...v2.3.11) (2026-04-08)
 
 ## [2.3.10](https://github.com/ResakaGit/trymellon-js/compare/v2.3.9...v2.3.10) (2026-04-08)
