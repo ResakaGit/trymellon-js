@@ -1,9 +1,8 @@
 ## [2.3.8](https://github.com/ResakaGit/trymellon-js/compare/v2.3.7...v2.3.8) (2026-04-08)
 
-
 ### Bug Fixes
 
-* **ci:** resolve minimatch v10/test-exclude@6 incompatibility + apply Prettier ([75233ac](https://github.com/ResakaGit/trymellon-js/commit/75233ac5e5813d7043d53b59f095edad8dc8893d))
+- **ci:** resolve minimatch v10/test-exclude@6 incompatibility + apply Prettier ([75233ac](https://github.com/ResakaGit/trymellon-js/commit/75233ac5e5813d7043d53b59f095edad8dc8893d))
 
 ## [2.3.7](https://github.com/ResakaGit/trymellon-js/compare/v2.3.6...v2.3.7) (2026-04-08)
 
