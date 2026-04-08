@@ -264,6 +264,91 @@ describe('BridgeManager', () => {
         })
       );
     });
+
+    it('complete auth kind: verifyPin then credentials.get then completeBridgeAuth', async () => {
+      const authContext = { type: 'auth' as const, options: {} };
+      const authVerifyResponse = {
+        session_id: '550e8400-e29b-41d4-a716-446655440000',
+        authentication_options: {
+          challenge: 'Y2hhbGxlbmdl',
+          rpId: 'example.com',
+          allowCredentials: [],
+          userVerification: 'preferred',
+        },
+      };
+      mockApiClient.getBridgeContext.mockResolvedValue(ok(authContext));
+      mockApiClient.verifyBridgePin.mockResolvedValue(ok(authVerifyResponse));
+      mockApiClient.completeBridgeAuth.mockResolvedValue(ok({ session_token: 'auth_tok_1' }));
+
+      const buf = new ArrayBuffer(8);
+      const fakeAuthCredential = {
+        id: 'cred_auth_1',
+        rawId: buf,
+        response: {
+          clientDataJSON: buf,
+          authenticatorData: buf,
+          signature: buf,
+          userHandle: null,
+        } as AuthenticatorAssertionResponse,
+        type: 'public-key',
+        getClientExtensionResults: () => ({}),
+      } as PublicKeyCredential;
+
+      vi.stubGlobal('navigator', {
+        ...navigator,
+        credentials: { get: vi.fn().mockResolvedValue(fakeAuthCredential) },
+      });
+
+      const manager = new BridgeManager(mockApiClient as unknown as ApiClient);
+      const result = await manager.complete('sess-auth', { kind: 'auth', presencePin: '9876' });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('auth_tok_1');
+      expect(mockApiClient.verifyBridgePin).toHaveBeenCalledWith('sess-auth', '9876', 'auth');
+      expect(mockApiClient.completeBridgeAuth).toHaveBeenCalledWith(
+        expect.objectContaining({ session_id: 'sess-auth' })
+      );
+    });
+
+    it('complete uses onPinRequired callback when presencePin is absent', async () => {
+      mockApiClient.getBridgeContext.mockResolvedValue(ok(validContext));
+      mockApiClient.verifyBridgePin.mockResolvedValue(ok(validVerifyResponse));
+      mockApiClient.completeBridgeEnrollment.mockResolvedValue(
+        ok({ credential_id: 'c2', entity_id: 'e2', user_id: 'u2', session_token: 'st2' })
+      );
+      vi.stubGlobal('navigator', {
+        ...navigator,
+        credentials: { create: vi.fn().mockResolvedValue(createFakePublicKeyCredential()) },
+      });
+
+      const onPinRequired = vi.fn().mockResolvedValue('5678');
+      const manager = new BridgeManager(mockApiClient as unknown as ApiClient);
+      const result = await manager.complete('sess-pin-cb', {
+        kind: 'enrollment',
+        onPinRequired,
+        ticketId: 'tick_2',
+        entityId: 'ent_2',
+      });
+
+      expect(onPinRequired).toHaveBeenCalled();
+      expect(mockApiClient.verifyBridgePin).toHaveBeenCalledWith(
+        'sess-pin-cb',
+        '5678',
+        'enrollment'
+      );
+      expect(result.ok).toBe(true);
+    });
+
+    it('complete returns INVALID_ARGUMENT when onPinRequired returns empty string', async () => {
+      mockApiClient.getBridgeContext.mockResolvedValue(ok(validContext));
+      const manager = new BridgeManager(mockApiClient as unknown as ApiClient);
+      const result = await manager.complete('sess-no-pin', {
+        kind: 'enrollment',
+        onPinRequired: async () => '',
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    });
   });
 
   describe('waitForResult', () => {
@@ -347,6 +432,66 @@ describe('BridgeManager', () => {
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
       expect(mockApiClient.getBridgeStatus).not.toHaveBeenCalled();
+    });
+
+    it('when SSE onerror fires, falls back to polling and resolves', async () => {
+      let capturedOnError: (() => void) | null = null;
+      const MockEventSource = vi.fn().mockImplementation(function (this: {
+        url: string;
+        close: ReturnType<typeof vi.fn>;
+        onerror: (() => void) | null;
+      }) {
+        this.close = vi.fn();
+        this.onerror = null;
+        Object.defineProperty(this, 'onerror', {
+          set: (fn: () => void) => {
+            capturedOnError = fn;
+          },
+          configurable: true,
+        });
+      });
+      vi.stubGlobal('EventSource', MockEventSource);
+      mockApiClient.getBridgeStatusUrl.mockReturnValue('https://api.example.com/bridge/status/s1');
+      mockApiClient.getBridgeStatus.mockResolvedValue(ok({ status: 'pin_verified' }));
+
+      const manager = new BridgeManager(mockApiClient as unknown as ApiClient);
+      const resultPromise = manager.waitForResult('sess-sse-err', {
+        useSse: true,
+        kind: 'auth',
+        timeoutMs: 10_000,
+      });
+
+      await vi.waitFor(() => expect(capturedOnError).not.toBeNull());
+      if (!capturedOnError) throw new Error('onerror handler was not set');
+      capturedOnError();
+
+      const result = await resultPromise;
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.status).toBe('pin_verified');
+      expect(mockApiClient.getBridgeStatus).toHaveBeenCalledWith('sess-sse-err', 'auth');
+      vi.unstubAllGlobals();
+    });
+
+    it('when EventSource constructor throws, falls back to polling', async () => {
+      vi.stubGlobal(
+        'EventSource',
+        vi.fn().mockImplementation(() => {
+          throw new Error('EventSource not supported');
+        })
+      );
+      mockApiClient.getBridgeStatusUrl.mockReturnValue('https://api.example.com/bridge/status/s2');
+      mockApiClient.getBridgeStatus.mockResolvedValue(ok({ status: 'completed' }));
+
+      const manager = new BridgeManager(mockApiClient as unknown as ApiClient);
+      const result = await manager.waitForResult('sess-no-eventsrc', {
+        useSse: true,
+        kind: 'enrollment',
+        timeoutMs: 10_000,
+      });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.status).toBe('completed');
+      vi.unstubAllGlobals();
     });
   });
 });

@@ -544,4 +544,90 @@ describe('TryMellon', () => {
       expect(mockTelemetrySend).toHaveBeenCalled();
     });
   });
+
+  describe('enroll', () => {
+    it('Given startEnrollment fails, then emits error event with operation enroll and returns err', async () => {
+      const mockApiClientInstance = (
+        tryMellon as { apiClient: { startEnrollment: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockApiClientInstance.startEnrollment.mockResolvedValue(
+        err(createError('UNKNOWN_ERROR', 'Enrollment start failed'))
+      );
+
+      const errorHandler = vi.fn();
+      tryMellon.on('error', errorHandler);
+
+      const result = await tryMellon.enroll({ ticketId: 'tk_1' });
+
+      expect(result.ok).toBe(false);
+      expect(errorHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'error', operation: 'enroll' })
+      );
+    });
+
+    it('Given full enroll flow succeeds, then emits success event with operation enroll', async () => {
+      const createAndSerializeSpy = vi.spyOn(
+        webauthnUtils,
+        'createAndSerializeCredentialForRegister'
+      );
+      const mockApiClientInstance = (
+        tryMellon as {
+          apiClient: {
+            startEnrollment: ReturnType<typeof vi.fn>;
+            finishEnrollment: ReturnType<typeof vi.fn>;
+          };
+        }
+      ).apiClient;
+
+      mockApiClientInstance.startEnrollment.mockResolvedValue(
+        ok({
+          challenge: {
+            challenge: 'Y2hhbGxlbmdl',
+            rp: { id: 'example.com', name: 'Example' },
+            user: { id: 'dXNlcl8x', name: 'u', displayName: 'U' },
+            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          },
+        })
+      );
+      createAndSerializeSpy.mockResolvedValue(
+        ok({
+          id: 'cred_enroll_1',
+          rawId: 'rawId_base64',
+          type: 'public-key',
+          response: { clientDataJSON: 'cdata', attestationObject: 'aobj' },
+        })
+      );
+      mockApiClientInstance.finishEnrollment.mockResolvedValue(
+        ok({ session_token: 'enroll_tok_1' })
+      );
+
+      const successHandler = vi.fn();
+      tryMellon.on('success', successHandler);
+
+      const result = await tryMellon.enroll({ ticketId: 'tk_2' });
+
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.sessionToken).toBe('enroll_tok_1');
+      expect(successHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'success', operation: 'enroll' })
+      );
+    });
+  });
+
+  describe('platform.signUp', () => {
+    it('delegates to onboardingManager.startFlow and returns its result', async () => {
+      const mockApiClientInstance = (
+        tryMellon as { apiClient: { startOnboarding: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockApiClientInstance.startOnboarding.mockResolvedValue(
+        err(createError('NETWORK_ERROR', 'network failure'))
+      );
+
+      const result = await tryMellon.platform.signUp({ user_role: 'app_user' });
+
+      expect(mockApiClientInstance.startOnboarding).toHaveBeenCalled();
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('NETWORK_ERROR');
+    });
+  });
 });

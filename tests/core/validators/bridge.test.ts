@@ -4,6 +4,7 @@ import {
   validateBridgeVerifyResponse,
   validateBridgeCompleteEnrollmentResponse,
   validateBridgeCompleteAuthResponse,
+  validateBridgeStatusResponse,
 } from '../../../src/core/validators/bridge';
 
 describe('validateBridgeContextResponse', () => {
@@ -111,6 +112,37 @@ describe('validateBridgeVerifyResponse', () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  it('returns err when registration_options is not object when present', () => {
+    const result = validateBridgeVerifyResponse({
+      session_id: validVerify.session_id,
+      registration_options: 'invalid',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('registration_options');
+  });
+
+  it('returns ok with authentication_options when present', () => {
+    const result = validateBridgeVerifyResponse({
+      session_id: validVerify.session_id,
+      authentication_options: { challenge: 'Y2hh', rpId: 'example.com' },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(result.value.authentication_options).toEqual({
+        challenge: 'Y2hh',
+        rpId: 'example.com',
+      });
+  });
+
+  it('returns err when authentication_options is not object when present', () => {
+    const result = validateBridgeVerifyResponse({
+      session_id: validVerify.session_id,
+      authentication_options: 'invalid',
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('authentication_options');
+  });
 });
 
 describe('validateBridgeCompleteEnrollmentResponse', () => {
@@ -154,6 +186,24 @@ describe('validateBridgeCompleteEnrollmentResponse', () => {
     });
     expect(result.ok).toBe(false);
   });
+
+  it('returns err when entity_id is not string', () => {
+    const result = validateBridgeCompleteEnrollmentResponse({
+      ...validComplete,
+      entity_id: 42,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('entity_id');
+  });
+
+  it('returns err when user_id is not string', () => {
+    const result = validateBridgeCompleteEnrollmentResponse({
+      ...validComplete,
+      user_id: null,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('user_id');
+  });
 });
 
 describe('validateBridgeCompleteAuthResponse', () => {
@@ -177,5 +227,57 @@ describe('validateBridgeCompleteAuthResponse', () => {
   it('returns err when session_token is not string', () => {
     const result = validateBridgeCompleteAuthResponse({ session_token: null });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('validateBridgeStatusResponse', () => {
+  it('returns ok for valid status pending', () => {
+    const result = validateBridgeStatusResponse({ status: 'pending' });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.status).toBe('pending');
+  });
+
+  it('returns ok for status completed with optional ts', () => {
+    const result = validateBridgeStatusResponse({
+      status: 'completed',
+      ts: '2026-03-15T12:00:00Z',
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.status).toBe('completed');
+      expect(result.value.ts).toBe('2026-03-15T12:00:00Z');
+    }
+  });
+
+  it('returns ok for pin_verified status', () => {
+    const result = validateBridgeStatusResponse({ status: 'pin_verified' });
+    expect(result.ok).toBe(true);
+  });
+
+  it('returns ok for pin_locked status', () => {
+    const result = validateBridgeStatusResponse({ status: 'pin_locked' });
+    expect(result.ok).toBe(true);
+  });
+
+  it('returns err for null', () => {
+    const result = validateBridgeStatusResponse(null);
+    expect(result.ok).toBe(false);
+  });
+
+  it('returns err when status is an unknown value', () => {
+    const result = validateBridgeStatusResponse({ status: 'unknown_status' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('status');
+  });
+
+  it('returns err when status is missing', () => {
+    const result = validateBridgeStatusResponse({});
+    expect(result.ok).toBe(false);
+  });
+
+  it('returns err when ts is not string when present', () => {
+    const result = validateBridgeStatusResponse({ status: 'completed', ts: 12345 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain('ts');
   });
 });

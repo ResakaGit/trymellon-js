@@ -18,6 +18,8 @@ export default defineConfig({
         '**/*.test.{ts,js}',
         '**/*.spec.{ts,js}',
         'scripts/**',
+        'e2e/**',
+        'packages/**',
         'src/angular/**',
         'src/types.ts',
         'src/ui/index.ts',
