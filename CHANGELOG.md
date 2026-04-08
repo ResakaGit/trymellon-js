@@ -1,3 +1,5 @@
+## [2.3.6](https://github.com/ResakaGit/trymellon-js/compare/v2.3.5...v2.3.6) (2026-04-08)
+
 ## [3.0.0] - 2026-04-08
 
 ### BREAKING CHANGES
