@@ -117,7 +117,7 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     expect(result.success).toBe(true);
   });
 
-  test('Given SDK + virtual authenticator + mocked API, When register() is called, Then returns session_token', async ({
+  test('Given SDK + virtual authenticator + mocked API, When signUp() is called, Then returns session_token', async ({
     page,
     authenticatorId: _authenticatorId,
   }) => {
@@ -147,7 +147,7 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     const result = await page.evaluate(
       async ({ pk, extUserId }) => {
         const apiBaseUrl = window.location.origin;
-        return (window as any).__sdk.register(
+        return (window as any).__sdk.signUp(
           { appId: 'app-virtual-e2e', publishableKey: pk, apiBaseUrl },
           { externalUserId: extUserId }
         );
@@ -162,7 +162,7 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     }
   });
 
-  test('Given registered credential in virtual authenticator, When authenticate() is called, Then returns session_token', async ({
+  test('Given registered credential in virtual authenticator, When signIn() is called, Then returns session_token', async ({
     page,
     authenticatorId: _authenticatorId,
   }) => {
@@ -208,7 +208,7 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     await page.evaluate(
       async ({ pk, extUserId }) => {
         const apiBaseUrl = window.location.origin;
-        return (window as any).__sdk.register(
+        return (window as any).__sdk.signUp(
           { appId: 'app-virtual-e2e', publishableKey: pk, apiBaseUrl },
           { externalUserId: extUserId }
         );
@@ -220,7 +220,7 @@ test.describe('Virtual Authenticator — TryMellon SDK', () => {
     const result = await page.evaluate(
       async ({ pk, extUserId }) => {
         const apiBaseUrl = window.location.origin;
-        return (window as any).__sdk.authenticate(
+        return (window as any).__sdk.signIn(
           { appId: 'app-virtual-e2e', publishableKey: pk, apiBaseUrl },
           { externalUserId: extUserId }
         );

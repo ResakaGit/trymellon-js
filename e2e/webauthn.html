@@ -12,13 +12,13 @@
      * Only used in E2E virtual-auth tests — never in production.
      */
     window.__sdk = {
-      register: async function (config, options) {
+      signUp: async function (config, options) {
         var sdk = new window.TryMellon.TryMellon(config);
-        return sdk.register(options);
+        return sdk.signUp(options);
       },
-      authenticate: async function (config, options) {
+      signIn: async function (config, options) {
         var sdk = new window.TryMellon.TryMellon(config);
-        return sdk.authenticate(options);
+        return sdk.signIn(options);
       },
     };
   </script>
