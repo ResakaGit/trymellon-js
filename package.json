@@ -1,6 +1,6 @@
 {
   "name": "@trymellon/js",
-  "version": "2.3.12",
+  "version": "2.3.13",
   "description": "SDK oficial de TryMellon para integrar autenticación passwordless con Passkeys / WebAuthn",
   "type": "module",
   "main": "./dist/index.cjs",

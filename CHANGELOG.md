@@ -1,3 +1,10 @@
+## [2.3.13](https://github.com/ResakaGit/trymellon-js/compare/v2.3.12...v2.3.13) (2026-04-08)
+
+
+### Bug Fixes
+
+* handle RATE_LIMIT_EXCEEDED in cross-device polling ([eb287f8](https://github.com/ResakaGit/trymellon-js/commit/eb287f82da6ca6cf5fb6beccd509ce343268cb77))
+
 ## [2.3.12](https://github.com/ResakaGit/trymellon-js/compare/v2.3.11...v2.3.12) (2026-04-08)
 
 
