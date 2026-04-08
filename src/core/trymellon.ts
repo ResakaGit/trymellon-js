@@ -230,9 +230,7 @@ export class TryMellon {
     return this.authService.register(options);
   }
 
-  async signIn(
-    options: AuthenticateOptions
-  ): Promise<Result<AuthenticateResult, TryMellonError>> {
+  async signIn(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>> {
     return this.authService.authenticate(options);
   }
 
@@ -328,7 +326,9 @@ export class TryMellon {
   };
 
   platform = {
-    signUp: (options: import('../types').OnboardingStartOptions & { company_name?: string }, signal?: AbortSignal) =>
-      this.onboardingManager.startFlow(options, signal),
+    signUp: (
+      options: import('../types').OnboardingStartOptions & { company_name?: string },
+      signal?: AbortSignal
+    ) => this.onboardingManager.startFlow(options, signal),
   };
 }

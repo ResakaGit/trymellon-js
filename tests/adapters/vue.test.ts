@@ -1,13 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
-import {
-  provideTryMellon,
-  useTryMellon,
-  useSignUp,
-  useSignIn,
-  useEnroll,
-} from '../../src/vue';
+import { provideTryMellon, useTryMellon, useSignUp, useSignIn, useEnroll } from '../../src/vue';
 
 describe('Vue adapter', () => {
   const mockSignUp = vi.fn();

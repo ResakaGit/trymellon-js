@@ -78,9 +78,7 @@ describe('Examples Syntax Validation', () => {
     expect(typeof client.otp.send).toBe('function');
     // Note: This will throw because API is not available in test environment
     // but we're just checking the method exists
-    expect(() =>
-      client.otp.send({ userId: 'user_123', email: 'user@example.com' })
-    ).not.toThrow();
+    expect(() => client.otp.send({ userId: 'user_123', email: 'user@example.com' })).not.toThrow();
   });
 
   it('should allow using otp.verify', async () => {
@@ -89,9 +87,7 @@ describe('Examples Syntax Validation', () => {
     expect(typeof client.otp.verify).toBe('function');
     // Note: This will throw because API is not available in test environment
     // but we're just checking the method exists
-    expect(() =>
-      client.otp.verify({ userId: 'user_123', code: '123456' })
-    ).not.toThrow();
+    expect(() => client.otp.verify({ userId: 'user_123', code: '123456' })).not.toThrow();
   });
 
   it('should allow error handling with TryMellonError', () => {
