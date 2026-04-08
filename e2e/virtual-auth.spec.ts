@@ -25,7 +25,7 @@ const USER_ID_B64 = Buffer.from('virtual-user-id-001').toString('base64url');
 function mockRegStartResponse(): string {
   return JSON.stringify({
     ok: true,
-    resultado: {
+    data: {
       session_id: 'sess-virtual-reg-001',
       challenge: {
         rp: { id: 'localhost', name: 'Virtual Auth Test' },
@@ -44,7 +44,7 @@ function mockRegStartResponse(): string {
 function mockRegFinishResponse(): string {
   return JSON.stringify({
     ok: true,
-    resultado: {
+    data: {
       session_token: 'virtual-session-token-reg',
       credential_id: 'virtual-cred-001',
       status: 'registered',
@@ -56,7 +56,7 @@ function mockRegFinishResponse(): string {
 function mockAuthStartResponse(): string {
   return JSON.stringify({
     ok: true,
-    resultado: {
+    data: {
       session_id: 'sess-virtual-auth-001',
       challenge: {
         challenge: AUTH_CHALLENGE,
@@ -72,7 +72,7 @@ function mockAuthStartResponse(): string {
 function mockAuthFinishResponse(): string {
   return JSON.stringify({
     ok: true,
-    resultado: {
+    data: {
       session_token: 'virtual-session-token-auth',
       authenticated: true,
       user: { user_id: 'virtual-uid-001', external_user_id: EXT_USER_ID },
