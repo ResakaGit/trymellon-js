@@ -1,3 +1,10 @@
+## [2.3.10](https://github.com/ResakaGit/trymellon-js/compare/v2.3.9...v2.3.10) (2026-04-08)
+
+
+### Bug Fixes
+
+* **e2e:** rename register/authenticate to signUp/signIn in virtual-auth tests ([e6d34fc](https://github.com/ResakaGit/trymellon-js/commit/e6d34fc1615cb010c24e259b6ed09d5a8309ab78))
+
 ## [2.3.9](https://github.com/ResakaGit/trymellon-js/compare/v2.3.8...v2.3.9) (2026-04-08)
 
 
