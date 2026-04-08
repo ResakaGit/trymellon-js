@@ -14,9 +14,6 @@ export function useSignIn(): {
   execute: (options: AuthenticateOptions) => Promise<Result<AuthenticateResult, TryMellonError>>;
 } {
   const client = useTryMellon();
-  const action = useCallback(
-    (options: AuthenticateOptions) => client.signIn(options),
-    [client]
-  );
+  const action = useCallback((options: AuthenticateOptions) => client.signIn(options), [client]);
   return useTryMellonAction(action);
 }
