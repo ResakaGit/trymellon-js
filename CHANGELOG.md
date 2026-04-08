@@ -1,3 +1,10 @@
+## [3.1.4](https://github.com/ResakaGit/trymellon-js/compare/v3.1.3...v3.1.4) (2026-04-08)
+
+
+### Bug Fixes
+
+* **sdk:** audit-21 — bridge terminal states, enrollment result fields, bridge discriminator ([eeb9702](https://github.com/ResakaGit/trymellon-js/commit/eeb9702279fd24c737984917fb14198a36339a40)), closes [#11](https://github.com/ResakaGit/trymellon-js/issues/11) [#12](https://github.com/ResakaGit/trymellon-js/issues/12) [#15](https://github.com/ResakaGit/trymellon-js/issues/15)
+
 ## [3.1.3](https://github.com/ResakaGit/trymellon-js/compare/v3.1.2...v3.1.3) (2026-04-08)
 
 
