@@ -11,10 +11,12 @@ Practical integration examples for the `@trymellon/js` SDK in different scenario
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({
+const clientResult = TryMellon.create({
   appId: 'your-app-id-uuid', // Dashboard → Your app → App ID
   publishableKey: 'cli_xxxx', // Dashboard → Your app → Client ID
 });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 async function registerUser(externalUserId: string) {
   const result = await client.register({ externalUserId });
@@ -44,10 +46,9 @@ async function registerUser(externalUserId: string) {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({
-  appId: 'your-app-id-uuid',
-  publishableKey: 'cli_xxxx',
-});
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 async function loginUser(externalUserId: string) {
   const result = await client.authenticate({ externalUserId });
@@ -79,10 +80,9 @@ async function loginUser(externalUserId: string) {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({
-  appId: 'your-app-id-uuid',
-  publishableKey: 'cli_xxxx',
-});
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 // Subscribe to events
 client.on('start', (payload) => {
@@ -117,10 +117,9 @@ if (result.ok) console.log('Registration OK:', result.value.sessionToken);
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({
-  appId: 'your-app-id-uuid',
-  publishableKey: 'cli_xxxx',
-});
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 async function authenticateWithFallback(userId: string) {
   if (!TryMellon.isSupported()) {
@@ -169,9 +168,11 @@ import { useState, useEffect } from 'react';
 import { TryMellon } from '@trymellon/js';
 
 function PasskeyAuth() {
-  const [client] = useState(
-    () => new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' })
-  );
+  const [client] = useState(() => {
+    const result = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+    if (!result.ok) throw result.error;
+    return result.value;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -249,7 +250,9 @@ function PasskeyAuth() {
 import { ref, onMounted, onUnmounted } from 'vue';
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -319,7 +322,9 @@ const handleLogin = async () => {
     <script type="module">
       import { TryMellon } from '@trymellon/js';
 
-      const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+      const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+      if (!clientResult.ok) throw clientResult.error;
+      const client = clientResult.value;
       const statusDiv = document.getElementById('status');
 
       function showStatus(message, isError = false) {
@@ -363,7 +368,9 @@ const handleLogin = async () => {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 const controller = new AbortController();
 
@@ -388,7 +395,9 @@ if (!result.ok && result.error.code === 'USER_CANCELLED') {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 async function checkSupport() {
   const status = await client.getStatus();
@@ -419,7 +428,9 @@ async function checkSupport() {
 ```typescript
 import { TryMellon } from '@trymellon/js';
 
-const client = new TryMellon({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+const clientResult = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
+if (!clientResult.ok) throw clientResult.error;
+const client = clientResult.value;
 
 async function completeFlow() {
   // Check support
@@ -475,7 +486,7 @@ async function useEmailFallback() {
   await fetch('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_token: verifyResult.value.sessionToken }),
+    body: JSON.stringify({ sessionToken: verifyResult.value.sessionToken }),
   });
 }
 ```

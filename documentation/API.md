@@ -10,55 +10,20 @@ Main SDK class for passwordless authentication with Passkeys/WebAuthn.
 
 ### Constructor
 
+> **Deprecated.** Use `TryMellon.create()` instead. The constructor throws on invalid config and cannot be used safely in environments where exceptions are undesirable. It is kept for backward compatibility only.
+
 ```typescript
+/** @deprecated Use TryMellon.create() */
 new TryMellon(config: TryMellonConfig)
 ```
 
-**Parameters:**
-
-- `config.appId` (string, required): Application ID (UUID) for your app. Sent in the `X-App-Id` header. Get it from Dashboard → Your app → App ID. The API identifies your app by `publishableKey` and Origin.
-- `config.publishableKey` (string, required): Client ID (value starting with `cli_`). Sent in `Authorization: Bearer <publishableKey>`. Get it from Dashboard → Your app → Client ID.
-- `config.apiBaseUrl` (string, optional): API base URL. Default: `'https://api.trymellonauth.com'`
-  - Must be a valid URL
-- `config.timeoutMs` (number, optional): Timeout in milliseconds for HTTP requests. Default: `30000`
-  - Valid range: `1000` - `300000` (1 second - 5 minutes)
-- `config.maxRetries` (number, optional): Maximum number of retries for failed HTTP requests. Default: `3`
-  - Valid range: `0` - `10`
-  - Only 5xx and transient network errors are retried
-- `config.retryDelayMs` (number, optional): Initial delay in milliseconds between retries. Default: `1000`
-  - Valid range: `100` - `10000` (100ms - 10 seconds)
-  - Delay increases exponentially on each retry
-
-**Example:**
-
-```typescript
-import { TryMellon } from '@trymellon/js';
-
-const client = new TryMellon({
-  appId: 'your-app-id-uuid', // Dashboard → Your app → App ID
-  publishableKey: 'cli_xxxx', // Dashboard → Your app → Client ID
-  apiBaseUrl: 'https://api.trymellonauth.com',
-  timeoutMs: 30000,
-  maxRetries: 3,
-  retryDelayMs: 1000,
-});
-```
-
-**Errors:**
-
-- Throws `TryMellonError` with code `'INVALID_ARGUMENT'` if:
-  - `appId` is empty or not a string
-  - `publishableKey` is empty or not a string
-  - `apiBaseUrl` is not a valid URL
-  - `timeoutMs` is out of valid range (or not finite)
-  - `maxRetries` is out of valid range
-  - `retryDelayMs` is out of valid range
+Throws `TryMellonError` with code `'INVALID_ARGUMENT'` if config is invalid.
 
 ---
 
 ## Static Methods
 
-### `TryMellon.create(config)`
+### `TryMellon.create(config)` ✓ Recommended
 
 Validates the configuration and creates an instance without throwing. Returns `Result<TryMellon, TryMellonError>`.
 
@@ -66,19 +31,34 @@ Validates the configuration and creates an instance without throwing. Returns `R
 static create(config: TryMellonConfig): Result<TryMellon, TryMellonError>
 ```
 
+**Parameters:**
+
+- `config.appId` (string, required): Application ID (UUID). Get it from Dashboard → Your app → App ID.
+- `config.publishableKey` (string, required): Client ID (value starting with `cli_`). Get it from Dashboard → Your app → Client ID.
+- `config.apiBaseUrl` (string, optional): API base URL. Default: `'https://api.trymellonauth.com'`. Must be a valid URL.
+- `config.timeoutMs` (number, optional): HTTP request timeout in ms. Default: `30000`. Valid range: `1000`–`300000`.
+- `config.maxRetries` (number, optional): Max retries for failed requests. Default: `3`. Valid range: `0`–`10`. Only 5xx and transient errors are retried.
+- `config.retryDelayMs` (number, optional): Initial retry delay in ms (exponential backoff). Default: `1000`. Valid range: `100`–`10000`.
+- `config.sandbox` (boolean, optional): When `true`, `register()` and `authenticate()` return a fixed sandbox token immediately — no API or WebAuthn calls. For local development only.
+- `config.origin` (string, optional): Explicit origin for API requests. Defaults to `window.location.origin`. Set when running in Node/SSR.
+- `config.contextHashStorage` (object, optional): Custom storage for context hash (e.g. `sessionStorage`). Must implement `getItem`/`setItem`.
+
 **Example:**
 
 ```typescript
-const result = TryMellon.create({ appId: 'your-app-id-uuid', publishableKey: 'cli_xxxx' });
-if (result.ok) {
-  const client = result.value;
-  // use client
-} else {
-  console.error(result.error.code, result.error.message);
-}
-```
+import { TryMellon } from '@trymellon/js';
 
-**Recommended** for handling configuration errors without try/catch. The constructor is still available but throws if config is invalid.
+const clientResult = TryMellon.create({
+  appId: 'your-app-id-uuid', // Dashboard → Your app → App ID
+  publishableKey: 'cli_xxxx', // Dashboard → Your app → Client ID
+});
+
+if (!clientResult.ok) {
+  console.error(clientResult.error.code, clientResult.error.message);
+  throw clientResult.error;
+}
+
+const client = clientResult.value;
 
 ---
 
@@ -303,7 +283,7 @@ console.log('SDK version:', client.version());
 Starts the email fallback flow by sending an OTP code.
 
 ```typescript
-fallback.email.start(options: EmailFallbackStartOptions): Promise<void>
+fallback.email.start(options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>>
 ```
 
 **Parameters:**
@@ -314,18 +294,19 @@ fallback.email.start(options: EmailFallbackStartOptions): Promise<void>
 **Example:**
 
 ```typescript
-try {
-  await client.fallback.email.start({
-    userId: 'user_123',
-    email: 'user@example.com',
-  });
-  console.log('OTP code sent by email');
-} catch (error) {
-  console.error('Error sending OTP:', error);
+const startResult = await client.fallback.email.start({
+  userId: 'user_123',
+  email: 'user@example.com',
+});
+
+if (!startResult.ok) {
+  console.error('Error sending OTP:', startResult.error.message);
+  return;
 }
+console.log('OTP code sent by email');
 ```
 
-**Errors:**
+**Errors (result.error.code):**
 
 - `INVALID_ARGUMENT`: Invalid `userId` or `email`
 - `NETWORK_FAILURE`: Network error
@@ -337,7 +318,7 @@ try {
 Verifies the OTP code and returns a sessionToken.
 
 ```typescript
-fallback.email.verify(options: EmailFallbackVerifyOptions): Promise<EmailFallbackVerifyResult>
+fallback.email.verify(options: EmailFallbackVerifyOptions): Promise<Result<EmailFallbackVerifyResult, TryMellonError>>
 ```
 
 **Parameters:**
@@ -347,29 +328,30 @@ fallback.email.verify(options: EmailFallbackVerifyOptions): Promise<EmailFallbac
 
 **Returns:**
 
-- `Promise<EmailFallbackVerifyResult>`: Object with `sessionToken`
+- `Promise<Result<EmailFallbackVerifyResult, TryMellonError>>`: `ok: true` with `value.sessionToken` on success
 
 **Example:**
 
 ```typescript
-try {
-  const result = await client.fallback.email.verify({
-    userId: 'user_123',
-    code: '123456',
-  });
+const verifyResult = await client.fallback.email.verify({
+  userId: 'user_123',
+  code: '123456',
+});
 
-  // Send sessionToken to backend
-  await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionToken: result.sessionToken }),
-  });
-} catch (error) {
-  console.error('Invalid code:', error);
+if (!verifyResult.ok) {
+  console.error('Invalid code:', verifyResult.error.message);
+  return;
 }
+
+// Send sessionToken to backend
+await fetch('/api/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ sessionToken: verifyResult.value.sessionToken }),
+});
 ```
 
-**Errors:**
+**Errors (result.error.code):**
 
 - `INVALID_ARGUMENT`: Invalid `userId` or `code`
 - `NETWORK_FAILURE`: Network error
@@ -396,6 +378,19 @@ type TryMellonConfig = {
   sandbox?: boolean;
   /** Custom token for sandbox mode. If not set, SANDBOX_SESSION_TOKEN is used. */
   sandboxToken?: string;
+  /**
+   * Explicit origin for API requests. Defaults to window.location.origin.
+   * Set this in Node/SSR or when the document origin is not the correct RP ID origin.
+   */
+  origin?: string;
+  /**
+   * Custom storage for context hash (e.g. sessionStorage). Must implement getItem/setItem.
+   * Defaults to browser sessionStorage or in-memory fallback.
+   */
+  contextHashStorage?: {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+  };
 };
 ```
 
@@ -433,22 +428,37 @@ type RegisterOptions = {
 ### `RegisterResult`
 
 ```typescript
-type RegisterResult = {
+interface RegisterResult {
   success: true;
-  sessionToken?: string;
-};
+  credentialId: string;
+  status: string;
+  sessionToken: string;
+  user: {
+    userId: string;
+    externalUserId?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
+  /** Set when successUrl was passed and allowed by application allowlist. */
+  redirectUrl?: string;
+}
 ```
 
-**Note:** `sessionToken` is optional and is only present when TryMellon Backend provides it during registration. If present, you can use it immediately to authenticate the user without calling `authenticate()`.
+**Note:** `sessionToken` is always present on a successful registration. You can use it immediately to create a session without calling `authenticate()`.
 
 ### `AuthenticateOptions`
 
 ```typescript
-type AuthenticateOptions = {
-  userId?: string;
+interface AuthenticateOptions {
+  externalUserId?: string;
+  /** @deprecated Use externalUserId */
+  external_user_id?: string;
   hint?: string;
+  successUrl?: string;
   signal?: AbortSignal;
-};
+  /** Conditional UI mediation for passkey autofill. */
+  mediation?: 'optional' | 'conditional' | 'required';
+}
 ```
 
 ### `AuthenticateResult`
@@ -485,10 +495,10 @@ type TryMellonEvent = 'start' | 'success' | 'error' | 'cancelled';
 
 ```typescript
 type EventPayload =
-  | { type: 'start'; operation: 'register' | 'authenticate' }
-  | { type: 'success'; operation: 'register' | 'authenticate' }
-  | { type: 'error'; error: TryMellonError }
-  | { type: 'cancelled'; operation: 'register' | 'authenticate' };
+  | { type: 'start'; operation: 'register' | 'authenticate' | 'enroll'; nonce?: string }
+  | { type: 'success'; operation: 'register' | 'authenticate' | 'enroll'; token: string; user?: SuccessEventUserInfo; nonce?: string }
+  | { type: 'error'; error: TryMellonError; operation?: 'register' | 'authenticate' | 'enroll'; nonce?: string }
+  | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
 ```
 
 ### `EventHandler`
@@ -570,6 +580,14 @@ Available error codes:
 - `'INVALID_ARGUMENT'`: Invalid argument
 - `'TIMEOUT'`: Operation expired
 - `'ABORTED'`: Operation aborted
+- `'ABORT_ERROR'`: Operation aborted by user or timeout
+- `'CHALLENGE_MISMATCH'`: Challenge mismatch — link was already used or expired
+- `'TICKET_NOT_FOUND'`: Enrollment ticket not found or invalid
+- `'TICKET_EXPIRED'`: Enrollment ticket has expired
+- `'TICKET_ALREADY_USED'`: Enrollment ticket was already used
+- `'PIN_MISMATCH'`: PIN does not match
+- `'PIN_LOCKED'`: PIN locked due to too many failed attempts
+- `'BRIDGE_SESSION_EXPIRED'`: Bridge session has expired
 - `'UNKNOWN_ERROR'`: Unknown error
 
 **Note on retries:**

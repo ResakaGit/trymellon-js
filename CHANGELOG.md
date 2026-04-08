@@ -1,3 +1,19 @@
+## [Unreleased]
+
+### Fixed
+
+- **`documentation/API.md`:** Marked constructor as `@deprecated`; promoted `TryMellon.create()` as the recommended pattern with full parameter documentation.
+- **`documentation/API.md`:** Added `origin` and `contextHashStorage` fields to `TryMellonConfig` type block.
+- **`documentation/API.md`:** `RegisterResult.sessionToken` was incorrectly shown as optional (`?`); it is always present on success.
+- **`documentation/API.md`:** `AuthenticateOptions` used `userId?: string` — corrected to `externalUserId?: string` with deprecated `external_user_id` alias and `mediation` field.
+- **`documentation/API.md`:** `EventPayload` operation unions missing `'enroll'`; corrected across all variants.
+- **`documentation/API.md`:** `TryMellonErrorCode` list was incomplete; added `ABORT_ERROR`, `CHALLENGE_MISMATCH`, `TICKET_NOT_FOUND`, `TICKET_EXPIRED`, `TICKET_ALREADY_USED`, `PIN_MISMATCH`, `PIN_LOCKED`, `BRIDGE_SESSION_EXPIRED`.
+- **`documentation/API.md`:** `fallback.email.start()` and `fallback.email.verify()` incorrectly showed bare return types with try/catch. Both return `Result<T, TryMellonError>`; examples updated to use Result pattern.
+- **`documentation/EXAMPLES.md`:** All 10 examples used deprecated `new TryMellon()` constructor; migrated to `TryMellon.create()` pattern.
+- **`documentation/EXAMPLES.md`:** Complete Example fetch body used `session_token` (snake_case); corrected to `sessionToken`.
+
+---
+
 ## [2.3.5](https://github.com/ResakaGit/trymellon-js/compare/v2.3.4...v2.3.5) (2026-04-07)
 
 ## [2.3.6] - 2026-04-07
