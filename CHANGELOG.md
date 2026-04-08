@@ -1,6 +1,18 @@
 # [3.1.0](https://github.com/ResakaGit/trymellon-js/compare/v3.0.1...v3.1.0) (2026-04-08)
 
 
+### Bug Fixes
+
+* **cross-device:** signal race on SSE→polling fallback and code quality ([7b8b3a6](https://github.com/ResakaGit/trymellon-js/commit/7b8b3a6150ac114d7d8a679065ee20d5fe74d922))
+
+
+### Features
+
+* **cross-device:** add SSE path to waitForSession with polling fallback ([b44da0c](https://github.com/ResakaGit/trymellon-js/commit/b44da0c0075f58dfa48086cade0353bf059d1721))
+
+# [3.1.0](https://github.com/ResakaGit/trymellon-js/compare/v3.0.1...v3.1.0) (2026-04-08)
+
+
 ### Features
 
 * **cross-device:** `waitForSession` uses SSE (EventSource) in browser — server pushes completion event on mobile approval; falls back to polling on SSE error or in Node.js ([a0d8670](https://github.com/ResakaGit/trymellon-js/commit/a0d8670))
