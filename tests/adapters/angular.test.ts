@@ -38,13 +38,13 @@ describe('Angular adapter', () => {
     const service = TestBed.inject(TryMellonService);
     expect(service).toBeDefined();
     expect(service.client).toBeDefined();
-    expect(typeof service.client.register).toBe('function');
-    expect(typeof service.client.authenticate).toBe('function');
+    expect(typeof service.client.signUp).toBe('function');
+    expect(typeof service.client.signIn).toBe('function');
   });
 
-  it('client.register can be called (integration)', async () => {
+  it('client.signUp can be called (integration)', async () => {
     const service = TestBed.inject(TryMellonService);
-    const mockRegister = vi.spyOn(service.client, 'register').mockResolvedValue({
+    const mockSignUp = vi.spyOn(service.client, 'signUp').mockResolvedValue({
       ok: true,
       value: {
         success: true,
@@ -55,9 +55,9 @@ describe('Angular adapter', () => {
       },
     } as never);
 
-    const result = await service.client.register({ externalUserId: 'user_123' });
+    const result = await service.client.signUp({ externalUserId: 'user_123' });
 
-    expect(mockRegister).toHaveBeenCalledWith({ externalUserId: 'user_123' });
+    expect(mockSignUp).toHaveBeenCalledWith({ externalUserId: 'user_123' });
     expect(result.ok).toBe(true);
   });
 });
