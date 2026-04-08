@@ -14,8 +14,31 @@ import { validateCredentialStructure } from '../utils/validation';
 import { waitWithAbort } from './polling-utils';
 
 const POLL_INTERVAL_MS = 3000;
-const MAX_POLL_ATTEMPTS = 60; // ~2 minutes
+const MAX_POLL_ATTEMPTS = 60; // ~3 minutes
 const RATE_LIMIT_BACKOFF_MS = 8000; // wait longer when backend asks to slow down
+
+type CompletedResult = Result<
+  { sessionToken: string; userId: string; redirectUrl?: string },
+  TryMellonError
+>;
+
+/** Maps a completed status payload to the public result. Pure — single source of truth for both SSE and polling paths. */
+function toCompletedResult(value: {
+  session_token?: string;
+  user_id?: string;
+  redirect_url?: string;
+}): CompletedResult {
+  if (!value.session_token || !value.user_id) {
+    return err(createError('UNKNOWN_ERROR', 'Missing data in completed session'));
+  }
+  const redirectUrl =
+    value.redirect_url != null && value.redirect_url !== '' ? value.redirect_url : undefined;
+  return ok({
+    sessionToken: value.session_token,
+    userId: value.user_id,
+    ...(redirectUrl !== undefined && { redirectUrl }),
+  });
+}
 
 export class CrossDeviceManager {
   constructor(private readonly apiClient: ApiClient) {}
@@ -58,29 +81,6 @@ export class CrossDeviceManager {
       return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
     }
 
-    type CompletedResult = Result<
-      { sessionToken: string; userId: string; redirectUrl?: string },
-      TryMellonError
-    >;
-
-    /** Maps a completed status payload to the public result. Pure — single source of truth for both paths. */
-    const toCompletedResult = (value: {
-      session_token?: string;
-      user_id?: string;
-      redirect_url?: string;
-    }): CompletedResult => {
-      if (!value.session_token || !value.user_id) {
-        return err(createError('UNKNOWN_ERROR', 'Missing data in completed session'));
-      }
-      const redirectUrl =
-        value.redirect_url != null && value.redirect_url !== '' ? value.redirect_url : undefined;
-      return ok({
-        sessionToken: value.session_token,
-        userId: value.user_id,
-        ...(redirectUrl !== undefined && { redirectUrl }),
-      });
-    };
-
     const pollUntilCompleted = async (): Promise<CompletedResult> => {
       for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
         const statusResult = await this.apiClient.getCrossDeviceStatus(sessionId, pollingToken);
@@ -106,16 +106,17 @@ export class CrossDeviceManager {
       return err(createError('TIMEOUT', 'Cross-device authentication timed out'));
     };
 
-    const useSse = opts?.useSse !== false;
+    const useSse = opts?.useSse ?? true;
 
     if (useSse && typeof EventSource !== 'undefined') {
       return new Promise<CompletedResult>((resolve) => {
         const url = this.apiClient.getCrossDeviceStatusUrl(sessionId, pollingToken);
-        let resolved = false;
+        // hasSettled guards against double-resolve across SSE, onerror fallback and abort paths
+        let hasSettled = false;
 
         const onDone = (result: CompletedResult) => {
-          if (resolved) return;
-          resolved = true;
+          if (hasSettled) return;
+          hasSettled = true;
           try {
             es.close();
           } catch {
@@ -133,8 +134,8 @@ export class CrossDeviceManager {
         try {
           es = new EventSource(url);
         } catch {
-          signal?.removeEventListener('abort', onAbort);
-          pollUntilCompleted().then(resolve);
+          // EventSource constructor failed — fall back to polling; abort listener stays active
+          pollUntilCompleted().then(onDone);
           return;
         }
 
@@ -158,13 +159,13 @@ export class CrossDeviceManager {
         };
 
         es.onerror = () => {
-          if (resolved) return;
+          if (hasSettled) return;
           try {
             es.close();
           } catch {
             /* ignore */
           }
-          signal?.removeEventListener('abort', onAbort);
+          // Keep abort listener active during fallback — onDone handles cleanup on resolution
           pollUntilCompleted().then(onDone);
         };
       });

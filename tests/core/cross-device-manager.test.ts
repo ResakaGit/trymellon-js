@@ -295,7 +295,7 @@ describe('CrossDeviceManager', () => {
       vi.useRealTimers();
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.code).toBe('TIMEOUT');
-      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalled();
+      expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledTimes(60);
     });
   });
 

@@ -219,12 +219,16 @@ export class ApiClient {
     );
   }
 
+  private crossDeviceStatusPath(sessionId: string): string {
+    return `/v1/auth/cross-device/status/${sessionId}`;
+  }
+
   /**
    * Full URL for GET cross-device status (polling or EventSource).
    * pollingToken is appended as query param when present — EventSource cannot send custom headers.
    */
   getCrossDeviceStatusUrl(sessionId: string, pollingToken?: string | null): string {
-    const base = `${this.baseUrl}/v1/auth/cross-device/status/${sessionId}`;
+    const base = `${this.baseUrl}${this.crossDeviceStatusPath(sessionId)}`;
     if (typeof pollingToken === 'string' && pollingToken.length > 0) {
       return `${base}?polling_token=${encodeURIComponent(pollingToken)}`;
     }
@@ -235,14 +239,11 @@ export class ApiClient {
     sessionId: string,
     pollingToken?: string | null
   ): Promise<Result<CrossDeviceStatusResult, TryMellonError>> {
-    const headers: Record<string, string> = {};
-    if (typeof pollingToken === 'string' && pollingToken.length > 0) {
-      headers['X-Polling-Token'] = pollingToken;
-    }
+    const hasToken = typeof pollingToken === 'string' && pollingToken.length > 0;
     return this.get(
-      `/v1/auth/cross-device/status/${sessionId}`,
+      this.crossDeviceStatusPath(sessionId),
       validateCrossDeviceStatusResponse,
-      Object.keys(headers).length > 0 ? headers : undefined
+      hasToken ? { 'X-Polling-Token': pollingToken as string } : undefined
     );
   }
 
