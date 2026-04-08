@@ -1,3 +1,10 @@
+## [2.3.9](https://github.com/ResakaGit/trymellon-js/compare/v2.3.8...v2.3.9) (2026-04-08)
+
+
+### Bug Fixes
+
+* **ci:** angular.test.ts register/authenticate → signUp/signIn + serve-handler minimatch override ([ffae150](https://github.com/ResakaGit/trymellon-js/commit/ffae15054284e90f5bea931c0befe497684dfc0e))
+
 ## [2.3.8](https://github.com/ResakaGit/trymellon-js/compare/v2.3.7...v2.3.8) (2026-04-08)
 
 ### Bug Fixes
