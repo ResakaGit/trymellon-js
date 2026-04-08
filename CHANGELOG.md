@@ -1,3 +1,5 @@
+## [2.3.11](https://github.com/ResakaGit/trymellon-js/compare/v2.3.10...v2.3.11) (2026-04-08)
+
 ## [2.3.10](https://github.com/ResakaGit/trymellon-js/compare/v2.3.9...v2.3.10) (2026-04-08)
 
 
