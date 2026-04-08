@@ -116,8 +116,8 @@ describe('CrossDeviceManager', () => {
       const result = await manager.waitForSession('sess_1');
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value.session_token).toBe('st_1');
-        expect(result.value.user_id).toBe('user_1');
+        expect(result.value.sessionToken).toBe('st_1');
+        expect(result.value.userId).toBe('user_1');
         expect(result.value.redirectUrl).toBeUndefined();
       }
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledWith('sess_1', undefined);
@@ -136,8 +136,8 @@ describe('CrossDeviceManager', () => {
       const result = await manager.waitForSession('sess_1');
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value.session_token).toBe('st_redir');
-        expect(result.value.user_id).toBe('user_redir');
+        expect(result.value.sessionToken).toBe('st_redir');
+        expect(result.value.userId).toBe('user_redir');
         expect(result.value.redirectUrl).toBe('https://app.example.com/landing');
       }
     });
@@ -188,7 +188,7 @@ describe('CrossDeviceManager', () => {
       vi.useRealTimers();
 
       expect(result.ok).toBe(true);
-      if (result.ok) expect(result.value.session_token).toBe('st_rl');
+      if (result.ok) expect(result.value.sessionToken).toBe('st_rl');
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledTimes(2);
     });
 
@@ -229,8 +229,8 @@ describe('CrossDeviceManager', () => {
       const result = await manager.waitForSession('sess_2');
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.value.session_token).toBe('st_2');
-        expect(result.value.user_id).toBe('user_2');
+        expect(result.value.sessionToken).toBe('st_2');
+        expect(result.value.userId).toBe('user_2');
       }
       expect(mockApiClient.getCrossDeviceStatus).toHaveBeenCalledTimes(3);
     });

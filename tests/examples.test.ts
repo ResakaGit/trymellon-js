@@ -125,16 +125,16 @@ describe('Examples Syntax Validation', () => {
     const TEST_CLIENT_CFG = { appId: 'app_test', publishableKey: 'key_test', timeoutMs: 3_000 };
 
     it(
-      'signUp returns Result with value.session_token on success',
+      'signUp returns Result with value.sessionToken on success',
       async () => {
         const client = new TryMellon(TEST_CLIENT_CFG);
         const result = await client.signUp({ externalUserId: 'user_123' });
         expect(result).toBeDefined();
         expect(typeof result.ok).toBe('boolean');
         if (result.ok) {
-          expect(result.value).toHaveProperty('session_token');
-          expect(typeof result.value.session_token).toBe('string');
-          expect(result.value.user).toHaveProperty('external_user_id');
+          expect(result.value).toHaveProperty('sessionToken');
+          expect(typeof result.value.sessionToken).toBe('string');
+          expect(result.value.user).toHaveProperty('externalUserId');
         } else {
           expect(result.error).toHaveProperty('code');
           expect(result.error).toHaveProperty('message');
@@ -144,15 +144,15 @@ describe('Examples Syntax Validation', () => {
     );
 
     it(
-      'signIn returns Result with value.session_token on success',
+      'signIn returns Result with value.sessionToken on success',
       async () => {
         const client = new TryMellon(TEST_CLIENT_CFG);
         const result = await client.signIn({ externalUserId: 'user_123' });
         expect(result).toBeDefined();
         expect(typeof result.ok).toBe('boolean');
         if (result.ok) {
-          expect(result.value).toHaveProperty('session_token');
-          expect(result.value.user).toHaveProperty('external_user_id');
+          expect(result.value).toHaveProperty('sessionToken');
+          expect(result.value.user).toHaveProperty('externalUserId');
         } else {
           expect(result.error).toHaveProperty('code');
           expect(result.error).toHaveProperty('message');
