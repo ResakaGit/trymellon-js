@@ -75,9 +75,8 @@ describe('ApiClient enrollment', () => {
       mockHttpClient.post.mockResolvedValue(
         ok({
           credential_id: 'cred_1',
-          status: 'verified',
+          user_id: 'user_uuid_1',
           session_token: 'session_tok_1',
-          user: { user_id: 'user_uuid_1' },
         })
       );
 

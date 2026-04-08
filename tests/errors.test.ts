@@ -303,10 +303,14 @@ describe('mapBackendErrorCodeToTryMellon', () => {
     expect(mapBackendErrorCodeToTryMellon('QR_INVALID_RESPONSE')).toBe('CHALLENGE_MISMATCH');
   });
 
+  it('maps internal_error to SERVER_ERROR and forbidden to FORBIDDEN', () => {
+    expect(mapBackendErrorCodeToTryMellon('internal_error')).toBe('SERVER_ERROR');
+    expect(mapBackendErrorCodeToTryMellon('forbidden')).toBe('FORBIDDEN');
+  });
+
   it('returns UNKNOWN_ERROR for unknown backend codes', () => {
-    expect(mapBackendErrorCodeToTryMellon('internal_error')).toBe('UNKNOWN_ERROR');
-    expect(mapBackendErrorCodeToTryMellon('forbidden')).toBe('UNKNOWN_ERROR');
     expect(mapBackendErrorCodeToTryMellon('')).toBe('UNKNOWN_ERROR');
+    expect(mapBackendErrorCodeToTryMellon('some_random_code')).toBe('UNKNOWN_ERROR');
   });
 
   it('normalizes case', () => {

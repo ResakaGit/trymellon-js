@@ -10,7 +10,14 @@ import type {
 } from '../../types';
 import { isObject, isString, required, validationError } from './helpers';
 
-const BRIDGE_STATUS_VALUES = ['pending', 'pin_verified', 'pin_locked', 'completed'] as const;
+const BRIDGE_STATUS_VALUES = [
+  'pending',
+  'pin_verified',
+  'pin_locked',
+  'completed',
+  'expired',
+  'cancelled',
+] as const;
 
 // ---------------------------------------------------------------------------
 // Validators (backend: bridge.schemas.ts)
@@ -185,7 +192,7 @@ export function validateBridgeStatusResponse(
     !BRIDGE_STATUS_VALUES.includes(status as BridgeStatusSnapshot['status'])
   ) {
     return validationError(
-      'Invalid bridge status response: status must be one of pending, pin_verified, pin_locked, completed',
+      'Invalid bridge status response: status must be one of pending, pin_verified, pin_locked, completed, expired, cancelled',
       { field: 'status', originalData: data }
     );
   }
