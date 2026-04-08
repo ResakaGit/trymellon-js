@@ -168,6 +168,9 @@ export type EnrollOptions = {
 /** Result of finish enrollment; aligns with backend envelope (session_token). */
 export type EnrollmentResult = {
   sessionToken: string;
+  credentialId: string;
+  userId: string;
+  entityId?: string;
 };
 
 /** Backend response for POST /v1/enrollment/register/options. Validators use this shape. */
@@ -392,6 +395,7 @@ export type BridgeOptions = {
 
 /** Public result of bridge enrollment: sessionToken and optional credential/user/entity ids. */
 export type BridgeEnrollmentResult = {
+  kind: 'enrollment';
   sessionToken: string;
   credentialId?: string;
   userId?: string;
@@ -400,6 +404,7 @@ export type BridgeEnrollmentResult = {
 
 /** Public result of bridge auth: sessionToken only. */
 export type BridgeAuthResult = {
+  kind: 'auth';
   sessionToken: string;
 };
 

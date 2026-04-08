@@ -40,6 +40,9 @@ export class EnrollmentManager {
 
     return ok({
       sessionToken: finishResult.value.session_token,
+      credentialId: finishResult.value.credential_id,
+      userId: finishResult.value.user_id,
+      ...(finishResult.value.entity_id !== undefined && { entityId: finishResult.value.entity_id }),
     });
   }
 }

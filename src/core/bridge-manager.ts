@@ -30,7 +30,6 @@ import { validateCredentialStructure } from '../utils/validation';
 // ---------------------------------------------------------------------------
 
 const BRIDGE_TERMINAL_STATUSES: ReadonlySet<BridgeStatusSnapshot['status']> = new Set([
-  'pin_verified',
   'pin_locked',
   'completed',
   'expired',
@@ -76,6 +75,7 @@ export function toBridgeEnrollmentResult(
   apiResult: BridgeCompleteEnrollmentResult
 ): BridgeEnrollmentResult {
   return {
+    kind: 'enrollment',
     sessionToken: apiResult.session_token,
     credentialId: apiResult.credential_id,
     userId: apiResult.user_id,
@@ -85,7 +85,7 @@ export function toBridgeEnrollmentResult(
 
 /** Maps API complete-auth response to public result. Pure. */
 export function toBridgeAuthResult(apiResult: BridgeCompleteAuthResult): BridgeAuthResult {
-  return { sessionToken: apiResult.session_token };
+  return { kind: 'auth', sessionToken: apiResult.session_token };
 }
 
 /** Resolves PIN from options and calls verifyBridgePin. Single async step for PIN flow. */

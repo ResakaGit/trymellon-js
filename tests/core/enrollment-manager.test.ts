@@ -37,9 +37,8 @@ const validStartResponse: EnrollmentStartResponse = {
 
 const validFinishResponse: EnrollmentFinishResponse = {
   credential_id: 'cred_1',
-  status: 'verified',
+  user_id: 'user_uuid_1',
   session_token: 'session_tok_1',
-  user: { user_id: 'user_uuid_1' },
 };
 
 describe('EnrollmentManager', () => {
@@ -79,6 +78,8 @@ describe('EnrollmentManager', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.sessionToken).toBe('session_tok_1');
+        expect(result.value.credentialId).toBe('cred_1');
+        expect(result.value.userId).toBe('user_uuid_1');
       }
       expect(mockApiClient.startEnrollment).toHaveBeenCalledWith('ticket_abc', FIXED_CONTEXT_HASH);
       expect(mockApiClient.finishEnrollment).toHaveBeenCalledWith(

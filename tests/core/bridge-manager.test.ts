@@ -87,6 +87,7 @@ describe('toBridgeEnrollmentResult / toBridgeAuthResult', () => {
       session_token: 'st1',
     };
     const result = toBridgeEnrollmentResult(dto);
+    expect(result.kind).toBe('enrollment');
     expect(result.sessionToken).toBe('st1');
     expect(result.credentialId).toBe('c1');
     expect(result.userId).toBe('u1');
@@ -95,6 +96,7 @@ describe('toBridgeEnrollmentResult / toBridgeAuthResult', () => {
 
   it('toBridgeAuthResult maps DTO to public shape', () => {
     const result = toBridgeAuthResult({ session_token: 'token_auth' });
+    expect(result.kind).toBe('auth');
     expect(result.sessionToken).toBe('token_auth');
   });
 });
@@ -251,7 +253,10 @@ describe('BridgeManager', () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         expect(result.value.sessionToken).toBe('st1');
-        expect('credentialId' in result.value && result.value.credentialId).toBe('c1');
+        expect(result.value.kind).toBe('enrollment');
+        if (result.value.kind === 'enrollment') {
+          expect(result.value.credentialId).toBe('c1');
+        }
       }
       expect(mockApiClient.verifyBridgePin).toHaveBeenCalledWith('sess-123', '1234', 'enrollment');
       expect(mockApiClient.completeBridgeEnrollment).toHaveBeenCalledWith(
@@ -303,7 +308,10 @@ describe('BridgeManager', () => {
       const result = await manager.complete('sess-auth', { kind: 'auth', presencePin: '9876' });
 
       expect(result.ok).toBe(true);
-      if (result.ok) expect(result.value.sessionToken).toBe('auth_tok_1');
+      if (result.ok) {
+        expect(result.value.kind).toBe('auth');
+        expect(result.value.sessionToken).toBe('auth_tok_1');
+      }
       expect(mockApiClient.verifyBridgePin).toHaveBeenCalledWith('sess-auth', '9876', 'auth');
       expect(mockApiClient.completeBridgeAuth).toHaveBeenCalledWith(
         expect.objectContaining({ session_id: 'sess-auth' })
@@ -452,7 +460,7 @@ describe('BridgeManager', () => {
       });
       vi.stubGlobal('EventSource', MockEventSource);
       mockApiClient.getBridgeStatusUrl.mockReturnValue('https://api.example.com/bridge/status/s1');
-      mockApiClient.getBridgeStatus.mockResolvedValue(ok({ status: 'pin_verified' }));
+      mockApiClient.getBridgeStatus.mockResolvedValue(ok({ status: 'completed' }));
 
       const manager = new BridgeManager(mockApiClient as unknown as ApiClient);
       const resultPromise = manager.waitForResult('sess-sse-err', {
@@ -467,7 +475,7 @@ describe('BridgeManager', () => {
 
       const result = await resultPromise;
       expect(result.ok).toBe(true);
-      if (result.ok) expect(result.value.status).toBe('pin_verified');
+      if (result.ok) expect(result.value.status).toBe('completed');
       expect(mockApiClient.getBridgeStatus).toHaveBeenCalledWith('sess-sse-err', 'auth');
       vi.unstubAllGlobals();
     });
