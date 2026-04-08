@@ -11,10 +11,10 @@ describe('ui/application/auth-ui.application-service', () => {
     expect(next).toBe('EVALUATING_ENV');
   });
 
-  it('startAuth calls register for mode=register and authenticate otherwise', () => {
+  it('startAuth calls signUp for mode=register and signIn otherwise', () => {
     const core: CoreAuthPort = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
+      signUp: vi.fn(),
+      signIn: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
       enroll: vi.fn(),
       getContextHash: vi.fn().mockReturnValue(''),
@@ -26,18 +26,18 @@ describe('ui/application/auth-ui.application-service', () => {
       core,
       { externalUserId: 'user_1' }
     );
-    expect(core.register).toHaveBeenCalledWith({ externalUserId: 'user_1' });
-    expect(core.authenticate).not.toHaveBeenCalled();
+    expect(core.signUp).toHaveBeenCalledWith({ externalUserId: 'user_1' });
+    expect(core.signIn).not.toHaveBeenCalled();
     expect(stateAfterRegister).not.toBe('READY_REGISTER');
 
-    (core.register as vi.Mock).mockClear();
-    (core.authenticate as vi.Mock).mockClear();
+    (core.signUp as vi.Mock).mockClear();
+    (core.signIn as vi.Mock).mockClear();
 
     const stateAfterLogin = authUiApplicationService.startAuth('READY_LOGIN', 'login', core, {
       externalUserId: 'user_2',
     });
-    expect(core.authenticate).toHaveBeenCalledWith({ externalUserId: 'user_2' });
-    expect(core.register).not.toHaveBeenCalled();
+    expect(core.signIn).toHaveBeenCalledWith({ externalUserId: 'user_2' });
+    expect(core.signUp).not.toHaveBeenCalled();
     expect(stateAfterLogin).not.toBe('READY_LOGIN');
   });
 
@@ -83,8 +83,8 @@ describe('ui/application/auth-ui.application-service', () => {
 
   it('startEnrollment transitions to ENROLLING and calls core.enroll', () => {
     const core: CoreAuthPort = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
+      signUp: vi.fn(),
+      signIn: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
       enroll: vi.fn(),
       getContextHash: vi.fn().mockReturnValue(''),

@@ -185,7 +185,7 @@ export async function registerPasskey(
     RegisterResult,
     CredentialCreationOptions
   >({
-    operation: 'register',
+    operation: 'signUp',
     eventEmitter,
     start: () => apiClient.startRegister({ external_user_id: extId }),
     createOptions: (startResult) =>
@@ -223,7 +223,7 @@ export async function registerPasskey(
   if (result.ok) {
     eventEmitter.emit('success', {
       type: 'success',
-      operation: 'register',
+      operation: 'signUp',
       token: result.value.sessionToken,
       user: result.value.user,
     });
@@ -248,7 +248,7 @@ export async function authenticatePasskey(
     AuthenticateResult,
     CredentialRequestOptions
   >({
-    operation: 'authenticate',
+    operation: 'signIn',
     eventEmitter,
     start: () =>
       apiClient.startAuth(hasUserId ? { external_user_id: (extId as string).trim() } : {}),
@@ -285,7 +285,7 @@ export async function authenticatePasskey(
   if (result.ok) {
     eventEmitter.emit('success', {
       type: 'success',
-      operation: 'authenticate',
+      operation: 'signIn',
       token: result.value.sessionToken,
       user: result.value.user,
     });

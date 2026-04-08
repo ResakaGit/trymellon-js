@@ -73,7 +73,7 @@ describe('E2E fixture: WC como integrador (E.10)', () => {
     el.setAttribute('mode', 'login');
     container.appendChild(el);
 
-    type Payload = { type: 'start'; operation: 'register' | 'authenticate' };
+    type Payload = { type: 'start'; operation: 'signUp' | 'signIn' };
     const listeners: Array<(p: Payload) => void> = [];
     const mockCore: CoreWithEvents = {
       on(_event, handler) {
@@ -92,7 +92,7 @@ describe('E2E fixture: WC como integrador (E.10)', () => {
     el.addEventListener('mellon:start', ((e: Event) =>
       received.push(e as CustomEvent)) as EventListener);
 
-    emit({ type: 'start', operation: 'authenticate' });
+    emit({ type: 'start', operation: 'signIn' });
 
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe('mellon:start');

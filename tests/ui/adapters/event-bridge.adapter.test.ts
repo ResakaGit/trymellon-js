@@ -33,7 +33,7 @@ describe('event-bridge adapter', () => {
     const host = document.createElement('div');
     const dispatchSpy = vi.spyOn(host, 'dispatchEvent');
     eventBridgeAdapter.subscribe(core, host);
-    core.emit('start', { type: 'start', operation: 'register', nonce: 'n1' });
+    core.emit('start', { type: 'start', operation: 'signUp', nonce: 'n1' });
     expect(dispatchSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
     const evt = dispatchSpy.mock.calls[0][0] as CustomEvent<MellonOperationDetail>;
     expect(evt.type).toBe(MELLON_START);
@@ -44,7 +44,7 @@ describe('event-bridge adapter', () => {
   });
 
   describe('mellon:start', () => {
-    it('emits mellon:start with MellonOperationDetail when core emits start (register)', () => {
+    it('emits mellon:start with MellonOperationDetail when core emits start (signUp)', () => {
       const core = createCore();
       const host = document.createElement('div');
       const received: CustomEvent<MellonOperationDetail>[] = [];
@@ -53,7 +53,7 @@ describe('event-bridge adapter', () => {
       }) as EventListener);
 
       eventBridgeAdapter.subscribe(core, host);
-      const payload: EventPayload = { type: 'start', operation: 'register', nonce: 'n1' };
+      const payload: EventPayload = { type: 'start', operation: 'signUp', nonce: 'n1' };
       core.emit('start', payload);
 
       expect(received).toHaveLength(1);
@@ -74,7 +74,7 @@ describe('event-bridge adapter', () => {
       }) as EventListener);
 
       eventBridgeAdapter.subscribe(core, host);
-      core.emit('start', { type: 'start', operation: 'authenticate' });
+      core.emit('start', { type: 'start', operation: 'signIn' });
 
       expect(received).toHaveLength(1);
       expect(received[0].detail.operation).toBe('login');
@@ -109,7 +109,7 @@ describe('event-bridge adapter', () => {
       eventBridgeAdapter.subscribe(core, host);
       core.emit('success', {
         type: 'success',
-        operation: 'authenticate',
+        operation: 'signIn',
         token: 'jwt-ok',
         nonce: 'n1',
         redirectUrl: 'https://app.example/dashboard',
@@ -135,7 +135,7 @@ describe('event-bridge adapter', () => {
       eventBridgeAdapter.subscribe(core, host);
       core.emit('success', {
         type: 'success',
-        operation: 'register',
+        operation: 'signUp',
         token: 'jwt-ok',
       });
 
@@ -153,16 +153,16 @@ describe('event-bridge adapter', () => {
       }) as EventListener);
 
       eventBridgeAdapter.subscribe(core, host);
-      core.emit('start', { type: 'start', operation: 'authenticate', nonce: 'n1' });
+      core.emit('start', { type: 'start', operation: 'signIn', nonce: 'n1' });
       core.emit('success', {
         type: 'success',
-        operation: 'authenticate',
+        operation: 'signIn',
         token: 'jwt-first',
         nonce: 'n1',
       });
       core.emit('success', {
         type: 'success',
-        operation: 'authenticate',
+        operation: 'signIn',
         token: 'jwt-second',
         nonce: 'n1',
       });
@@ -202,7 +202,7 @@ describe('event-bridge adapter', () => {
       eventBridgeAdapter.subscribe(core, host);
       core.emit('success', {
         type: 'success',
-        operation: 'authenticate',
+        operation: 'signIn',
         token: 'jwt-ok',
         redirectUrl: 123 as unknown as string,
       });
@@ -223,7 +223,7 @@ describe('event-bridge adapter', () => {
       eventBridgeAdapter.subscribe(core, host);
       core.emit('success', {
         type: 'success',
-        operation: 'authenticate',
+        operation: 'signIn',
         token: 'jwt-ok',
         nonce: 'ceremony-nonce-123',
       });
@@ -243,7 +243,7 @@ describe('event-bridge adapter', () => {
       eventBridgeAdapter.subscribe(core, host);
       core.emit('success', {
         type: 'success',
-        operation: 'register',
+        operation: 'signUp',
         token: 'jwt-ok',
       });
 
@@ -262,16 +262,16 @@ describe('event-bridge adapter', () => {
       }) as EventListener);
 
       eventBridgeAdapter.subscribe(core, host);
-      core.emit('start', { type: 'start', operation: 'authenticate', nonce: 'n1' });
+      core.emit('start', { type: 'start', operation: 'signIn', nonce: 'n1' });
       core.emit('success', {
         type: 'success',
-        operation: 'authenticate',
+        operation: 'signIn',
         token: 'jwt-ok',
         nonce: 'n1',
       });
       core.emit('error', {
         type: 'error',
-        operation: 'authenticate',
+        operation: 'signIn',
         nonce: 'n1',
         error: { code: 'LATE_ERROR', message: 'Should not reach host' },
       });
@@ -290,7 +290,7 @@ describe('event-bridge adapter', () => {
       }) as EventListener);
 
       eventBridgeAdapter.subscribe(core, host);
-      core.emit('cancelled', { type: 'cancelled', operation: 'register', nonce: 'n2' });
+      core.emit('cancelled', { type: 'cancelled', operation: 'signUp', nonce: 'n2' });
 
       expect(received).toHaveLength(1);
       expect(received[0].detail).toEqual({
@@ -308,11 +308,11 @@ describe('event-bridge adapter', () => {
       host.addEventListener(MELLON_START, listener);
 
       const unsubscribe = eventBridgeAdapter.subscribe(core, host);
-      core.emit('start', { type: 'start', operation: 'register' });
+      core.emit('start', { type: 'start', operation: 'signUp' });
       expect(listener).toHaveBeenCalledTimes(1);
 
       unsubscribe();
-      core.emit('start', { type: 'start', operation: 'register' });
+      core.emit('start', { type: 'start', operation: 'signUp' });
       expect(listener).toHaveBeenCalledTimes(1);
     });
   });

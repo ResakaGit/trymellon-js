@@ -77,9 +77,9 @@ function applyStartAuthAndInvokeCore(
 ): UIState {
   const nextState = applyTransition(currentState, { type: 'START_AUTH' });
   if (mode === 'register') {
-    coreAuthPort.register(options);
+    coreAuthPort.signUp(options);
   } else {
-    coreAuthPort.authenticate(options);
+    coreAuthPort.signIn(options);
   }
   return nextState;
 }

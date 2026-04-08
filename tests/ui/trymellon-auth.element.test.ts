@@ -163,7 +163,7 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
     container.appendChild(el);
 
-    type Payload = { type: 'start'; operation: 'register' | 'authenticate' };
+    type Payload = { type: 'start'; operation: 'signUp' | 'signIn' };
     const listeners: Array<(p: Payload) => void> = [];
     const mockCore: CoreWithEvents = {
       on(_event, handler) {
@@ -184,7 +184,7 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     };
     el.addEventListener('mellon:start', handler);
 
-    emit({ type: 'start', operation: 'register' });
+    emit({ type: 'start', operation: 'signUp' });
 
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe('mellon:start');
@@ -199,7 +199,7 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
 
     type Payload = {
       type: 'success';
-      operation: 'register' | 'authenticate';
+      operation: 'signUp' | 'signIn';
       token: string;
       user?: unknown;
     };
@@ -223,7 +223,7 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     };
     el.addEventListener('mellon:success', handler);
 
-    emit({ type: 'success', operation: 'authenticate', token: 'tk-auth' });
+    emit({ type: 'success', operation: 'signIn', token: 'tk-auth' });
 
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe('mellon:success');
@@ -256,11 +256,11 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     };
     el.addEventListener('mellon:success', handler);
 
-    emit({ type: 'success', operation: 'authenticate', token: '' });
+    emit({ type: 'success', operation: 'signIn', token: '' });
     expect(received).toHaveLength(0);
 
     received.length = 0;
-    emit({ type: 'success', operation: 'register', token: 'valid-token' });
+    emit({ type: 'success', operation: 'signUp', token: 'valid-token' });
     expect(received).toHaveLength(1);
     expect(received[0].detail.token).toBe('valid-token');
   });
@@ -300,8 +300,8 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     el.addEventListener('mellon:success', onSuccess);
     el.addEventListener('mellon:error', onError);
 
-    emit('start', { type: 'start', operation: 'authenticate' });
-    emit('success', { type: 'success', operation: 'authenticate', token: 'tk' });
+    emit('start', { type: 'start', operation: 'signIn' });
+    emit('success', { type: 'success', operation: 'signIn', token: 'tk' });
     emit('error', { type: 'error', error: createError('UNKNOWN_ERROR', 'late') });
 
     expect(successReceived).toHaveLength(1);
@@ -312,7 +312,7 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
     container.appendChild(el);
 
-    type Payload = { type: 'start'; operation: 'register' };
+    type Payload = { type: 'start'; operation: 'signUp' };
     const listeners: Array<(p: Payload) => void> = [];
     const mockCore: CoreWithEvents = {
       on(_event, handler) {
@@ -333,12 +333,12 @@ describe('TryMellonAuthElement event bridge (E.6)', () => {
     };
     el.addEventListener('mellon:start', handler);
 
-    emit({ type: 'start', operation: 'register' });
+    emit({ type: 'start', operation: 'signUp' });
     expect(received).toHaveLength(1);
 
     unsubscribe();
     received.length = 0;
-    emit({ type: 'start', operation: 'register' });
+    emit({ type: 'start', operation: 'signUp' });
     expect(received).toHaveLength(0);
   });
 });
@@ -401,13 +401,13 @@ describe('TryMellonAuthElement FSM wiring (E.7)', () => {
     });
   });
 
-  it('click on button calls core.authenticate and transitions AUTHENTICATING → SUCCESS on mellon:success', async () => {
+  it('click on button calls core.signIn and transitions AUTHENTICATING → SUCCESS on mellon:success', async () => {
     const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
     el.setAttribute('action', 'direct-auth');
     el.setAttribute('mode', 'login');
     container.appendChild(el);
     const core = createValidTryMellonInstance();
-    const authenticateSpy = vi.spyOn(core, 'authenticate').mockResolvedValue(
+    const signInSpy = vi.spyOn(core, 'signIn').mockResolvedValue(
       ok({
         authenticated: true,
         sessionToken: 'tk',
@@ -420,23 +420,23 @@ describe('TryMellonAuthElement FSM wiring (E.7)', () => {
     expect(btn).not.toBeNull();
     btn?.click();
     expect(el.currentState).toBe('AUTHENTICATING');
-    expect(authenticateSpy).toHaveBeenCalled();
+    expect(signInSpy).toHaveBeenCalled();
     el.dispatchEvent(
       new CustomEvent('mellon:success', {
-        detail: { token: 'tk', operation: 'authenticate' },
+        detail: { token: 'tk', operation: 'login' },
         composed: true,
       })
     );
     expect(el.currentState).toBe('SUCCESS');
   });
 
-  it('click on button calls core.register and transitions AUTHENTICATING → ERROR on mellon:error', async () => {
+  it('click on button calls core.signUp and transitions AUTHENTICATING → ERROR on mellon:error', async () => {
     const el = document.createElement('trymellon-auth') as TryMellonAuthElement;
     el.setAttribute('action', 'direct-auth');
     el.setAttribute('mode', 'register');
     container.appendChild(el);
     const core = createValidTryMellonInstance();
-    const registerSpy = vi.spyOn(core, 'register').mockResolvedValue(
+    const signUpSpy = vi.spyOn(core, 'signUp').mockResolvedValue(
       ok({
         success: true,
         credentialId: 'c',
@@ -451,7 +451,7 @@ describe('TryMellonAuthElement FSM wiring (E.7)', () => {
     expect(btn).not.toBeNull();
     btn?.click();
     expect(el.currentState).toBe('AUTHENTICATING');
-    expect(registerSpy).toHaveBeenCalled();
+    expect(signUpSpy).toHaveBeenCalled();
     el.dispatchEvent(
       new CustomEvent('mellon:error', {
         detail: { code: 'ERR', message: 'test', operation: 'register' },
@@ -537,9 +537,9 @@ describe('TryMellonAuthElement integration (E7 click → modal → events)', () 
           if (i !== -1) listeners[event].splice(i, 1);
         };
       },
-      async authenticate(_options?: unknown) {
+      async signIn(_options?: unknown) {
         listeners.success.forEach((h) =>
-          h({ type: 'success', operation: 'authenticate', token: 'tk-e7-integration' })
+          h({ type: 'success', operation: 'signIn', token: 'tk-e7-integration' })
         );
         return {
           ok: true,
@@ -550,9 +550,9 @@ describe('TryMellonAuthElement integration (E7 click → modal → events)', () 
           },
         };
       },
-      async register(_options?: unknown) {
+      async signUp(_options?: unknown) {
         listeners.success.forEach((h) =>
-          h({ type: 'success', operation: 'register', token: 'tk-e7-reg' })
+          h({ type: 'success', operation: 'signUp', token: 'tk-e7-reg' })
         );
         return {
           ok: true,
@@ -673,7 +673,7 @@ describe('TryMellonAuthElement reset and tab (02-fsm-estado-modal)', () => {
     el.setAttribute('mode', 'login');
     container.appendChild(el);
     const core = createValidTryMellonInstance();
-    vi.spyOn(core, 'authenticate').mockImplementation(() => new Promise(() => {}));
+    vi.spyOn(core, 'signIn').mockImplementation(() => new Promise(() => {}));
     el.attachCore(core);
     await vi.waitFor(() => expect(el.currentState).toBe('READY_LOGIN'));
     const btn = el.shadowRoot?.querySelector<HTMLButtonElement>('button.mellon-btn');
@@ -738,7 +738,7 @@ describe('TryMellonAuthElement reset and tab (02-fsm-estado-modal)', () => {
     el.setAttribute('mode', 'login');
     container.appendChild(el);
     const core = createValidTryMellonInstance();
-    vi.spyOn(core, 'authenticate').mockImplementation(() => new Promise(() => {}));
+    vi.spyOn(core, 'signIn').mockImplementation(() => new Promise(() => {}));
     el.attachCore(core);
     await vi.waitFor(() => expect(el.currentState).toBe('READY_LOGIN'));
     const btn = el.shadowRoot?.querySelector<HTMLButtonElement>('button.mellon-btn');

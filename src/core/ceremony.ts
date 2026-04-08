@@ -6,7 +6,7 @@ import type { TryMellonError } from '../errors';
 import { mapWebAuthnError, createNotSupportedError, createInvalidArgumentError } from '../errors';
 import { validateCredentialStructure } from '../utils/validation';
 
-export type CeremonyOperation = 'register' | 'authenticate';
+export type CeremonyOperation = 'signUp' | 'signIn';
 
 export interface InvokeCeremonyContext<
   TStartResult,
@@ -66,7 +66,7 @@ export async function invokeCeremony<
     if (!credential) {
       const error = createInvalidArgumentError(
         'credential',
-        `${operation === 'register' ? 'creation' : 'retrieval'} failed`
+        `${operation === 'signUp' ? 'creation' : 'retrieval'} failed`
       );
       eventEmitter.emit('error', { type: 'error', error });
       return err(error);

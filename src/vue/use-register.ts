@@ -4,7 +4,7 @@ import type { RegisterOptions, RegisterResult } from '../types';
 import type { TryMellonError } from '../errors';
 import type { Result } from '../utils/result';
 
-export function useRegister(): {
+export function useSignUp(): {
   result: Ref<Result<RegisterResult, TryMellonError> | null>;
   loading: Ref<boolean>;
   error: Ref<TryMellonError | null>;
@@ -19,7 +19,7 @@ export function useRegister(): {
     loading.value = true;
     error.value = null;
     result.value = null;
-    const res = await client.register(options);
+    const res = await client.signUp(options);
     result.value = res;
     loading.value = false;
     error.value = res.ok ? null : res.error;

@@ -8,13 +8,13 @@ import type {
 } from '../ports/core-events.port';
 import type { RunEnvEvalParams } from '../application/evaluate-env.use-case';
 
-export type PendingAuthOperation = 'register' | 'authenticate';
+export type PendingAuthOperation = 'signUp' | 'signIn';
 
 export class AuthController {
   private _currentState: UIState = INITIAL_UI_STATE;
   private _lastRenderedState: UIState | null = null;
   private _renderDirty = true;
-  private _pendingOperation: PendingAuthOperation = 'authenticate';
+  private _pendingOperation: PendingAuthOperation = 'signIn';
   private _currentNonce: string | undefined = undefined;
   private _envEvalRequestId = 0;
 
@@ -45,7 +45,7 @@ export class AuthController {
   }
 
   setPendingOperationFromTab(tab: TabKind): void {
-    this._pendingOperation = tab === 'login' ? 'authenticate' : 'register';
+    this._pendingOperation = tab === 'login' ? 'signIn' : 'signUp';
   }
 
   get pendingOperation(): PendingAuthOperation {
@@ -59,7 +59,7 @@ export class AuthController {
   consumeCancelledDetailIfAuthenticating(): MellonOperationDetail | null {
     if (this._currentState !== 'AUTHENTICATING') return null;
     const detail: MellonOperationDetail = {
-      operation: this._pendingOperation === 'authenticate' ? 'login' : this._pendingOperation,
+      operation: this._pendingOperation === 'signIn' ? 'login' : 'register',
       ...(this._currentNonce !== undefined && { nonce: this._currentNonce }),
     };
     this._currentNonce = undefined;

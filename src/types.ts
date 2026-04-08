@@ -119,22 +119,22 @@ export type SuccessEventUserInfo = {
 /** Success payload: token always present (03-eventos-seguridad). Nonce when flow generates it. */
 export type SuccessEventPayload = {
   type: 'success';
-  operation: 'register' | 'authenticate' | 'enroll';
+  operation: 'signUp' | 'signIn' | 'enroll';
   token: string;
   user?: SuccessEventUserInfo;
   nonce?: string;
 };
 
 export type EventPayload =
-  | { type: 'start'; operation: 'register' | 'authenticate' | 'enroll'; nonce?: string }
+  | { type: 'start'; operation: 'signUp' | 'signIn' | 'enroll'; nonce?: string }
   | SuccessEventPayload
   | {
       type: 'error';
       error: TryMellonError;
-      operation?: 'register' | 'authenticate' | 'enroll';
+      operation?: 'signUp' | 'signIn' | 'enroll';
       nonce?: string;
     }
-  | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
+  | { type: 'cancelled'; operation: 'signUp' | 'signIn'; nonce?: string };
 
 export type EventHandler = (payload: EventPayload) => void;
 

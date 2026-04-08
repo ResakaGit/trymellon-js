@@ -101,7 +101,7 @@ describe('TryMellon sandbox mode', () => {
     });
   });
 
-  describe('register() in sandbox mode', () => {
+  describe('signUp() in sandbox mode', () => {
     it('returns success with sandbox token without calling registerPasskey', async () => {
       const createResult = TryMellon.create({
         sandbox: true,
@@ -110,7 +110,7 @@ describe('TryMellon sandbox mode', () => {
       });
       if (!createResult.ok) throw new Error('expected ok');
       const client = createResult.value;
-      const result = await client.register({ externalUserId: 'dev_user_1' });
+      const result = await client.signUp({ externalUserId: 'dev_user_1' });
 
       expect(registerPasskeySpy).not.toHaveBeenCalled();
       expect(result.ok).toBe(true);
@@ -131,7 +131,7 @@ describe('TryMellon sandbox mode', () => {
       });
       if (!createResult.ok) throw new Error('expected ok');
       const client = createResult.value;
-      const result = await client.register({ externalUserId: 'u1' });
+      const result = await client.signUp({ externalUserId: 'u1' });
 
       expect(registerPasskeySpy).not.toHaveBeenCalled();
       expect(result.ok).toBe(true);
@@ -141,7 +141,7 @@ describe('TryMellon sandbox mode', () => {
     });
   });
 
-  describe('authenticate() in sandbox mode', () => {
+  describe('signIn() in sandbox mode', () => {
     it('returns success with sandbox token without calling authenticatePasskey', async () => {
       const createResult = TryMellon.create({
         sandbox: true,
@@ -150,7 +150,7 @@ describe('TryMellon sandbox mode', () => {
       });
       if (!createResult.ok) throw new Error('expected ok');
       const client = createResult.value;
-      const result = await client.authenticate({ externalUserId: 'dev_user_1' });
+      const result = await client.signIn({ externalUserId: 'dev_user_1' });
 
       expect(authenticatePasskeySpy).not.toHaveBeenCalled();
       expect(result.ok).toBe(true);
@@ -162,7 +162,7 @@ describe('TryMellon sandbox mode', () => {
     });
   });
 
-  describe('validateSession() in sandbox mode', () => {
+  describe('session.verify() in sandbox mode', () => {
     it('returns valid mock response when token is sandbox token', async () => {
       const createResult = TryMellon.create({
         sandbox: true,
@@ -171,7 +171,7 @@ describe('TryMellon sandbox mode', () => {
       });
       if (!createResult.ok) throw new Error('expected ok');
       const client = createResult.value;
-      const result = await client.validateSession(SANDBOX_SESSION_TOKEN);
+      const result = await client.session.verify(SANDBOX_SESSION_TOKEN);
 
       expect(result.ok).toBe(true);
       if (result.ok) {

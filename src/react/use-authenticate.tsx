@@ -5,9 +5,9 @@ import type { AuthenticateOptions, AuthenticateResult } from '../types';
 import type { TryMellonError } from '../errors';
 import type { Result } from '../utils/result';
 
-export type UseAuthenticateState = UseActionState<AuthenticateResult>;
+export type UseSignInState = UseActionState<AuthenticateResult>;
 
-export function useAuthenticate(): {
+export function useSignIn(): {
   result: Result<AuthenticateResult, TryMellonError> | null;
   loading: boolean;
   error: TryMellonError | null;
@@ -15,7 +15,7 @@ export function useAuthenticate(): {
 } {
   const client = useTryMellon();
   const action = useCallback(
-    (options: AuthenticateOptions) => client.authenticate(options),
+    (options: AuthenticateOptions) => client.signIn(options),
     [client]
   );
   return useTryMellonAction(action);

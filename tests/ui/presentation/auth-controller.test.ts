@@ -38,9 +38,9 @@ describe('ui/presentation/auth-controller', () => {
   it('setPendingOperationFromTab and pendingOperation', () => {
     const c = new AuthController();
     c.setPendingOperationFromTab('login');
-    expect(c.pendingOperation).toBe('authenticate');
+    expect(c.pendingOperation).toBe('signIn');
     c.setPendingOperationFromTab('register');
-    expect(c.pendingOperation).toBe('register');
+    expect(c.pendingOperation).toBe('signUp');
   });
 
   it('consumeCancelledDetailIfAuthenticating returns null when not AUTHENTICATING', () => {
@@ -107,8 +107,8 @@ describe('ui/presentation/auth-controller', () => {
 
   it('startAuthFromClick no-op when state not ready for START_AUTH', () => {
     const core: CoreAuthPort = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
+      signUp: vi.fn(),
+      signIn: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
       enroll: vi.fn(),
       getContextHash: vi.fn().mockReturnValue(''),
@@ -117,13 +117,13 @@ describe('ui/presentation/auth-controller', () => {
     c.setState('IDLE');
     c.startAuthFromClick(core, 'login');
     expect(c.currentState).toBe('IDLE');
-    expect(core.authenticate).not.toHaveBeenCalled();
+    expect(core.signIn).not.toHaveBeenCalled();
   });
 
   it('startAuthFromClick delegates to core and transitions when START_AUTH is allowed (READY_LOGIN)', () => {
     const core: CoreAuthPort = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
+      signUp: vi.fn(),
+      signIn: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
       enroll: vi.fn(),
       getContextHash: vi.fn().mockReturnValue(''),
@@ -131,14 +131,14 @@ describe('ui/presentation/auth-controller', () => {
     const c = new AuthController();
     c.setState('READY_LOGIN');
     c.startAuthFromClick(core, 'login');
-    expect(core.authenticate).toHaveBeenCalled();
+    expect(core.signIn).toHaveBeenCalled();
     expect(c.currentState).toBe('AUTHENTICATING');
   });
 
   it('startAuthFromClick delegates register when START_AUTH is allowed (READY_REGISTER)', () => {
     const core: CoreAuthPort = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
+      signUp: vi.fn(),
+      signIn: vi.fn(),
       on: vi.fn().mockReturnValue(() => {}),
       enroll: vi.fn(),
       getContextHash: vi.fn().mockReturnValue(''),
@@ -146,7 +146,7 @@ describe('ui/presentation/auth-controller', () => {
     const c = new AuthController();
     c.setState('READY_REGISTER');
     c.startAuthFromClick(core, 'register');
-    expect(core.register).toHaveBeenCalled();
+    expect(core.signUp).toHaveBeenCalled();
     expect(c.currentState).toBe('AUTHENTICATING');
   });
 

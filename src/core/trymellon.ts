@@ -77,7 +77,7 @@ export class TryMellon {
   private crossDeviceManager: CrossDeviceManager;
   private authService: AuthService;
   private recoveryService: RecoveryService;
-  public onboarding: OnboardingManager;
+  private readonly onboardingManager: OnboardingManager;
   private readonly enrollmentManager: EnrollmentManager;
   private readonly bridgeManager: BridgeManager;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
@@ -170,7 +170,7 @@ export class TryMellon {
     );
     this.recoveryService = new RecoveryService(this.apiClient, this.eventEmitter);
     this.contextHashStorage = config.contextHashStorage;
-    this.onboarding = new OnboardingManager(this.apiClient);
+    this.onboardingManager = new OnboardingManager(this.apiClient);
     this.enrollmentManager = new EnrollmentManager(this.apiClient, this.contextHashStorage);
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
@@ -192,7 +192,7 @@ export class TryMellon {
   }
 
   /**
-   * Bridge (KP-BRIDGE-04): complete enrollment or auth from a second device (e.g. mobile scanning desktop QR).
+   * Bridge (KP-BRIDGE-04): complete enrollment or auth from a second device.
    * Use kind 'enrollment' for enrollment-bridge sessions, 'auth' for auth-bridge sessions.
    */
   get bridge(): {
@@ -200,7 +200,7 @@ export class TryMellon {
       sessionId: string,
       kind: 'enrollment' | 'auth'
     ): Promise<import('../utils/result').Result<BridgeContextResponse, TryMellonError>>;
-    verifyPin(
+    verifyPresence(
       sessionId: string,
       pin: string,
       kind: 'enrollment' | 'auth'
@@ -216,7 +216,7 @@ export class TryMellon {
   } {
     return {
       getContext: (sessionId, kind) => this.bridgeManager.getContext(sessionId, kind),
-      verifyPin: (sessionId, pin, kind) => this.bridgeManager.verifyPin(sessionId, pin, kind),
+      verifyPresence: (sessionId, pin, kind) => this.bridgeManager.verifyPin(sessionId, pin, kind),
       complete: (sessionId, options) => this.bridgeManager.complete(sessionId, options),
       waitForResult: (sessionId, options) => this.bridgeManager.waitForResult(sessionId, options),
     };
@@ -226,11 +226,11 @@ export class TryMellon {
     return isWebAuthnSupported();
   }
 
-  async register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
+  async signUp(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
     return this.authService.register(options);
   }
 
-  async authenticate(
+  async signIn(
     options: AuthenticateOptions
   ): Promise<Result<AuthenticateResult, TryMellonError>> {
     return this.authService.authenticate(options);
@@ -262,24 +262,26 @@ export class TryMellon {
     return getOrCreateContextHash(storage);
   }
 
-  async validateSession(
-    sessionToken: string
-  ): Promise<Result<SessionValidateResponse, TryMellonError>> {
-    if (this.sandbox && sessionToken === this.sandboxToken) {
-      return Promise.resolve(
-        ok({
-          valid: true,
-          userId: 'sandbox-user',
-          externalUserId: 'sandbox',
-          tenantId: 'sandbox-tenant',
-          appId: 'sandbox-app',
-        })
-      );
-    }
-    return this.apiClient.validateSession(sessionToken);
-  }
+  session = {
+    verify: async (
+      sessionToken: string
+    ): Promise<Result<SessionValidateResponse, TryMellonError>> => {
+      if (this.sandbox && sessionToken === this.sandboxToken) {
+        return Promise.resolve(
+          ok({
+            valid: true,
+            userId: 'sandbox-user',
+            externalUserId: 'sandbox',
+            tenantId: 'sandbox-tenant',
+            appId: 'sandbox-app',
+          })
+        );
+      }
+      return this.apiClient.validateSession(sessionToken);
+    },
+  };
 
-  async getStatus(): Promise<ClientStatus> {
+  async getCapabilities(): Promise<ClientStatus> {
     return getClientStatus();
   }
 
@@ -291,38 +293,42 @@ export class TryMellon {
     return typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0';
   }
 
-  fallback = {
-    email: {
-      start: async (options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>> => {
-        return this.apiClient.startEmailFallback(options);
-      },
-      verify: async (
-        options: EmailFallbackVerifyOptions
-      ): Promise<Result<EmailFallbackVerifyResult, TryMellonError>> => {
-        const result = await this.apiClient.verifyEmailCode({
-          userId: options.userId,
-          code: options.code,
-          ...(options.successUrl && { successUrl: options.successUrl }),
-        });
-        if (!result.ok) return result;
-        return ok({
-          sessionToken: result.value.sessionToken,
-          ...(result.value.redirectUrl && { redirectUrl: result.value.redirectUrl }),
-        });
-      },
+  otp = {
+    send: async (options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>> => {
+      return this.apiClient.startEmailFallback(options);
+    },
+    verify: async (
+      options: EmailFallbackVerifyOptions
+    ): Promise<Result<EmailFallbackVerifyResult, TryMellonError>> => {
+      const result = await this.apiClient.verifyEmailCode({
+        userId: options.userId,
+        code: options.code,
+        ...(options.successUrl && { successUrl: options.successUrl }),
+      });
+      if (!result.ok) return result;
+      return ok({
+        sessionToken: result.value.sessionToken,
+        ...(result.value.redirectUrl && { redirectUrl: result.value.redirectUrl }),
+      });
     },
   };
 
-  auth = {
-    crossDevice: {
-      init: () => this.crossDeviceManager.init(),
-      initRegistration: (options?: { externalUserId?: string }) =>
-        this.crossDeviceManager.initRegistration(options ?? {}),
-      waitForSession: (sessionId: string, signal?: AbortSignal, pollingToken?: string | null) =>
-        this.crossDeviceManager.waitForSession(sessionId, signal, pollingToken),
-      getContext: (sessionId: string) => this.apiClient.getCrossDeviceContext(sessionId),
-      approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
-    },
-    recoverAccount: (options: RecoverAccountOptions) => this.recoveryService.recover(options),
+  crossDevice = {
+    start: () => this.crossDeviceManager.init(),
+    startRegistration: (options?: { externalUserId?: string }) =>
+      this.crossDeviceManager.initRegistration(options ?? {}),
+    waitForCompletion: (sessionId: string, signal?: AbortSignal, pollingToken?: string | null) =>
+      this.crossDeviceManager.waitForSession(sessionId, signal, pollingToken),
+    getContext: (sessionId: string) => this.apiClient.getCrossDeviceContext(sessionId),
+    approve: (sessionId: string) => this.crossDeviceManager.approve(sessionId),
+  };
+
+  passkey = {
+    recover: (options: RecoverAccountOptions) => this.recoveryService.recover(options),
+  };
+
+  platform = {
+    signUp: (options: import('../types').OnboardingStartOptions & { company_name?: string }, signal?: AbortSignal) =>
+      this.onboardingManager.startFlow(options, signal),
   };
 }

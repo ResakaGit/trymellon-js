@@ -65,14 +65,14 @@ export type MellonContextReadyDetail = {
 
 export type CoreStartPayload = {
   type: 'start';
-  operation: 'register' | 'authenticate' | 'enroll';
+  operation: 'signUp' | 'signIn' | 'enroll';
   nonce?: string;
 };
 
 /** Minimal success payload from core. */
 export type CoreSuccessPayload = {
   type: 'success';
-  operation: 'register' | 'authenticate' | 'enroll';
+  operation: 'signUp' | 'signIn' | 'enroll';
   token: string;
   user?: unknown;
   nonce?: string;
@@ -82,14 +82,14 @@ export type CoreSuccessPayload = {
 /** Minimal error shape used by bridge (code, message). */
 export type CoreErrorPayload = {
   type: 'error';
-  operation?: 'register' | 'authenticate' | 'enroll';
+  operation?: 'signUp' | 'signIn' | 'enroll';
   error?: { code?: string; message?: string };
   nonce?: string;
 };
 
 export type CoreCancelledPayload = {
   type: 'cancelled';
-  operation: 'register' | 'authenticate' | 'enroll';
+  operation: 'signUp' | 'signIn' | 'enroll';
   nonce?: string;
 };
 
@@ -105,9 +105,9 @@ export interface CoreEventsPort {
 
 /** Minimal core surface for UI: start auth, enrollment, context hash, and subscribe to events. */
 export interface CoreAuthPort extends CoreWithEvents {
-  authenticate(options?: CoreAuthOptions): void;
-  register(options?: CoreAuthOptions): void;
-  enroll(options?: EnrollOptions): void;
+  signIn(options?: CoreAuthOptions): void;
+  signUp(options?: CoreAuthOptions): void;
+  enroll(options?: EnrollOptions): Promise<unknown>;
   getContextHash(): string;
 }
 

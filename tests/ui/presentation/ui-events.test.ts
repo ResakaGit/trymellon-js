@@ -38,7 +38,7 @@ describe('ui/presentation/ui-events', () => {
   });
 
   it('createMellonCancelledEvent returns CustomEvent with detail', () => {
-    const detail = { nonce: 'n', operation: 'authenticate' as const };
+    const detail = { nonce: 'n', operation: 'login' as const };
     const ev = createMellonCancelledEvent(detail);
     expect(ev.type).toBe(MELLON_CANCELLED);
     expect(ev.detail).toBe(detail);
@@ -72,7 +72,7 @@ describe('ui/presentation/ui-events', () => {
   });
 
   it('createMellonSuccessEvent returns CustomEvent with bubbles false', () => {
-    const detail = { credentialId: 'c', operation: 'authenticate' as const };
+    const detail = { credentialId: 'c', operation: 'login' as const };
     const ev = createMellonSuccessEvent(detail);
     expect(ev.type).toBe(MELLON_SUCCESS);
     expect(ev.detail).toBe(detail);
@@ -81,7 +81,7 @@ describe('ui/presentation/ui-events', () => {
   });
 
   it('createMellonErrorEvent returns CustomEvent with error detail', () => {
-    const detail = { code: 'ERR', message: 'fail', operation: 'authenticate' as const };
+    const detail = { code: 'ERR', message: 'fail', operation: 'login' as const };
     const ev = createMellonErrorEvent(detail);
     expect(ev.type).toBe(MELLON_ERROR);
     expect(ev.detail).toBe(detail);

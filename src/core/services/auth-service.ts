@@ -12,7 +12,7 @@ import type { TryMellonError } from '../../errors';
 import { buildTelemetryPayload, type TelemetrySender } from '../ports/telemetry';
 import { registerPasskey, authenticatePasskey } from '../webauthn';
 
-type AuthOperation = 'register' | 'authenticate';
+type AuthOperation = 'signUp' | 'signIn';
 
 type AuthOptions = RegisterOptions | AuthenticateOptions;
 
@@ -35,7 +35,7 @@ export class AuthService {
         : (options.external_user_id ?? options.externalUserId ?? 'sandbox');
     const externalId = typeof externalUserId === 'string' ? externalUserId : 'sandbox';
 
-    if (operation === 'register') {
+    if (operation === 'signUp') {
       return Promise.resolve(
         ok({
           success: true,
@@ -58,11 +58,11 @@ export class AuthService {
 
   async register(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>> {
     if (this.sandbox) {
-      const result = await this.sandboxAuthResult('register', options);
+      const result = await this.sandboxAuthResult('signUp', options);
       if (result.ok) {
         this.eventEmitter.emit('success', {
           type: 'success',
-          operation: 'register',
+          operation: 'signUp',
           token: result.value.sessionToken,
           user: result.value.user,
         });
@@ -74,7 +74,7 @@ export class AuthService {
     const result = await registerPasskey(options, this.apiClient, this.eventEmitter);
     if (result.ok && this.telemetrySender) {
       this.telemetrySender
-        .send(buildTelemetryPayload('register', Date.now() - start))
+        .send(buildTelemetryPayload('signUp', Date.now() - start))
         .catch((e) => console.warn('[TryMellon] Telemetry send failed', e));
     }
     return result;
@@ -84,11 +84,11 @@ export class AuthService {
     options: AuthenticateOptions
   ): Promise<Result<AuthenticateResult, TryMellonError>> {
     if (this.sandbox) {
-      const result = await this.sandboxAuthResult('authenticate', options);
+      const result = await this.sandboxAuthResult('signIn', options);
       if (result.ok) {
         this.eventEmitter.emit('success', {
           type: 'success',
-          operation: 'authenticate',
+          operation: 'signIn',
           token: result.value.sessionToken,
           user: result.value.user,
         });
@@ -100,7 +100,7 @@ export class AuthService {
     const result = await authenticatePasskey(options, this.apiClient, this.eventEmitter);
     if (result.ok && this.telemetrySender) {
       this.telemetrySender
-        .send(buildTelemetryPayload('authenticate', Date.now() - start))
+        .send(buildTelemetryPayload('signIn', Date.now() - start))
         .catch((e) => console.warn('[TryMellon] Telemetry send failed', e));
     }
     return result;

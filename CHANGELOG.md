@@ -1,23 +1,54 @@
-## [Unreleased]
+## [3.0.0] - 2026-04-08
+
+### BREAKING CHANGES
+
+**All renames are driven by intent-based naming aligned with fintech SDK conventions. No behavior changes.**
+
+#### `TryMellon` class — method renames
+
+| Before | After | Reason |
+|---|---|---|
+| `register(options)` | `signUp(options)` | Intent over ceremony |
+| `authenticate(options)` | `signIn(options)` | Intent over ceremony |
+| `capabilities()` | `getCapabilities()` | `get` prefix — async data fetch, not a getter |
+| `crossDevice.context(sessionId)` | `crossDevice.getContext(sessionId)` | Noun-as-method → verb-prefixed |
+| `bridge.context(sessionId, kind)` | `bridge.getContext(sessionId, kind)` | Same |
+| `bridge.subscribe(sessionId, opts)` | `bridge.waitForResult(sessionId, opts)` | One-shot poll/SSE — not a continuous stream |
+| `invite.accept(options)` | `enroll(options)` | Top-level method, consistent with `signIn`/`signUp`; `invite` implied social flow |
+
+#### Framework adapters — hook/service renames
+
+| Package | Before | After |
+|---|---|---|
+| `@trymellon/js/react` | `useRegister` | `useSignUp` |
+| `@trymellon/js/react` | `useAuthenticate` | `useSignIn` |
+| `@trymellon/js/react` | `useInviteAccept` | `useEnroll` |
+| `@trymellon/js/vue` | `useRegister` | `useSignUp` |
+| `@trymellon/js/vue` | `useAuthenticate` | `useSignIn` |
+| `@trymellon/js/vue` | `useInviteAccept` | `useEnroll` |
+| Angular `TryMellonService` | `inviteAccept()` | `enroll()` |
+
+#### Internal EventEmitter operation strings (SDK consumers using `client.on()`)
+
+| Before | After |
+|---|---|
+| `operation: 'register'` in `start`/`success`/`error` payloads | `operation: 'signUp'` |
+| `operation: 'authenticate'` in `start`/`success`/`error` payloads | `operation: 'signIn'` |
+
+`operation: 'enroll'` is unchanged. Public DOM event contract (`'login' | 'register' | 'enroll'`) is unchanged.
 
 ### Fixed
 
-- **`documentation/API.md` — full method surface migration:** Rewrote all method sections to reflect current SDK API:
-  - `register()` → `signUp()`, `authenticate()` → `signIn()`
-  - `getStatus()` → `capabilities()`
+- **`documentation/API.md` — full method surface migration:** Updated all method sections to reflect current SDK API.
   - `fallback.email.start/verify()` → `otp.send/verify()`
-  - Added `session.verify()`, `crossDevice.*`, `bridge.*`, `invite.accept()`, `passkey.recover()`, `getContextHash()` sections.
-  - `TryMellonConfig` sandbox description updated to reference `signUp`/`signIn`.
+  - Added `session.verify()`, `crossDevice.*`, `bridge.*`, `passkey.recover()`, `getContextHash()` sections.
+  - `TryMellonConfig` sandbox description updated.
   - Added `SessionValidateResponse` type block.
   - `EmailFallbackVerifyOptions` now includes `successUrl?`; `EmailFallbackVerifyResult` includes `redirectUrl?`.
   - `AuthenticateResult` updated to include `authenticated`, `signals`, `redirectUrl` fields.
-  - Added note clarifying `EventPayload` operation strings are internal runtime values independent of public method names.
-- **`documentation/API.md`:** Marked constructor as `@deprecated`; promoted `TryMellon.create()` as the recommended pattern with full parameter documentation.
-- **`documentation/API.md`:** Added `origin` and `contextHashStorage` fields to `TryMellonConfig` type block.
-- **`documentation/API.md`:** `RegisterResult.sessionToken` was incorrectly shown as optional (`?`); it is always present on success.
-- **`documentation/API.md`:** `TryMellonErrorCode` list was incomplete; added `ABORT_ERROR`, `CHALLENGE_MISMATCH`, `TICKET_NOT_FOUND`, `TICKET_EXPIRED`, `TICKET_ALREADY_USED`, `PIN_MISMATCH`, `PIN_LOCKED`, `BRIDGE_SESSION_EXPIRED`.
-- **`documentation/EXAMPLES.md`:** All 10 examples used deprecated `new TryMellon()` constructor; migrated to `TryMellon.create()` pattern.
-- **`documentation/EXAMPLES.md`:** Complete Example fetch body used `session_token` (snake_case); corrected to `sessionToken`.
+- **`documentation/API.md`:** Marked constructor as `@deprecated`; promoted `TryMellon.create()` as recommended pattern.
+- **`documentation/API.md`:** Added `origin` and `contextHashStorage` to `TryMellonConfig`. Fixed `RegisterResult.sessionToken` optionality. Completed `TryMellonErrorCode` list.
+- **`documentation/EXAMPLES.md`:** Migrated all 10 examples to `TryMellon.create()` pattern; fixed `sessionToken` casing.
 
 ---
 

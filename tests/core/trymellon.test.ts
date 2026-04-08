@@ -48,7 +48,7 @@ describe('TryMellon', () => {
         }) as Result<RegisterResult, never>
       );
 
-      await client.register({ external_user_id: 'user_123' });
+      await client.signUp({ external_user_id: 'user_123' });
 
       expect(mockTelemetrySend).not.toHaveBeenCalled();
     });
@@ -69,12 +69,12 @@ describe('TryMellon', () => {
         }) as Result<RegisterResult, never>
       );
 
-      await client.register({ external_user_id: 'user_123' });
+      await client.signUp({ external_user_id: 'user_123' });
 
       expect(mockTelemetrySend).toHaveBeenCalledTimes(1);
       expect(mockTelemetrySend).toHaveBeenCalledWith(
         expect.objectContaining({
-          event: 'register',
+          event: 'signUp',
           ok: true,
           latencyMs: expect.any(Number),
         })
@@ -97,12 +97,12 @@ describe('TryMellon', () => {
         }) as Result<AuthenticateResult, never>
       );
 
-      await client.authenticate({ external_user_id: 'user_123' });
+      await client.signIn({ external_user_id: 'user_123' });
 
       expect(mockTelemetrySend).toHaveBeenCalledTimes(1);
       expect(mockTelemetrySend).toHaveBeenCalledWith(
         expect.objectContaining({
-          event: 'authenticate',
+          event: 'signIn',
           ok: true,
           latencyMs: expect.any(Number),
         })
@@ -118,7 +118,7 @@ describe('TryMellon', () => {
       });
       registerPasskeySpy.mockResolvedValue(err(createError('UNKNOWN_ERROR', 'Failed')));
 
-      await client.register({ external_user_id: 'user_123' });
+      await client.signUp({ external_user_id: 'user_123' });
 
       expect(mockTelemetrySend).not.toHaveBeenCalled();
     });
@@ -163,7 +163,7 @@ describe('TryMellon', () => {
     vi.resetAllMocks();
   });
 
-  describe('register', () => {
+  describe('signUp', () => {
     it('should call registerPasskey and return success result', async () => {
       const mockResult = ok({
         credential_id: 'cred_123',
@@ -177,7 +177,7 @@ describe('TryMellon', () => {
         external_user_id: 'user_123',
       };
 
-      const result = await tryMellon.register(options);
+      const result = await tryMellon.signUp(options);
 
       expect(registerPasskeySpy).toHaveBeenCalledWith(
         options,
@@ -197,7 +197,7 @@ describe('TryMellon', () => {
         external_user_id: 'user_123',
       };
 
-      const result = await tryMellon.register(options);
+      const result = await tryMellon.signUp(options);
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
@@ -206,7 +206,7 @@ describe('TryMellon', () => {
     });
   });
 
-  describe('authenticate', () => {
+  describe('signIn', () => {
     it('should call authenticatePasskey and return success result', async () => {
       const mockResult = ok({
         authenticated: true,
@@ -220,7 +220,7 @@ describe('TryMellon', () => {
         external_user_id: 'user_123',
       };
 
-      const result = await tryMellon.authenticate(options);
+      const result = await tryMellon.signIn(options);
 
       expect(authenticatePasskeySpy).toHaveBeenCalledWith(
         options,
@@ -235,26 +235,21 @@ describe('TryMellon', () => {
 
       const options: AuthenticateOptions = { external_user_id: 'user_123' };
 
-      const result = await tryMellon.authenticate(options);
+      const result = await tryMellon.signIn(options);
 
       expect(result.ok).toBe(false);
     });
   });
 
-  describe('validateSession', () => {
+  describe('session.verify', () => {
     it('should call apiClient.validateSession', async () => {
-      // We need to access the spy on the mocked ApiClient instance
-      // But TryMellon creates a new instance.
-      // Since we mocked the module '../../src/core/api', the constructor returns a mock object.
-
-      // Get the mock instance from tryMellon (private apiClient, cast for test)
       const mockApiClientInstance = (
         tryMellon as { apiClient: { validateSession: ReturnType<typeof vi.fn> } }
       ).apiClient;
 
       mockApiClientInstance.validateSession.mockResolvedValue(ok({ valid: true }));
 
-      const result = await tryMellon.validateSession('token_123');
+      const result = await tryMellon.session.verify('token_123');
 
       expect(mockApiClientInstance.validateSession).toHaveBeenCalledWith('token_123');
       expect(result.ok).toBe(true);
@@ -309,9 +304,9 @@ describe('TryMellon', () => {
     });
   });
 
-  describe('getStatus', () => {
+  describe('getCapabilities', () => {
     it('should return ClientStatus with isPasskeySupported and recommendedFlow', async () => {
-      const status = await tryMellon.getStatus();
+      const status = await tryMellon.getCapabilities();
       expect(status).toHaveProperty('isPasskeySupported');
       expect(status).toHaveProperty('platformAuthenticatorAvailable');
       expect(status).toHaveProperty('recommendedFlow');
@@ -328,14 +323,14 @@ describe('TryMellon', () => {
     });
   });
 
-  describe('fallback.email', () => {
+  describe('otp', () => {
     it('should call startEmailFallback with userId and email', async () => {
       const mockInstance = (
         tryMellon as { apiClient: { startEmailFallback: ReturnType<typeof vi.fn> } }
       ).apiClient;
       mockInstance.startEmailFallback.mockResolvedValue(ok(undefined));
 
-      const result = await tryMellon.fallback.email.start({
+      const result = await tryMellon.otp.send({
         userId: 'u_123',
         email: 'u@example.com',
       });
@@ -352,7 +347,7 @@ describe('TryMellon', () => {
       ).apiClient;
       mockInstance.verifyEmailCode.mockResolvedValue(ok({ sessionToken: 'st_abc' }));
 
-      const result = await tryMellon.fallback.email.verify({
+      const result = await tryMellon.otp.verify({
         userId: 'u_123',
         code: '123456',
       });
@@ -364,7 +359,7 @@ describe('TryMellon', () => {
       if (result.ok) expect(result.value.sessionToken).toBe('st_abc');
     });
 
-    it('should return redirectUrl from fallback.email.verify when API returns it', async () => {
+    it('should return redirectUrl from otp.verify when API returns it', async () => {
       const mockInstance = (
         tryMellon as { apiClient: { verifyEmailCode: ReturnType<typeof vi.fn> } }
       ).apiClient;
@@ -372,7 +367,7 @@ describe('TryMellon', () => {
         ok({ sessionToken: 'st_abc', redirectUrl: 'https://app.example.com/dash' })
       );
 
-      const result = await tryMellon.fallback.email.verify({
+      const result = await tryMellon.otp.verify({
         userId: 'u_123',
         code: '123456',
       });
@@ -389,7 +384,7 @@ describe('TryMellon', () => {
       ).apiClient;
       mockInstance.verifyEmailCode.mockResolvedValue(ok({ sessionToken: 'st_xyz' }));
 
-      await tryMellon.fallback.email.verify({
+      await tryMellon.otp.verify({
         userId: 'u_1',
         code: '654321',
         successUrl: 'https://app.example.com/success',
@@ -404,8 +399,8 @@ describe('TryMellon', () => {
     });
   });
 
-  describe('auth.crossDevice', () => {
-    it('should expose init returning Result', async () => {
+  describe('crossDevice', () => {
+    it('should expose start returning Result', async () => {
       const mockInstance = (
         tryMellon as {
           apiClient: { initCrossDeviceAuth: ReturnType<typeof vi.fn> };
@@ -420,16 +415,16 @@ describe('TryMellon', () => {
         })
       );
 
-      const result = await tryMellon.auth.crossDevice.init();
+      const result = await tryMellon.crossDevice.start();
       expect(result.ok).toBe(true);
     });
 
-    it('should expose approve and waitForSession as functions', () => {
-      expect(typeof tryMellon.auth.crossDevice.approve).toBe('function');
-      expect(typeof tryMellon.auth.crossDevice.waitForSession).toBe('function');
+    it('should expose approve and waitForCompletion as functions', () => {
+      expect(typeof tryMellon.crossDevice.approve).toBe('function');
+      expect(typeof tryMellon.crossDevice.waitForCompletion).toBe('function');
     });
 
-    it('initRegistration delegates to crossDeviceManager', async () => {
+    it('startRegistration delegates to crossDeviceManager', async () => {
       const mockInstance = (
         tryMellon as { apiClient: { initCrossDeviceRegistration: ReturnType<typeof vi.fn> } }
       ).apiClient;
@@ -441,13 +436,13 @@ describe('TryMellon', () => {
           polling_token: 'poll_reg',
         })
       );
-      const result = await tryMellon.auth.crossDevice.initRegistration({
+      const result = await tryMellon.crossDevice.startRegistration({
         externalUserId: 'ext_u1',
       });
       expect(result.ok).toBe(true);
     });
 
-    it('initRegistration with {} or no options returns ok and delegates to API with that value', async () => {
+    it('startRegistration with {} or no options returns ok and delegates to API with that value', async () => {
       const mockInstance = (
         tryMellon as { apiClient: { initCrossDeviceRegistration: ReturnType<typeof vi.fn> } }
       ).apiClient;
@@ -459,7 +454,7 @@ describe('TryMellon', () => {
           polling_token: 'poll_anon',
         })
       );
-      const resultEmpty = await tryMellon.auth.crossDevice.initRegistration({});
+      const resultEmpty = await tryMellon.crossDevice.startRegistration({});
       expect(resultEmpty.ok).toBe(true);
       expect(mockInstance.initCrossDeviceRegistration).toHaveBeenCalledWith({});
       mockInstance.initCrossDeviceRegistration?.mockClear?.();
@@ -471,12 +466,12 @@ describe('TryMellon', () => {
           polling_token: 'poll_anon2',
         })
       );
-      const resultNoArg = await tryMellon.auth.crossDevice.initRegistration();
+      const resultNoArg = await tryMellon.crossDevice.startRegistration();
       expect(resultNoArg.ok).toBe(true);
       expect(mockInstance.initCrossDeviceRegistration).toHaveBeenCalledWith({});
     });
 
-    it('waitForSession delegates to crossDeviceManager', async () => {
+    it('waitForCompletion delegates to crossDeviceManager', async () => {
       const mockInstance = (
         tryMellon as { apiClient: { getCrossDeviceStatus: ReturnType<typeof vi.fn> } }
       ).apiClient;
@@ -488,7 +483,7 @@ describe('TryMellon', () => {
         })
       );
       const ac = new AbortController();
-      const result = await tryMellon.auth.crossDevice.waitForSession('sess_1', ac.signal, null);
+      const result = await tryMellon.crossDevice.waitForCompletion('sess_1', ac.signal, null);
       expect(typeof result.ok).toBe('boolean');
     });
 
@@ -499,7 +494,7 @@ describe('TryMellon', () => {
       mockInstance.getCrossDeviceContext?.mockResolvedValue?.(
         err(createError('NETWORK_ERROR', 'mock failure'))
       );
-      const result = await tryMellon.auth.crossDevice.approve('sess_1');
+      const result = await tryMellon.crossDevice.approve('sess_1');
       expect(result.ok).toBe(false);
     });
 
@@ -508,17 +503,15 @@ describe('TryMellon', () => {
         tryMellon as { apiClient: { getCrossDeviceContext: ReturnType<typeof vi.fn> } }
       ).apiClient;
       mockInstance.getCrossDeviceContext?.mockResolvedValue?.({ session_id: 's1' });
-      const result = await tryMellon.auth.crossDevice.getContext('sess_123');
+      const result = await tryMellon.crossDevice.getContext('sess_123');
       expect(mockInstance.getCrossDeviceContext).toHaveBeenCalledWith('sess_123');
       expect(result).toEqual({ session_id: 's1' });
     });
   });
 
-  describe('auth.recoverAccount', () => {
-    it('calls recoverAccount and returns Result (coverage of auth.recoverAccount path)', async () => {
-      // recoverAccount requires externalUserId + otp and full API/WebAuthn mocks; here we only
-      // assert that the method is invoked and returns a Result (ok or err).
-      const result = await tryMellon.auth.recoverAccount({ otp: '123456' });
+  describe('passkey.recover', () => {
+    it('calls recover and returns Result', async () => {
+      const result = await tryMellon.passkey.recover({ otp: '123456' });
       expect(typeof result.ok).toBe('boolean');
       if (result.ok) {
         expect(result.value).toBeDefined();
@@ -545,7 +538,7 @@ describe('TryMellon', () => {
         }) as Result<RegisterResult, never>
       );
 
-      const result = await client.register({ external_user_id: 'user_123' });
+      const result = await client.signUp({ external_user_id: 'user_123' });
 
       expect(result.ok).toBe(true);
       expect(mockTelemetrySend).toHaveBeenCalled();

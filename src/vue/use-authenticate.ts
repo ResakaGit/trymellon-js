@@ -4,7 +4,7 @@ import type { AuthenticateOptions, AuthenticateResult } from '../types';
 import type { TryMellonError } from '../errors';
 import type { Result } from '../utils/result';
 
-export function useAuthenticate(): {
+export function useSignIn(): {
   result: Ref<Result<AuthenticateResult, TryMellonError> | null>;
   loading: Ref<boolean>;
   error: Ref<TryMellonError | null>;
@@ -19,7 +19,7 @@ export function useAuthenticate(): {
     loading.value = true;
     error.value = null;
     result.value = null;
-    const res = await client.authenticate(options);
+    const res = await client.signIn(options);
     result.value = res;
     loading.value = false;
     error.value = res.ok ? null : res.error;

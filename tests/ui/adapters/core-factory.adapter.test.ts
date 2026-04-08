@@ -11,8 +11,8 @@ import type { TryMellonError } from '../../../src/errors';
 describe('ui/adapters/core-factory.adapter', () => {
   it('isCoreAuthPort returns true for object implementing CoreAuthPort surface', () => {
     const candidate = {
-      authenticate: vi.fn(),
-      register: vi.fn(),
+      signIn: vi.fn(),
+      signUp: vi.fn(),
       on: vi.fn(),
       enroll: vi.fn(),
       getContextHash: vi.fn(),
@@ -21,21 +21,21 @@ describe('ui/adapters/core-factory.adapter', () => {
   });
 
   it('isCoreAuthPort returns false when any method is missing', () => {
-    expect(isCoreAuthPort({ authenticate: vi.fn(), register: vi.fn() })).toBe(false);
-    expect(isCoreAuthPort({ authenticate: vi.fn(), on: vi.fn() })).toBe(false);
-    expect(isCoreAuthPort({ register: vi.fn(), on: vi.fn() })).toBe(false);
+    expect(isCoreAuthPort({ signIn: vi.fn(), signUp: vi.fn() })).toBe(false);
+    expect(isCoreAuthPort({ signIn: vi.fn(), on: vi.fn() })).toBe(false);
+    expect(isCoreAuthPort({ signUp: vi.fn(), on: vi.fn() })).toBe(false);
     expect(
       isCoreAuthPort({
-        authenticate: vi.fn(),
-        register: vi.fn(),
+        signIn: vi.fn(),
+        signUp: vi.fn(),
         on: vi.fn(),
         enroll: vi.fn(),
       })
     ).toBe(false);
     expect(
       isCoreAuthPort({
-        authenticate: vi.fn(),
-        register: vi.fn(),
+        signIn: vi.fn(),
+        signUp: vi.fn(),
         on: vi.fn(),
         getContextHash: vi.fn(),
       })
@@ -58,8 +58,8 @@ describe('ui/adapters/core-factory.adapter', () => {
 
   it('createCoreForUI returns CoreAuthPort-compatible instance on success', () => {
     const coreMock = {
-      authenticate: vi.fn(),
-      register: vi.fn(),
+      signIn: vi.fn(),
+      signUp: vi.fn(),
       on: vi.fn(),
       enroll: vi.fn(),
       getContextHash: vi.fn(),

@@ -68,8 +68,8 @@ function dispatchCustomEvent<T>(
 }
 
 /** Map core operation to public contract ('login' | 'register' | 'enroll'). */
-function toPublicOperation(op: 'register' | 'authenticate' | 'enroll'): AuthOperation {
-  if (op === 'authenticate') return 'login';
+function toPublicOperation(op: 'signUp' | 'signIn' | 'enroll'): AuthOperation {
+  if (op === 'signIn') return 'login';
   if (op === 'enroll') return 'enroll';
   return 'register';
 }
@@ -97,8 +97,8 @@ function isCoreStartPayload(raw: unknown): raw is CoreStartPayload {
     raw != null &&
     typeof raw === 'object' &&
     (raw as CoreStartPayload).type === 'start' &&
-    ((raw as CoreStartPayload).operation === 'register' ||
-      (raw as CoreStartPayload).operation === 'authenticate' ||
+    ((raw as CoreStartPayload).operation === 'signUp' ||
+      (raw as CoreStartPayload).operation === 'signIn' ||
       (raw as CoreStartPayload).operation === 'enroll')
   );
 }
@@ -110,7 +110,7 @@ function isCoreSuccessPayload(raw: unknown): raw is CoreSuccessPayload {
     typeof raw === 'object' &&
     o.type === 'success' &&
     typeof o.token === 'string' &&
-    (o.operation === 'register' || o.operation === 'authenticate' || o.operation === 'enroll')
+    (o.operation === 'signUp' || o.operation === 'signIn' || o.operation === 'enroll')
   );
 }
 
@@ -123,8 +123,8 @@ function isCoreCancelledPayload(raw: unknown): raw is CoreCancelledPayload {
     raw != null &&
     typeof raw === 'object' &&
     (raw as CoreCancelledPayload).type === 'cancelled' &&
-    ((raw as CoreCancelledPayload).operation === 'register' ||
-      (raw as CoreCancelledPayload).operation === 'authenticate' ||
+    ((raw as CoreCancelledPayload).operation === 'signUp' ||
+      (raw as CoreCancelledPayload).operation === 'signIn' ||
       (raw as CoreCancelledPayload).operation === 'enroll')
   );
 }
@@ -136,7 +136,7 @@ const eventBridgeAdapter: CoreEventsPort = {
       throw new TypeError('eventBridgeAdapter.subscribe: core and host are required');
     }
     const unsubscribes: Array<() => void> = [];
-    let lastOperation: 'register' | 'authenticate' | 'enroll' = 'authenticate';
+    let lastOperation: 'signUp' | 'signIn' | 'enroll' = 'signIn';
     let successEmittedThisCeremony = false;
 
     const offStart = core.on('start', (payload: unknown) => {

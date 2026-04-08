@@ -4,31 +4,31 @@ import { defineComponent, h } from 'vue';
 import {
   provideTryMellon,
   useTryMellon,
-  useRegister,
-  useAuthenticate,
+  useSignUp,
+  useSignIn,
   useEnroll,
 } from '../../src/vue';
 
 describe('Vue adapter', () => {
-  const mockRegister = vi.fn();
+  const mockSignUp = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('provideTryMellon and useRegister: execute calls client.register', async () => {
+  it('provideTryMellon and useSignUp: execute calls client.signUp', async () => {
     const mockClient = {
-      register: mockRegister,
-      authenticate: vi.fn(),
+      signUp: mockSignUp,
+      signIn: vi.fn(),
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockRegister.mockResolvedValue({
+    mockSignUp.mockResolvedValue({
       ok: true,
       value: {
         success: true,
@@ -48,7 +48,7 @@ describe('Vue adapter', () => {
 
     const ChildComponent = defineComponent({
       setup() {
-        const { execute, result } = useRegister();
+        const { execute, result } = useSignUp();
         return () =>
           h('div', [
             h(
@@ -67,25 +67,25 @@ describe('Vue adapter', () => {
     await wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
     await vi.waitFor(() => {
-      expect(mockRegister).toHaveBeenCalledWith({ externalUserId: 'user_123' });
+      expect(mockSignUp).toHaveBeenCalledWith({ externalUserId: 'user_123' });
     });
     expect(wrapper.find('[data-testid="success"]').exists()).toBe(true);
   });
 
-  it('provideTryMellon and useAuthenticate: execute calls client.authenticate and sets result', async () => {
-    const mockAuthenticate = vi.fn();
+  it('provideTryMellon and useSignIn: execute calls client.signIn and sets result', async () => {
+    const mockSignIn = vi.fn();
     const mockClient = {
-      register: vi.fn(),
-      authenticate: mockAuthenticate,
+      signUp: vi.fn(),
+      signIn: mockSignIn,
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockAuthenticate.mockResolvedValue({
+    mockSignIn.mockResolvedValue({
       ok: true,
       value: {
         session_token: 'st_1',
@@ -102,7 +102,7 @@ describe('Vue adapter', () => {
 
     const AuthChildComponent = defineComponent({
       setup() {
-        const { execute, result } = useAuthenticate();
+        const { execute, result } = useSignIn();
         return () =>
           h('div', [
             h('button', { onClick: () => execute({ externalUserId: 'user_456' }) }, 'Authenticate'),
@@ -115,25 +115,25 @@ describe('Vue adapter', () => {
     await wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
     await vi.waitFor(() => {
-      expect(mockAuthenticate).toHaveBeenCalledWith({ externalUserId: 'user_456' });
+      expect(mockSignIn).toHaveBeenCalledWith({ externalUserId: 'user_456' });
     });
     expect(wrapper.find('[data-testid="auth-success"]').exists()).toBe(true);
   });
 
-  it('useAuthenticate: error state when authenticate returns err', async () => {
-    const mockAuthenticate = vi.fn();
+  it('useSignIn: error state when signIn returns err', async () => {
+    const mockSignIn = vi.fn();
     const mockClient = {
-      register: vi.fn(),
-      authenticate: mockAuthenticate,
+      signUp: vi.fn(),
+      signIn: mockSignIn,
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockAuthenticate.mockResolvedValue({
+    mockSignIn.mockResolvedValue({
       ok: false,
       error: { code: 'NETWORK_FAILURE', message: 'Auth failed' },
     });
@@ -147,7 +147,7 @@ describe('Vue adapter', () => {
 
     const AuthChildComponent = defineComponent({
       setup() {
-        const { execute, error } = useAuthenticate();
+        const { execute, error } = useSignIn();
         return () =>
           h('div', [
             h('button', { onClick: () => execute({ externalUserId: 'x' }) }, 'Authenticate'),
@@ -166,22 +166,22 @@ describe('Vue adapter', () => {
   });
 
   it('provideTryMellon and useEnroll: execute calls client.enroll, contextHash from getContextHash', async () => {
-    const mockEnroll = vi.fn();
+    const mockAccept = vi.fn();
     const mockGetContextHash = vi.fn().mockReturnValue('vue_ctx_hash');
     const mockClient = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
-      enroll: mockEnroll,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      enroll: mockAccept,
       getContextHash: mockGetContextHash,
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockEnroll.mockResolvedValue({
+    mockAccept.mockResolvedValue({
       ok: true,
       value: { sessionToken: 'st_vue_enroll' },
     });
@@ -212,7 +212,7 @@ describe('Vue adapter', () => {
     await wrapper.find('button').trigger('click');
     await wrapper.vm.$nextTick();
     await vi.waitFor(() => {
-      expect(mockEnroll).toHaveBeenCalledWith({ ticketId: 'tk_1' });
+      expect(mockAccept).toHaveBeenCalledWith({ ticketId: 'tk_1' });
     });
     expect(wrapper.find('[data-testid="vue-enroll-ok"]').exists()).toBe(true);
   });

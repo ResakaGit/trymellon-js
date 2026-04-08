@@ -29,13 +29,13 @@ export function isCoreAuthPort(candidate: unknown): candidate is CoreAuthPort {
 
   const maybe = candidate as Record<string, unknown>;
 
-  const hasAuthenticate = typeof maybe.authenticate === 'function';
-  const hasRegister = typeof maybe.register === 'function';
+  const hasSignIn = typeof maybe.signIn === 'function';
+  const hasSignUp = typeof maybe.signUp === 'function';
   const hasOn = typeof maybe.on === 'function';
   const hasEnroll = typeof maybe.enroll === 'function';
   const hasGetContextHash = typeof maybe.getContextHash === 'function';
 
-  return hasAuthenticate && hasRegister && hasOn && hasEnroll && hasGetContextHash;
+  return hasSignIn && hasSignUp && hasOn && hasEnroll && hasGetContextHash;
 }
 
 /** Normalizes Presentation options to CoreAuthOptions. Forwards externalUserId when present. */

@@ -22,37 +22,37 @@ describe('Examples Syntax Validation', () => {
     expect(typeof isSupported).toBe('boolean');
   });
 
-  it('should allow using register method', async () => {
+  it('should allow using signUp method', async () => {
     const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
     const options: RegisterOptions = {
       external_user_id: 'user_123',
       authenticatorType: 'platform',
     };
 
-    expect(typeof client.register).toBe('function');
+    expect(typeof client.signUp).toBe('function');
     // Note: This will throw because WebAuthn is not available in test environment
     // but we're just checking the method exists
-    expect(() => client.register(options)).not.toThrow();
+    expect(() => client.signUp(options)).not.toThrow();
   });
 
-  it('should allow using authenticate method', async () => {
+  it('should allow using signIn method', async () => {
     const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
     const options: AuthenticateOptions = {
       external_user_id: 'user_123',
       hint: 'user@example.com',
     };
 
-    expect(typeof client.authenticate).toBe('function');
+    expect(typeof client.signIn).toBe('function');
     // Note: This will throw because WebAuthn is not available in test environment
     // but we're just checking the method exists
-    expect(() => client.authenticate(options)).not.toThrow();
+    expect(() => client.signIn(options)).not.toThrow();
   });
 
-  it('should allow using getStatus method', async () => {
+  it('should allow using getCapabilities method', async () => {
     const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
 
-    expect(typeof client.getStatus).toBe('function');
-    expect(() => client.getStatus()).not.toThrow();
+    expect(typeof client.getCapabilities).toBe('function');
+    expect(() => client.getCapabilities()).not.toThrow();
   });
 
   it('should allow using on method for events', () => {
@@ -72,25 +72,25 @@ describe('Examples Syntax Validation', () => {
     expect(typeof version).toBe('string');
   });
 
-  it('should allow using fallback.email.start', async () => {
+  it('should allow using otp.send', async () => {
     const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
 
-    expect(typeof client.fallback.email.start).toBe('function');
+    expect(typeof client.otp.send).toBe('function');
     // Note: This will throw because API is not available in test environment
     // but we're just checking the method exists
     expect(() =>
-      client.fallback.email.start({ userId: 'user_123', email: 'user@example.com' })
+      client.otp.send({ userId: 'user_123', email: 'user@example.com' })
     ).not.toThrow();
   });
 
-  it('should allow using fallback.email.verify', async () => {
+  it('should allow using otp.verify', async () => {
     const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
 
-    expect(typeof client.fallback.email.verify).toBe('function');
+    expect(typeof client.otp.verify).toBe('function');
     // Note: This will throw because API is not available in test environment
     // but we're just checking the method exists
     expect(() =>
-      client.fallback.email.verify({ userId: 'user_123', code: '123456' })
+      client.otp.verify({ userId: 'user_123', code: '123456' })
     ).not.toThrow();
   });
 
@@ -120,7 +120,7 @@ describe('Examples Syntax Validation', () => {
 
     // Note: This will throw because WebAuthn is not available in test environment
     // but we're just checking the method accepts the signal
-    expect(() => client.register(options)).not.toThrow();
+    expect(() => client.signUp(options)).not.toThrow();
   });
 
   describe('README Quickstart / EXAMPLES API contract (Result, session_token, error.code)', () => {
@@ -129,10 +129,10 @@ describe('Examples Syntax Validation', () => {
     const TEST_CLIENT_CFG = { appId: 'app_test', publishableKey: 'key_test', timeoutMs: 3_000 };
 
     it(
-      'register returns Result with value.session_token on success',
+      'signUp returns Result with value.session_token on success',
       async () => {
         const client = new TryMellon(TEST_CLIENT_CFG);
-        const result = await client.register({ externalUserId: 'user_123' });
+        const result = await client.signUp({ externalUserId: 'user_123' });
         expect(result).toBeDefined();
         expect(typeof result.ok).toBe('boolean');
         if (result.ok) {
@@ -148,10 +148,10 @@ describe('Examples Syntax Validation', () => {
     );
 
     it(
-      'authenticate returns Result with value.session_token on success',
+      'signIn returns Result with value.session_token on success',
       async () => {
         const client = new TryMellon(TEST_CLIENT_CFG);
-        const result = await client.authenticate({ externalUserId: 'user_123' });
+        const result = await client.signIn({ externalUserId: 'user_123' });
         expect(result).toBeDefined();
         expect(typeof result.ok).toBe('boolean');
         if (result.ok) {
@@ -166,10 +166,10 @@ describe('Examples Syntax Validation', () => {
     );
 
     it(
-      'fallback.email.verify returns Result with value.sessionToken',
+      'otp.verify returns Result with value.sessionToken',
       async () => {
         const client = new TryMellon(TEST_CLIENT_CFG);
-        const result = await client.fallback.email.verify({
+        const result = await client.otp.verify({
           userId: 'user_123',
           code: '123456',
         });

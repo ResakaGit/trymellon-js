@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { TryMellonProvider, useRegister, useAuthenticate, useEnroll } from '../../src/react';
+import { TryMellonProvider, useSignUp, useSignIn, useEnroll } from '../../src/react';
 
 function TestComponent() {
-  const { execute, loading, result } = useRegister();
+  const { execute, loading, result } = useSignUp();
   return (
     <div>
       <button
@@ -19,7 +19,7 @@ function TestComponent() {
 }
 
 function TestAuthenticateComponent() {
-  const { execute, loading, result, error } = useAuthenticate();
+  const { execute, loading, result, error } = useSignIn();
   return (
     <div>
       <button
@@ -37,25 +37,25 @@ function TestAuthenticateComponent() {
 }
 
 describe('React adapter', () => {
-  const mockRegister = vi.fn();
+  const mockSignUp = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('TryMellonProvider and useRegister: execute calls client.register', async () => {
+  it('TryMellonProvider and useSignUp: execute calls client.signUp', async () => {
     const mockClient = {
-      register: mockRegister,
-      authenticate: vi.fn(),
+      signUp: mockSignUp,
+      signIn: vi.fn(),
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockRegister.mockResolvedValue({
+    mockSignUp.mockResolvedValue({
       ok: true,
       value: {
         success: true,
@@ -76,27 +76,27 @@ describe('React adapter', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalledWith({ externalUserId: 'user_123' });
+      expect(mockSignUp).toHaveBeenCalledWith({ externalUserId: 'user_123' });
     });
     await waitFor(() => {
       expect(screen.getByTestId('success').textContent).toBe('OK');
     });
   });
 
-  it('TryMellonProvider and useAuthenticate: execute calls client.authenticate and sets loading/result/error', async () => {
-    const mockAuthenticate = vi.fn();
+  it('TryMellonProvider and useSignIn: execute calls client.signIn and sets loading/result/error', async () => {
+    const mockSignIn = vi.fn();
     const mockClient = {
-      register: vi.fn(),
-      authenticate: mockAuthenticate,
+      signUp: vi.fn(),
+      signIn: mockSignIn,
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockAuthenticate.mockResolvedValue({
+    mockSignIn.mockResolvedValue({
       ok: true,
       value: {
         session_token: 'st_1',
@@ -115,7 +115,7 @@ describe('React adapter', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(mockAuthenticate).toHaveBeenCalledWith({ externalUserId: 'user_456' });
+      expect(mockSignIn).toHaveBeenCalledWith({ externalUserId: 'user_456' });
     });
     await waitFor(() => {
       expect(screen.getByTestId('auth-success').textContent).toBe('OK');
@@ -123,20 +123,20 @@ describe('React adapter', () => {
     expect(screen.queryByTestId('loading')).toBeNull();
   });
 
-  it('useAuthenticate: error state when authenticate returns err', async () => {
-    const mockAuthenticate = vi.fn();
+  it('useSignIn: error state when signIn returns err', async () => {
+    const mockSignIn = vi.fn();
     const mockClient = {
-      register: vi.fn(),
-      authenticate: mockAuthenticate,
+      signUp: vi.fn(),
+      signIn: mockSignIn,
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockAuthenticate.mockResolvedValue({
+    mockSignIn.mockResolvedValue({
       ok: false,
       error: { code: 'NETWORK_FAILURE', message: 'Network error' },
     });
@@ -155,22 +155,22 @@ describe('React adapter', () => {
   });
 
   it('TryMellonProvider and useEnroll: execute calls client.enroll, contextHash from getContextHash', async () => {
-    const mockEnroll = vi.fn();
+    const mockAccept = vi.fn();
     const mockGetContextHash = vi.fn().mockReturnValue('ctx_hash_abc');
     const mockClient = {
-      register: vi.fn(),
-      authenticate: vi.fn(),
-      enroll: mockEnroll,
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      enroll: mockAccept,
       getContextHash: mockGetContextHash,
       validateSession: vi.fn(),
       getStatus: vi.fn(),
       on: vi.fn(),
       version: vi.fn(() => '0.1.0'),
-      fallback: { email: { start: vi.fn(), verify: vi.fn() } },
+      otp: { send: vi.fn(), verify: vi.fn() },
       onboarding: {},
     } as never;
 
-    mockEnroll.mockResolvedValue({
+    mockAccept.mockResolvedValue({
       ok: true,
       value: { sessionToken: 'st_enroll_1' },
     });
@@ -205,7 +205,7 @@ describe('React adapter', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(mockEnroll).toHaveBeenCalledWith({ ticketId: 'ticket_1' });
+      expect(mockAccept).toHaveBeenCalledWith({ ticketId: 'ticket_1' });
     });
     await waitFor(() => {
       expect(screen.getByTestId('enroll-success').textContent).toBe('OK');
