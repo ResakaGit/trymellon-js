@@ -29,6 +29,10 @@
     "GHSA-3mfm-83xf-c92r",
     "GHSA-9cx6-37pm-9jff",
     "GHSA-xhpv-hc6g-r9c6",
-    "GHSA-xjpj-3mr7-gcpf"
+    "GHSA-xjpj-3mr7-gcpf",
+    // --- lodash / lodash-es (transitive via @semantic-release/changelog, @semantic-release/git, semantic-release;
+    //     devDep only, not in production bundle; no fix available in 4.x; _.template exploit path not reachable
+    //     in semantic-release toolchain) ---
+    "GHSA-r5fr-rjxr-66jc"
   ]
 }
