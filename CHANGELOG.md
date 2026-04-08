@@ -1,3 +1,23 @@
+# [3.0.0](https://github.com/ResakaGit/trymellon-js/compare/v2.3.13...v3.0.0) (2026-04-08)
+
+
+### Features
+
+* **cross-device:** normalize waitForCompletion return to camelCase ([4eccd35](https://github.com/ResakaGit/trymellon-js/commit/4eccd35402b636abc55ad6aba5538ce1ca57c145))
+
+
+### BREAKING CHANGES
+
+* **cross-device:** crossDevice.waitForCompletion() previously returned
+{ session_token, user_id, redirectUrl? } (mixed casing). Now returns
+{ sessionToken, userId, redirectUrl? } — consistent with every other
+public Result type in the SDK.
+
+Consumers accessing result.value.session_token or result.value.user_id
+must rename to result.value.sessionToken / result.value.userId.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
 ## [2.3.13](https://github.com/ResakaGit/trymellon-js/compare/v2.3.12...v2.3.13) (2026-04-08)
 
 
