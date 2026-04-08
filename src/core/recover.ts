@@ -36,7 +36,7 @@ export async function recoverAccount(
     RecoverAccountResult,
     CredentialCreationOptions
   >({
-    operation: 'register',
+    operation: 'signUp',
     eventEmitter,
     start: () => apiClient.verifyAccountRecoveryOtp(extId, options.otp),
     createOptions: (startResult) => {
@@ -88,7 +88,7 @@ export async function recoverAccount(
   if (result.ok) {
     eventEmitter.emit('success', {
       type: 'success',
-      operation: 'register',
+      operation: 'signUp',
       token: result.value.sessionToken,
       user: result.value.user,
     });

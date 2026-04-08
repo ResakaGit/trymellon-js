@@ -1,4 +1,4 @@
-export type TelemetryEvent = 'register' | 'authenticate';
+export type TelemetryEvent = 'signUp' | 'signIn';
 
 export type TelemetryPayload = {
   event: TelemetryEvent;

@@ -76,7 +76,7 @@ describe('recoverAccount', () => {
     if (!result.ok) expect(result.error.code).toBe('NOT_SUPPORTED');
     expect(mockEventEmitter.emit).toHaveBeenCalledWith('start', {
       type: 'start',
-      operation: 'register',
+      operation: 'signUp',
     });
     expect(mockEventEmitter.emit).toHaveBeenCalledWith(
       'error',
@@ -267,7 +267,7 @@ describe('recoverAccount', () => {
     }
     expect(mockEventEmitter.emit).toHaveBeenCalledWith('success', {
       type: 'success',
-      operation: 'register',
+      operation: 'signUp',
       token: 'sess_tok_abc',
       user: {
         userId: 'u_1',
