@@ -11,7 +11,7 @@ import type {
 import { createAuthenticationOptions, createRegistrationOptions } from './webauthn';
 import { serializeCredentialForAuth, serializeCredentialForRegister } from './webauthn-utils';
 import { validateCredentialStructure } from '../utils/validation';
-import { waitWithAbort } from './polling-utils';
+import { waitWithAbort, withSseFallback } from './polling-utils';
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 60; // ~3 minutes
@@ -21,6 +21,24 @@ type CompletedResult = Result<
   { sessionToken: string; userId: string; redirectUrl?: string },
   TryMellonError
 >;
+
+/** Parses an SSE message for the cross-device status stream. Returns null for non-terminal events. */
+function parseCrossDeviceMessage(event: MessageEvent): CompletedResult | null {
+  try {
+    const raw = typeof event.data === 'string' ? event.data : String(event.data);
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed === null || typeof parsed !== 'object') return null;
+    const p = parsed as Record<string, unknown>;
+    if (p.status !== 'completed') return null;
+    return toCompletedResult({
+      session_token: typeof p.session_token === 'string' ? p.session_token : undefined,
+      user_id: typeof p.user_id === 'string' ? p.user_id : undefined,
+      redirect_url: typeof p.redirect_url === 'string' ? p.redirect_url : undefined,
+    });
+  } catch {
+    return null;
+  }
+}
 
 /** Maps a completed status payload to the public result. Pure — single source of truth for both SSE and polling paths. */
 function toCompletedResult(value: {
@@ -109,66 +127,8 @@ export class CrossDeviceManager {
     const useSse = opts?.useSse ?? true;
 
     if (useSse && typeof EventSource !== 'undefined') {
-      return new Promise<CompletedResult>((resolve) => {
-        const url = this.apiClient.getCrossDeviceStatusUrl(sessionId, pollingToken);
-        // hasSettled guards against double-resolve across SSE, onerror fallback and abort paths
-        let hasSettled = false;
-
-        const onDone = (result: CompletedResult) => {
-          if (hasSettled) return;
-          hasSettled = true;
-          try {
-            es.close();
-          } catch {
-            /* ignore */
-          }
-          signal?.removeEventListener('abort', onAbort);
-          resolve(result);
-        };
-
-        const onAbort = () =>
-          onDone(err(createError('ABORT_ERROR', 'Operation aborted by user or timeout')));
-        signal?.addEventListener('abort', onAbort, { once: true });
-
-        let es: EventSource;
-        try {
-          es = new EventSource(url);
-        } catch {
-          // EventSource constructor failed — fall back to polling; abort listener stays active
-          pollUntilCompleted().then(onDone);
-          return;
-        }
-
-        es.onmessage = (event: MessageEvent) => {
-          try {
-            const raw = typeof event.data === 'string' ? event.data : String(event.data);
-            const parsed = JSON.parse(raw) as unknown;
-            if (parsed === null || typeof parsed !== 'object') return;
-            const p = parsed as Record<string, unknown>;
-            if (p.status !== 'completed') return;
-            onDone(
-              toCompletedResult({
-                session_token: typeof p.session_token === 'string' ? p.session_token : undefined,
-                user_id: typeof p.user_id === 'string' ? p.user_id : undefined,
-                redirect_url: typeof p.redirect_url === 'string' ? p.redirect_url : undefined,
-              })
-            );
-          } catch {
-            /* ignore malformed events */
-          }
-        };
-
-        es.onerror = () => {
-          if (hasSettled) return;
-          try {
-            es.close();
-          } catch {
-            /* ignore */
-          }
-          // Keep abort listener active during fallback — onDone handles cleanup on resolution
-          pollUntilCompleted().then(onDone);
-        };
-      });
+      const url = this.apiClient.getCrossDeviceStatusUrl(sessionId, pollingToken);
+      return withSseFallback(url, pollUntilCompleted, parseCrossDeviceMessage, signal);
     }
 
     return pollUntilCompleted();

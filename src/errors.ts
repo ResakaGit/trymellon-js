@@ -6,7 +6,6 @@ export type TryMellonErrorCode =
   | 'NETWORK_FAILURE'
   | 'INVALID_ARGUMENT'
   | 'TIMEOUT'
-  | 'ABORTED'
   | 'ABORT_ERROR'
   | 'CHALLENGE_MISMATCH'
   | 'TICKET_NOT_FOUND'
@@ -43,7 +42,6 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   NETWORK_FAILURE: 'Network request failed',
   INVALID_ARGUMENT: 'Invalid argument provided',
   TIMEOUT: 'Operation timed out',
-  ABORTED: 'Operation was aborted',
   ABORT_ERROR: 'Operation aborted by user or timeout',
   CHALLENGE_MISMATCH: 'This link was already used or expired. Please try again from your computer.',
   TICKET_NOT_FOUND: 'Enrollment ticket not found or invalid',
@@ -160,7 +158,7 @@ export function validateBase64Url(s: string, fieldName: string): void {
 
 const DOM_EXCEPTION_ERROR_MAP: Record<string, TryMellonErrorCode> = {
   NotAllowedError: 'USER_CANCELLED',
-  AbortError: 'ABORTED',
+  AbortError: 'ABORT_ERROR',
   NotSupportedError: 'NOT_SUPPORTED',
   SecurityError: 'NOT_SUPPORTED',
   InvalidStateError: 'UNKNOWN_ERROR',
@@ -218,6 +216,20 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     session_not_found: 'BRIDGE_SESSION_EXPIRED',
     origin_not_allowed: 'INVALID_ARGUMENT',
     origin_not_allowed_for_application: 'INVALID_ARGUMENT',
+    // Cross-device QR domain errors (backend emits QR_ prefix)
+    qr_expired: 'SESSION_EXPIRED',
+    qr_session_not_found: 'SESSION_EXPIRED',
+    qr_rate_limited: 'RATE_LIMIT_EXCEEDED',
+    qr_origin_not_allowed: 'INVALID_ARGUMENT',
+    qr_tenant_mismatch: 'INVALID_ARGUMENT',
+    qr_polling_token_required: 'INVALID_ARGUMENT',
+    qr_replay_detected: 'CHALLENGE_MISMATCH',
+    qr_invalid_response: 'CHALLENGE_MISMATCH',
+    qr_credential_not_found: 'PASSKEY_NOT_FOUND',
+    qr_user_not_found: 'PASSKEY_NOT_FOUND',
+    qr_invalid_state: 'UNKNOWN_ERROR',
+    qr_no_challenge: 'UNKNOWN_ERROR',
+    qr_internal_error: 'UNKNOWN_ERROR',
   };
   return map[normalized] ?? 'UNKNOWN_ERROR';
 }

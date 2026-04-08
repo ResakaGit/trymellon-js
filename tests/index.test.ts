@@ -160,7 +160,6 @@ describe('Public API Exports', () => {
       | 'NETWORK_FAILURE'
       | 'INVALID_ARGUMENT'
       | 'TIMEOUT'
-      | 'ABORTED'
       | 'ABORT_ERROR'
       | 'UNKNOWN_ERROR'
     >();

@@ -304,9 +304,9 @@ describe('TryMellon', () => {
     });
   });
 
-  describe('getCapabilities', () => {
+  describe('capabilities', () => {
     it('should return ClientStatus with isPasskeySupported and recommendedFlow', async () => {
-      const status = await tryMellon.getCapabilities();
+      const status = await tryMellon.capabilities();
       expect(status).toHaveProperty('isPasskeySupported');
       expect(status).toHaveProperty('platformAuthenticatorAvailable');
       expect(status).toHaveProperty('recommendedFlow');

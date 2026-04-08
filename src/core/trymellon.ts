@@ -211,7 +211,12 @@ export class TryMellon {
     ): Promise<import('../utils/result').Result<BridgeResult, TryMellonError>>;
     waitForResult(
       sessionId: string,
-      options?: { useSse?: boolean; kind?: 'enrollment' | 'auth'; timeoutMs?: number }
+      options?: {
+        useSse?: boolean;
+        kind?: 'enrollment' | 'auth';
+        timeoutMs?: number;
+        signal?: AbortSignal;
+      }
     ): Promise<import('../utils/result').Result<BridgeStatusSnapshot, TryMellonError>>;
   } {
     return {
@@ -279,7 +284,7 @@ export class TryMellon {
     },
   };
 
-  async getCapabilities(): Promise<ClientStatus> {
+  async capabilities(): Promise<ClientStatus> {
     return getClientStatus();
   }
 

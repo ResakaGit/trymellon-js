@@ -48,11 +48,11 @@ describe('Examples Syntax Validation', () => {
     expect(() => client.signIn(options)).not.toThrow();
   });
 
-  it('should allow using getCapabilities method', async () => {
+  it('should allow using capabilities method', async () => {
     const client = new TryMellon({ appId: 'app_test', publishableKey: 'key_test' });
 
-    expect(typeof client.getCapabilities).toBe('function');
-    expect(() => client.getCapabilities()).not.toThrow();
+    expect(typeof client.capabilities).toBe('function');
+    expect(() => client.capabilities()).not.toThrow();
   });
 
   it('should allow using on method for events', () => {

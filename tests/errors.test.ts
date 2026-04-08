@@ -51,7 +51,7 @@ describe('TryMellonError', () => {
       'NETWORK_FAILURE',
       'INVALID_ARGUMENT',
       'TIMEOUT',
-      'ABORTED',
+      'ABORT_ERROR',
       'UNKNOWN_ERROR',
     ];
 
@@ -97,10 +97,10 @@ describe('createError', () => {
   });
 
   it('should create error with default message when not provided', () => {
-    const error = createError('ABORTED');
+    const error = createError('ABORT_ERROR');
 
     expect(error).toBeInstanceOf(TryMellonError);
-    expect(error.code).toBe('ABORTED');
+    expect(error.code).toBe('ABORT_ERROR');
     expect(error.message).toBeTruthy();
   });
 
@@ -290,6 +290,19 @@ describe('mapBackendErrorCodeToTryMellon', () => {
     expect(isOriginNotAllowedBackendCode('other_code')).toBe(false);
   });
 
+  it('maps QR_ prefixed cross-device domain error codes', () => {
+    expect(mapBackendErrorCodeToTryMellon('QR_EXPIRED')).toBe('SESSION_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('QR_SESSION_NOT_FOUND')).toBe('SESSION_EXPIRED');
+    expect(mapBackendErrorCodeToTryMellon('QR_RATE_LIMITED')).toBe('RATE_LIMIT_EXCEEDED');
+    expect(mapBackendErrorCodeToTryMellon('QR_ORIGIN_NOT_ALLOWED')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('QR_TENANT_MISMATCH')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('QR_REPLAY_DETECTED')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('QR_CREDENTIAL_NOT_FOUND')).toBe('PASSKEY_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('QR_USER_NOT_FOUND')).toBe('PASSKEY_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('QR_POLLING_TOKEN_REQUIRED')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('QR_INVALID_RESPONSE')).toBe('CHALLENGE_MISMATCH');
+  });
+
   it('returns UNKNOWN_ERROR for unknown backend codes', () => {
     expect(mapBackendErrorCodeToTryMellon('internal_error')).toBe('UNKNOWN_ERROR');
     expect(mapBackendErrorCodeToTryMellon('forbidden')).toBe('UNKNOWN_ERROR');
@@ -317,12 +330,12 @@ describe('mapWebAuthnError', () => {
     expect(error.code).toBe('USER_CANCELLED');
   });
 
-  it('should map AbortError to ABORTED', () => {
+  it('should map AbortError to ABORT_ERROR', () => {
     const domError = new DOMException('Operation aborted', 'AbortError');
     const error = mapWebAuthnError(domError);
 
     expect(error).toBeInstanceOf(TryMellonError);
-    expect(error.code).toBe('ABORTED');
+    expect(error.code).toBe('ABORT_ERROR');
   });
 
   it('should map NotSupportedError to NOT_SUPPORTED', () => {

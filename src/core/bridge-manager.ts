@@ -3,6 +3,7 @@ import type { Result } from '../utils/result';
 import { ok, err } from '../utils/result';
 import { createError, createInvalidArgumentError, mapWebAuthnError } from '../errors';
 import type { TryMellonError } from '../errors';
+import { waitWithAbort, withSseFallback } from './polling-utils';
 import type {
   BridgeContextResponse,
   BridgeChallengeResponse,
@@ -39,6 +40,25 @@ const BRIDGE_WAIT_DEFAULT_TIMEOUT_MS = 300_000;
 
 function isTerminalBridgeStatus(status: BridgeStatusSnapshot['status']): boolean {
   return BRIDGE_TERMINAL_STATUSES.has(status);
+}
+
+/** Parses an SSE message for the bridge status stream. Returns null for non-terminal events. */
+function parseBridgeStatusMessage(
+  event: MessageEvent
+): Result<BridgeStatusSnapshot, TryMellonError> | null {
+  try {
+    const raw = typeof event.data === 'string' ? event.data : String(event.data);
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed === null || typeof parsed !== 'object' || !('status' in parsed)) return null;
+    const p = parsed as Record<string, unknown>;
+    if (typeof p.status !== 'string') return null;
+    const status = p.status as BridgeStatusSnapshot['status'];
+    if (!isTerminalBridgeStatus(status)) return null;
+    const ts = p.ts;
+    return ok({ status, ...(typeof ts === 'string' && { ts }) });
+  } catch {
+    return null;
+  }
 }
 
 /** Validates sessionId for bridge calls. Single place for guard. */
@@ -104,7 +124,7 @@ export class BridgeManager {
    */
   async waitForResult(
     sessionId: string,
-    options?: { useSse?: boolean; kind?: BridgeKind; timeoutMs?: number }
+    options?: { useSse?: boolean; kind?: BridgeKind; timeoutMs?: number; signal?: AbortSignal }
   ): Promise<Result<BridgeStatusSnapshot, TryMellonError>> {
     const sid = validateBridgeSessionId(sessionId);
     if (!sid.ok) return err(sid.error);
@@ -112,82 +132,40 @@ export class BridgeManager {
     const kind: BridgeKind = options?.kind ?? 'enrollment';
     const useSse = options?.useSse !== false;
     const timeoutMs = options?.timeoutMs ?? BRIDGE_WAIT_DEFAULT_TIMEOUT_MS;
+    const signal = options?.signal;
+
+    if (signal?.aborted) {
+      return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+    }
 
     const pollUntilTerminal = async (
       startAt: number
     ): Promise<Result<BridgeStatusSnapshot, TryMellonError>> => {
       for (;;) {
+        if (signal?.aborted) {
+          return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+        }
         const statusResult = await this.apiClient.getBridgeStatus(sid.value, kind);
         if (!statusResult.ok) return err(statusResult.error);
         if (isTerminalBridgeStatus(statusResult.value.status)) return ok(statusResult.value);
         if (Date.now() - startAt >= timeoutMs) {
           return err(createError('TIMEOUT', 'Bridge status wait timed out'));
         }
-        await new Promise((r) => setTimeout(r, BRIDGE_POLL_INTERVAL_MS));
+        const waitResult = await waitWithAbort(BRIDGE_POLL_INTERVAL_MS, signal);
+        if (waitResult === 'aborted') {
+          return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+        }
       }
     };
 
     if (useSse && typeof EventSource !== 'undefined') {
-      return new Promise((resolve) => {
-        const url = this.apiClient.getBridgeStatusUrl(sid.value, kind);
-        let resolved = false;
-
-        const onDone = (result: Result<BridgeStatusSnapshot, TryMellonError>) => {
-          if (resolved) return;
-          resolved = true;
-          try {
-            es.close();
-          } catch {
-            /* ignore */
-          }
-          resolve(result);
-        };
-
-        let es: EventSource;
-        try {
-          es = new EventSource(url);
-        } catch {
-          pollUntilTerminal(Date.now()).then(onDone);
-          return;
-        }
-
-        es.onmessage = (event: MessageEvent) => {
-          try {
-            const raw = typeof event.data === 'string' ? event.data : String(event.data);
-            const parsed = JSON.parse(raw) as unknown;
-            if (
-              parsed !== null &&
-              typeof parsed === 'object' &&
-              'status' in parsed &&
-              typeof (parsed as Record<string, unknown>).status === 'string'
-            ) {
-              const status = (parsed as Record<string, unknown>)
-                .status as BridgeStatusSnapshot['status'];
-              if (isTerminalBridgeStatus(status)) {
-                const ts = (parsed as Record<string, unknown>).ts;
-                onDone(
-                  ok({
-                    status,
-                    ...(typeof ts === 'string' && { ts }),
-                  })
-                );
-              }
-            }
-          } catch {
-            /* ignore malformed event */
-          }
-        };
-
-        es.onerror = () => {
-          if (resolved) return;
-          try {
-            es.close();
-          } catch {
-            /* ignore */
-          }
-          pollUntilTerminal(Date.now()).then(onDone);
-        };
-      });
+      const url = this.apiClient.getBridgeStatusUrl(sid.value, kind);
+      return withSseFallback(
+        url,
+        () => pollUntilTerminal(Date.now()),
+        parseBridgeStatusMessage,
+        signal
+      );
     }
 
     return pollUntilTerminal(Date.now());
@@ -233,6 +211,11 @@ export class BridgeManager {
     if (!sid.ok) return err(sid.error);
 
     const kind: BridgeKind = options?.kind ?? 'enrollment';
+
+    if (options?.signal?.aborted) {
+      return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
+    }
+
     const contextResult = await this.apiClient.getBridgeContext(sid.value, kind);
     if (!contextResult.ok) return err(contextResult.error);
 
