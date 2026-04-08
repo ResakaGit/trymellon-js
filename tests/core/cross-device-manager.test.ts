@@ -178,8 +178,17 @@ describe('CrossDeviceManager', () => {
     it('should back off and retry when backend returns RATE_LIMIT_EXCEEDED, then succeed', async () => {
       vi.useFakeTimers();
       mockApiClient.getCrossDeviceStatus
-        .mockResolvedValueOnce(err(createError('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded for cross-device-status. Try again later.')))
-        .mockResolvedValueOnce(ok({ status: 'completed', session_token: 'st_rl', user_id: 'u_rl' }));
+        .mockResolvedValueOnce(
+          err(
+            createError(
+              'RATE_LIMIT_EXCEEDED',
+              'Rate limit exceeded for cross-device-status. Try again later.'
+            )
+          )
+        )
+        .mockResolvedValueOnce(
+          ok({ status: 'completed', session_token: 'st_rl', user_id: 'u_rl' })
+        );
 
       const resultPromise = manager.waitForSession('sess_rl');
       // Advance past the rate-limit backoff (8000ms)
