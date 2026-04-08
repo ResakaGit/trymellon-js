@@ -1,3 +1,5 @@
+## [3.1.2](https://github.com/ResakaGit/trymellon-js/compare/v3.1.1...v3.1.2) (2026-04-08)
+
 # Changelog
 
 All notable changes to `@trymellon/js` are documented in this file.
