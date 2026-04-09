@@ -90,7 +90,11 @@ export async function invokeCeremony<
     return ok(finishResult.value);
   } catch (error) {
     const tryMellonError = mapWebAuthnError(error);
-    eventEmitter.emit('error', { type: 'error', error: tryMellonError });
+    if (tryMellonError.code === 'ABORT_ERROR') {
+      eventEmitter.emit('cancelled', { type: 'cancelled', operation });
+    } else {
+      eventEmitter.emit('error', { type: 'error', error: tryMellonError });
+    }
     return err(tryMellonError);
   }
 }

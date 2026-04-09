@@ -173,7 +173,14 @@ export class FetchHttpClient implements HttpClient {
             if (isEnvelopeError(errorData) && isOriginNotAllowedBackendCode(errorData.error.code)) {
               warnOriginNotAllowed(errorData);
             }
-            const { message, code } = parseHttpErrorBody(errorData, response.statusText);
+            const { message, code: parsedCode } = parseHttpErrorBody(
+              errorData,
+              response.statusText
+            );
+            const code: TryMellonErrorCode =
+              response.status === 401 && parsedCode === 'NETWORK_FAILURE'
+                ? 'SESSION_EXPIRED'
+                : parsedCode;
             const errResult = createError(code, message, {
               requestId,
               status: response.status,

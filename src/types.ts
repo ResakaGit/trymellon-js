@@ -244,23 +244,14 @@ export type OnboardingStartOptions = {
   user_role: 'maintainer' | 'app_user';
 };
 
-export type OnboardingStartResult = {
-  session_id: string;
-  onboarding_url: string;
-  expires_in: number;
-};
+/** @deprecated Use {@link OnboardingStartResponse} */
+export type OnboardingStartResult = OnboardingStartResponse;
 
-export type OnboardingStatusResult = {
-  status: 'pending_passkey' | 'pending_data' | 'completed';
-  onboarding_url: string;
-  expires_in: number;
-};
+/** @deprecated Use {@link OnboardingStatusResponse} */
+export type OnboardingStatusResult = OnboardingStatusResponse;
 
-export type OnboardingRegisterResult = {
-  session_id: string;
-  status: 'pending_passkey';
-  onboarding_url: string;
-};
+/** @deprecated Use {@link OnboardingRegisterResponse} */
+export type OnboardingRegisterResult = OnboardingRegisterResponse;
 
 export type OnboardingRegisterPasskeyOptions = {
   session_id: string;
@@ -277,25 +268,16 @@ export type OnboardingRegisterPasskeyOptions = {
   challenge: string;
 };
 
-export type OnboardingRegisterPasskeyResult = {
-  session_id: string;
-  status: 'pending_data' | 'completed';
-  user_id: string;
-  tenant_id: string;
-};
+/** @deprecated Use {@link OnboardingRegisterPasskeyResponse} */
+export type OnboardingRegisterPasskeyResult = OnboardingRegisterPasskeyResponse;
 
 export type OnboardingCompleteOptions = {
   session_id: string;
   company_name?: string;
 };
 
-export type OnboardingCompleteResult = {
-  session_id: string;
-  status: 'completed';
-  user_id: string;
-  tenant_id: string;
-  session_token: string;
-};
+/** @deprecated Use {@link OnboardingCompleteResponse} */
+export type OnboardingCompleteResult = OnboardingCompleteResponse;
 
 // ============================================================================
 // Cross-Device Types

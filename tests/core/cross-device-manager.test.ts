@@ -573,19 +573,33 @@ describe('CrossDeviceManager', () => {
       expect(es.closeCalled).toBe(true);
     });
 
-    it('Given pollingToken provided, when SSE opens, then URL includes polling_token as query param', async () => {
-      mockApiClient.getCrossDeviceStatusUrl.mockReturnValue(
-        'https://api.example.com/v1/auth/cross-device/status/sess_1?polling_token=tok_pt'
+    it('Given pollingToken provided, when waitForSession is called, then X-Polling-Token header is sent via fetch SSE (no EventSource)', async () => {
+      // pollingToken is sent via X-Polling-Token header using fetch-based SSE, not as a query param.
+      const sseBody = 'data: {"status":"completed","session_token":"tok_ok","user_id":"usr_ok"}\n\n';
+      const mockResponse = new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(sseBody));
+            controller.close();
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
       );
+      const mockFetch = vi.fn().mockResolvedValue(mockResponse);
+      vi.stubGlobal('fetch', mockFetch);
 
       const resultPromise = manager.waitForSession('sess_1', undefined, 'tok_pt');
-      const es = MockEventSource.instances[0];
+      const result = await resultPromise;
 
-      expect(mockApiClient.getCrossDeviceStatusUrl).toHaveBeenCalledWith('sess_1', 'tok_pt');
-      expect(es.url).toContain('polling_token=tok_pt');
-
-      es.emit({ status: 'completed', session_token: 'tok_ok', user_id: 'usr_ok' });
-      await resultPromise;
+      expect(result.ok).toBe(true);
+      // getCrossDeviceStatusUrl called with sessionId only; pollingToken goes to headers
+      expect(mockApiClient.getCrossDeviceStatusUrl).toHaveBeenCalledWith('sess_1');
+      // Fetch used (not EventSource) because headers are non-empty
+      expect(MockEventSource.instances).toHaveLength(0);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ headers: { 'X-Polling-Token': 'tok_pt' } })
+      );
     });
   });
 });

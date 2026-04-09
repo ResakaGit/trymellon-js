@@ -94,8 +94,8 @@ describe('getOrCreateContextHash', () => {
     });
   });
 
-  describe('when storage unavailable (undefined or getItem/setItem throw)', () => {
-    it('uses in-memory fallback; two calls in same session return same hash', () => {
+  describe('when storage throws on every call', () => {
+    it('returns a valid hash on each call; different calls yield different hashes (no shared state)', () => {
       const storageUnavailable: StorageLike = {
         getItem: vi.fn(() => {
           throw new Error('QuotaExceeded');
@@ -108,14 +108,9 @@ describe('getOrCreateContextHash', () => {
       const second = getOrCreateContextHash(storageUnavailable);
       expect(first).toMatch(HEX_REGEX);
       expect(first).toHaveLength(64);
-      expect(second).toBe(first);
-    });
-
-    it('when storage is undefined, uses in-memory fallback and same hash on second call', () => {
-      const first = getOrCreateContextHash(undefined);
-      const second = getOrCreateContextHash(undefined);
-      expect(first).toMatch(HEX_REGEX);
-      expect(second).toBe(first);
+      expect(second).toMatch(HEX_REGEX);
+      // No module-level fallback; each failed-storage call generates a fresh hash.
+      // Callers that need cross-call consistency must pass a pre-created createInMemoryStorage().
     });
   });
 });

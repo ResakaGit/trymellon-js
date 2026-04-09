@@ -1,3 +1,13 @@
+## [3.1.5] - 2026-04-08
+
+### Fixed
+
+- **`withSseFallback` — cierra EventSource en abort:** El handler de abort (`onAbort`) ahora llama a `es?.close()` antes de resolver el error `ABORT_ERROR`. La `es` se declara antes del handler para que la closure capture el binding por referencia. Antes el EventSource quedaba abierto si se abortaba la señal externamente.
+- **`startEmailFallback` / `verifyEmailCode` — payload snake_case correcto:** Los tests actualizados para reflejar que el SDK envía `user_id` (snake_case) al backend, no `userId`. Alineado con la convención SDK → backend de la plataforma.
+- **`bridge-manager.test.ts` — mock `createInMemoryStorage` agregado:** El `vi.mock('../../src/core/context-hash')` ahora incluye `createInMemoryStorage` que `bridge-manager.ts` requiere. 18 tests que fallaban por export faltante ahora pasan.
+- **`context-hash.test.ts` — tests actualizados al nuevo comportamiento:** Eliminada expectativa de hash consistente entre llamadas cuando el storage lanza excepción. El nuevo diseño no tiene singleton de fallback; cada llamada fallida genera un hash fresco. Callers que necesiten consistencia deben pasar un `createInMemoryStorage()` propio.
+- **`cross-device-manager.test.ts` — pollingToken via X-Polling-Token header:** Test actualizado para verificar que cuando se provee `pollingToken`, se usa el path fetch-based SSE (no EventSource), el header `X-Polling-Token` se envía, y `getCrossDeviceStatusUrl` se llama solo con `sessionId`.
+
 ## [3.1.4](https://github.com/ResakaGit/trymellon-js/compare/v3.1.3...v3.1.4) (2026-04-08)
 
 
@@ -27,12 +37,21 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 ### Added
 
 - **Shared SSE-with-polling fallback (`withSseFallback`).** Internal utility extracted from `CrossDeviceManager` and `BridgeManager` into `polling-utils`. Both cross-device and bridge flows now share a single, tested SSE implementation with automatic polling fallback when `EventSource` is unavailable.
+- **README: `### Action Signing` section.** Documents `client.action.sign()` API (challenge/verify flow), error codes (`ACTION_CHALLENGE_EXPIRED`, `ACTION_ALREADY_CLAIMED`, `ACTION_PAYLOAD_MISMATCH`), and backend verification pattern. Feature is gated behind backend wiring (KP Trust Layer ADR-029) — SDK UI layer pending sprint implementation.
 
 ### Fixed
 
 - **Bridge: abort signal was silently dropped during SSE wait.** Calling `bridge.waitForResult()` with an `AbortSignal` and firing that signal while an SSE connection was open caused the operation to hang instead of resolving. The signal is now wired through `withSseFallback` and cancels correctly.
 - **Unified `ABORT_ERROR` code.** Two codes (`ABORT_ERROR` and `ABORTED`) existed for aborted operations, leading to inconsistent error handling. All abort paths now return `ABORT_ERROR`. If your code checks for `ABORTED`, rename it to `ABORT_ERROR`.
 - **`QR_*` backend error codes now map to SDK errors.** 13 server error codes prefixed `QR_` (e.g. `qr_rate_limited`, `qr_session_expired`) were previously surfaced as unknown errors. They now map to the correct SDK error codes. Rate-limit errors trigger the exponential backoff logic in `crossDevice.waitForCompletion()`.
+- **`StorageLike | undefined` in `EnrollmentManager` and `TryMellon`.** Both classes now fall back to `createInMemoryStorage()` when the provided storage is `undefined` (SSR/Node environments), preventing a TypeScript error on construction.
+- **`onboarding-manager.ts`: `'pending'` not in `OnboardingStatus` union.** Status literal corrected to `'pending_data'` — the actual value emitted by the backend.
+- **`BridgeManager` + `CrossDeviceManager`: SSE callback type widened.** `parseBridgeStatusMessage` and `parseCrossDeviceMessage` callbacks now accept `MessageEvent | { data: string }` to cover both browser SSE and polling paths without a type error.
+- **`validateSession`: 30 s cache + request coalescing.** `ApiClient.validateSession()` now caches successful responses for 30 s and deduplicates in-flight requests for the same token. Concurrent calls during a single page render (e.g., multiple middleware guards) hit the network once. Revocations propagate within the TTL window.
+- **`startEmailFallback` / `verifyEmailCode`: payload field renamed `userId` → `user_id`.** The SDK was sending camelCase `userId` but the backend expects `user_id`. Fixed in `api.ts`. Previously both email fallback endpoints would always return a validation error silently.
+- **`getCrossDeviceStatusUrl`: polling token removed from query string.** The URL no longer appends `?polling_token=xxx`. The polling token is now sent via the `X-Polling-Token` header (fetch-based SSE path) to avoid exposure in server access logs and Referer headers. **Breaking for SSE via native `EventSource`** — but `EventSource` cannot send custom headers, so that path already required the workaround; the SDK's internal fetch-based SSE is unaffected.
+- **`context-hash.ts`: module-level singleton removed (SSR contamination fix).** The previous `inMemoryStorageFallback` was a module-level constant, meaning all SSR requests in the same Node.js process shared the same context hash. `getOrCreateContextHash` now requires an explicit `StorageLike` argument. Callers that need in-memory fallback must create one via `createInMemoryStorage()` and keep it as an instance-level field.
+- **`BridgeManager`: `MAX_BRIDGE_POLL_ATTEMPTS` cap + instance-level `_inMemoryFallback`.** The poll loop is now a bounded `for` loop (max 200 iterations ≈ 300 s / 1.5 s interval). Previously an unbounded `for(;;)` could run forever if the signal was never fired. Each `BridgeManager` instance owns its own `_inMemoryFallback` storage to prevent SSR cross-request contamination.
 
 ### Docs
 

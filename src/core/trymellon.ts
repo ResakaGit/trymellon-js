@@ -4,7 +4,7 @@ import { OnboardingManager } from './onboarding-manager';
 import { EnrollmentManager } from './enrollment-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { BridgeManager } from './bridge-manager';
-import { getOrCreateContextHash } from './context-hash';
+import { getOrCreateContextHash, createInMemoryStorage } from './context-hash';
 import { EventEmitter } from './events';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
 import { validateUrl, validateRange, createInvalidArgumentError } from '../errors';
@@ -104,6 +104,10 @@ export class TryMellon {
 
     if (config.retryDelayMs !== undefined) {
       validateRange(config.retryDelayMs, 'retryDelayMs', MIN_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS);
+    }
+
+    if (config.telemetryEndpoint !== undefined) {
+      validateUrl(config.telemetryEndpoint, 'telemetryEndpoint');
     }
   }
 
@@ -259,9 +263,12 @@ export class TryMellon {
   }
 
   getContextHash(): string {
+    // contextHashStorage is optional; sessionStorage is absent in SSR/Node.
+    // createInMemoryStorage() is the safe last-resort — per-call ephemeral storage,
+    // consistent with the BridgeManager._inMemoryFallback pattern.
     const storage =
       this.contextHashStorage ??
-      (typeof sessionStorage !== 'undefined' ? sessionStorage : undefined);
+      (typeof sessionStorage !== 'undefined' ? sessionStorage : createInMemoryStorage());
     return getOrCreateContextHash(storage);
   }
 

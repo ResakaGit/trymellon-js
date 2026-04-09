@@ -67,6 +67,17 @@ import type { OnboardingRegisterResponseWithChallenge } from './validators';
 export type BridgeKind = 'enrollment' | 'auth';
 
 export class ApiClient {
+  private readonly _sessionValidateCache = new Map<
+    string,
+    { value: SessionValidateResponse; cachedAt: number }
+  >();
+  private readonly _sessionValidatePending = new Map<
+    string,
+    Promise<Result<SessionValidateResponse, TryMellonError>>
+  >();
+  /** TTL for cached session validation results (30 s). Short enough to pick up revocations quickly. */
+  private readonly _sessionValidateTtlMs = 30_000;
+
   constructor(
     private readonly httpClient: HttpClient,
     private readonly baseUrl: string,
@@ -133,9 +144,25 @@ export class ApiClient {
   async validateSession(
     sessionToken: string
   ): Promise<Result<SessionValidateResponse, TryMellonError>> {
-    return this.get('/v1/sessions/validate', validateSessionValidateResponse, {
+    const cached = this._sessionValidateCache.get(sessionToken);
+    if (cached && Date.now() - cached.cachedAt < this._sessionValidateTtlMs) {
+      return ok(cached.value);
+    }
+    const pending = this._sessionValidatePending.get(sessionToken);
+    if (pending) return pending;
+
+    const inflight = this.get('/v1/sessions/validate', validateSessionValidateResponse, {
       Authorization: `Bearer ${sessionToken}`,
+    }).then((result) => {
+      this._sessionValidatePending.delete(sessionToken);
+      if (result.ok) {
+        this._sessionValidateCache.set(sessionToken, { value: result.value, cachedAt: Date.now() });
+      }
+      return result;
     });
+
+    this._sessionValidatePending.set(sessionToken, inflight);
+    return inflight;
   }
 
   async startEmailFallback(options: {
@@ -145,7 +172,7 @@ export class ApiClient {
     const url = `${this.baseUrl}/v1/fallback/email/start`;
     const result = await this.httpClient.post<unknown>(
       url,
-      { userId: options.userId, email: options.email },
+      { user_id: options.userId, email: options.email },
       this.mergeHeaders()
     );
     if (!result.ok) return err(result.error);
@@ -157,7 +184,7 @@ export class ApiClient {
     code: string;
     successUrl?: string;
   }): Promise<Result<{ sessionToken: string; redirectUrl?: string }, TryMellonError>> {
-    const body: Record<string, unknown> = { userId: options.userId, code: options.code };
+    const body: Record<string, unknown> = { user_id: options.userId, code: options.code };
     if (options.successUrl) body.success_url = options.successUrl;
     return this.post('/v1/fallback/email/verify', body, validateEmailVerifyResponse);
   }
@@ -224,15 +251,12 @@ export class ApiClient {
   }
 
   /**
-   * Full URL for GET cross-device status (polling or EventSource).
-   * pollingToken is appended as query param when present — EventSource cannot send custom headers.
+   * Full URL for GET cross-device status (fetch-SSE or polling).
+   * The polling token is passed via X-Polling-Token header (not query param) to avoid
+   * exposure in server logs and Referer headers.
    */
-  getCrossDeviceStatusUrl(sessionId: string, pollingToken?: string | null): string {
-    const base = `${this.baseUrl}${this.crossDeviceStatusPath(sessionId)}`;
-    if (typeof pollingToken === 'string' && pollingToken.length > 0) {
-      return `${base}?polling_token=${encodeURIComponent(pollingToken)}`;
-    }
-    return base;
+  getCrossDeviceStatusUrl(sessionId: string): string {
+    return `${this.baseUrl}${this.crossDeviceStatusPath(sessionId)}`;
   }
 
   async getCrossDeviceStatus(

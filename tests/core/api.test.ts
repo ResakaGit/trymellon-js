@@ -323,7 +323,7 @@ describe('ApiClient', () => {
       expect(result.ok).toBe(true);
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         'https://api.example.com/v1/fallback/email/start',
-        { userId: 'user_123', email: 'user@example.com' },
+        { user_id: 'user_123', email: 'user@example.com' },
         expect.any(Object)
       );
     });
@@ -345,7 +345,7 @@ describe('ApiClient', () => {
 
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         'https://api.example.com/v1/fallback/email/verify',
-        { userId: 'user_123', code: '123456' },
+        { user_id: 'user_123', code: '123456' },
         expect.any(Object)
       );
     });

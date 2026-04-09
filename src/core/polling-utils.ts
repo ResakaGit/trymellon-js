@@ -39,15 +39,17 @@ export async function waitWithAbort(
 
 /**
  * Wraps a polling function with SSE-push acceleration.
- * Opens EventSource for real-time completion; falls back to pollFn on SSE error or constructor failure.
- * Correctly wires AbortSignal to both the SSE and polling paths.
- * Only call when EventSource is available (typeof EventSource !== 'undefined').
+ * When headers are provided uses fetch-based SSE (ReadableStream) so the token never
+ * appears in the URL. Falls back to EventSource (no headers) when headers is empty/omitted
+ * and EventSource is available. Falls back to pollFn on any SSE error.
+ * Correctly wires AbortSignal to all paths.
  */
 export function withSseFallback<T>(
   url: string,
   pollFn: () => Promise<Result<T, TryMellonError>>,
-  parseMessage: (event: MessageEvent) => Result<T, TryMellonError> | null,
-  signal?: AbortSignal
+  parseMessage: (event: MessageEvent | { data: string }) => Result<T, TryMellonError> | null,
+  signal?: AbortSignal,
+  headers?: Record<string, string>
 ): Promise<Result<T, TryMellonError>> {
   return new Promise((resolve) => {
     let settled = false;
@@ -56,22 +58,65 @@ export function withSseFallback<T>(
     const onDone = (result: Result<T, TryMellonError>) => {
       if (settled) return;
       settled = true;
+      signal?.removeEventListener('abort', onAbort);
+      resolve(result);
+    };
+
+    const onAbort = () => {
       try {
         es?.close();
       } catch {
         /* ignore */
       }
-      signal?.removeEventListener('abort', onAbort);
-      resolve(result);
-    };
-
-    const onAbort = () =>
       onDone(err(createError('ABORT_ERROR', 'Operation aborted by user or timeout')));
+    };
     signal?.addEventListener('abort', onAbort, { once: true });
 
-    // Abort event only fires for future aborts — check if already aborted after registering
     if (signal?.aborted) {
       onAbort();
+      return;
+    }
+
+    const hasHeaders = headers != null && Object.keys(headers).length > 0;
+
+    // Fetch-based SSE path: supports custom headers, token stays off the URL.
+    if (hasHeaders && typeof fetch !== 'undefined') {
+      fetch(url, { headers, signal })
+        .then(async (response) => {
+          if (!response.ok || !response.body) {
+            pollFn().then(onDone);
+            return;
+          }
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          while (!settled) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+            for (const line of lines) {
+              if (!line.startsWith('data:')) continue;
+              const data = line.slice(5).trimStart();
+              const result = parseMessage({ data });
+              if (result !== null) {
+                onDone(result);
+                return;
+              }
+            }
+          }
+          if (!settled) pollFn().then(onDone);
+        })
+        .catch(() => {
+          if (!settled) pollFn().then(onDone);
+        });
+      return;
+    }
+
+    // EventSource path: no custom headers, token must be in URL if needed.
+    if (typeof EventSource === 'undefined') {
+      pollFn().then(onDone);
       return;
     }
 
@@ -82,18 +127,28 @@ export function withSseFallback<T>(
       return;
     }
 
-    es.onmessage = (event: MessageEvent) => {
-      const result = parseMessage(event);
-      if (result !== null) onDone(result);
-    };
-
-    es.onerror = () => {
-      if (settled) return;
+    const cleanup = () => {
       try {
         es?.close();
       } catch {
         /* ignore */
       }
+    };
+
+    const origOnDone = onDone;
+    const wrappedOnDone = (result: Result<T, TryMellonError>) => {
+      cleanup();
+      origOnDone(result);
+    };
+
+    es.onmessage = (event: MessageEvent) => {
+      const result = parseMessage(event);
+      if (result !== null) wrappedOnDone(result);
+    };
+
+    es.onerror = () => {
+      if (settled) return;
+      cleanup();
       pollFn().then(onDone);
     };
   });

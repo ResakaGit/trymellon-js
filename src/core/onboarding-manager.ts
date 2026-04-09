@@ -12,6 +12,8 @@ import { waitWithAbort } from './polling-utils';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLL_ATTEMPTS = 60; // ~2 minutes
+/** Break early if status is unknown/unexpected this many consecutive times. */
+const MAX_CONSECUTIVE_NON_PROGRESS = 3;
 
 export class OnboardingManager {
   constructor(private readonly apiClient: ApiClient) {}
@@ -31,6 +33,8 @@ export class OnboardingManager {
     if (!startResult.ok) return err(startResult.error);
 
     const { session_id } = startResult.value;
+
+    let consecutiveNonProgress = 0;
 
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
       if (signal?.aborted) {
@@ -104,6 +108,17 @@ export class OnboardingManager {
           company_name: options.company_name,
         });
         return completeResult;
+      }
+
+      if (status === 'pending_data') {
+        consecutiveNonProgress = 0;
+        continue;
+      }
+
+      // Unknown/terminal-error status (e.g. 'failed', 'cancelled', or unexpected value).
+      consecutiveNonProgress++;
+      if (consecutiveNonProgress >= MAX_CONSECUTIVE_NON_PROGRESS) {
+        return err(createError('UNKNOWN_ERROR', `Onboarding reached unexpected status: ${status}`));
       }
     }
 

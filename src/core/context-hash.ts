@@ -49,8 +49,6 @@ export function createInMemoryStorage(): StorageLike {
   };
 }
 
-const inMemoryStorageFallback = createInMemoryStorage();
-
 /**
  * Pure: get existing valid hash from storage or create, persist, and return. Single place for the logic.
  */
@@ -64,13 +62,17 @@ function getOrCreateInStorage(storage: StorageLike): string {
 
 /**
  * Returns existing context hash from storage or creates one, persists it, and returns it.
- * If storage is omitted or throws (e.g. private browsing), uses in-memory fallback (Strategy).
+ * Callers must supply a storage instance — no module-level singleton fallback to avoid
+ * SSR cross-request contamination (multiple users sharing the same in-memory hash).
+ * In browser environments pass `sessionStorage`; for in-memory fallback create one via
+ * `createInMemoryStorage()` and keep it as an instance-level field.
  */
-export function getOrCreateContextHash(storage?: StorageLike): string {
-  const effectiveStorage = storage ?? inMemoryStorageFallback;
+export function getOrCreateContextHash(storage: StorageLike): string {
   try {
-    return getOrCreateInStorage(effectiveStorage);
+    return getOrCreateInStorage(storage);
   } catch {
-    return getOrCreateInStorage(inMemoryStorageFallback);
+    // Storage threw (e.g. SecurityError in private browsing). Generate a fresh hash for this call.
+    // Callers that need consistency across calls should pass a pre-created in-memory storage.
+    return generateContextHash();
   }
 }

@@ -193,8 +193,8 @@ export class TryMellonAuthModalElement extends AuthElementBase {
     const slot = root.querySelector<HTMLSlotElement>(`slot[name="${SLOT_CROSS_DEVICE}"]`);
     if (slot && this._qrSlotChangeBound) {
       slot.removeEventListener('slotchange', this._qrSlotChangeBound);
-      this._qrSlotChangeBound = null;
     }
+    this._qrSlotChangeBound = null;
     const wrap = root.querySelector<HTMLElement>(`.${CROSS_DEVICE_WRAP_CLASS}`);
     if (wrap) wrap.setAttribute('data-qr-area-state', 'default');
   }

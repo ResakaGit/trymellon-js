@@ -23,7 +23,7 @@ type CompletedResult = Result<
 >;
 
 /** Parses an SSE message for the cross-device status stream. Returns null for non-terminal events. */
-function parseCrossDeviceMessage(event: MessageEvent): CompletedResult | null {
+function parseCrossDeviceMessage(event: MessageEvent | { data: string }): CompletedResult | null {
   try {
     const raw = typeof event.data === 'string' ? event.data : String(event.data);
     const parsed = JSON.parse(raw) as unknown;
@@ -126,9 +126,19 @@ export class CrossDeviceManager {
 
     const useSse = opts?.useSse ?? true;
 
-    if (useSse && typeof EventSource !== 'undefined') {
-      const url = this.apiClient.getCrossDeviceStatusUrl(sessionId, pollingToken);
-      return withSseFallback(url, pollUntilCompleted, parseCrossDeviceMessage, signal);
+    if (useSse) {
+      const url = this.apiClient.getCrossDeviceStatusUrl(sessionId);
+      const pollingHeaders =
+        typeof pollingToken === 'string' && pollingToken.length > 0
+          ? { 'X-Polling-Token': pollingToken }
+          : undefined;
+      return withSseFallback(
+        url,
+        pollUntilCompleted,
+        parseCrossDeviceMessage,
+        signal,
+        pollingHeaders
+      );
     }
 
     return pollUntilCompleted();

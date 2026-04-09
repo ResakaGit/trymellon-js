@@ -5,7 +5,7 @@ import { createError } from '../errors';
 import type { TryMellonError } from '../errors';
 import type { EnrollOptions, EnrollmentResult } from '../types';
 import type { StorageLike } from './context-hash';
-import { getOrCreateContextHash } from './context-hash';
+import { getOrCreateContextHash, createInMemoryStorage } from './context-hash';
 import { createAndSerializeCredentialForRegister } from './webauthn';
 
 export class EnrollmentManager {
@@ -19,8 +19,9 @@ export class EnrollmentManager {
       return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
     }
 
-    const effectiveStorage =
-      this.storage ?? (typeof sessionStorage !== 'undefined' ? sessionStorage : undefined);
+    const effectiveStorage: StorageLike =
+      this.storage ??
+      (typeof sessionStorage !== 'undefined' ? sessionStorage : createInMemoryStorage());
     const contextHash = getOrCreateContextHash(effectiveStorage);
 
     const startResult = await this.apiClient.startEnrollment(options.ticketId, contextHash);

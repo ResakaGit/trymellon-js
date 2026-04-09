@@ -121,6 +121,44 @@ await client.otp.verify({ userId: 'user_123', code: '123456' })
 await client.passkey.recover({ externalUserId: 'user_123', otp: '...' })
 ```
 
+### Action Signing
+
+Sign a user's intent with a passkey — cryptographic proof that the authenticated user explicitly approved an action. Use this for high-risk operations: fund transfers, permission grants, settings changes.
+
+```typescript
+// Prompt the user to approve an action with their passkey
+const result = await client.action.sign({
+  userId: 'user_123',
+  payload: {
+    action: 'transfer',
+    amount: 5000,
+    currency: 'USD',
+    to: 'account_456',
+  },
+})
+
+if (result.ok) {
+  // Send result.value.signature to your backend for verification
+  await fetch('/api/transfer', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...transferData,
+      actionSignature: result.value.signature,
+      challengeId: result.value.challengeId,
+    }),
+  })
+} else {
+  switch (result.error.code) {
+    case 'USER_CANCELLED':        // user dismissed the prompt
+    case 'ACTION_CHALLENGE_EXPIRED':  // challenge TTL exceeded (default 5 min)
+    case 'ACTION_ALREADY_CLAIMED':    // challenge already verified (anti-replay)
+    case 'ACTION_PAYLOAD_MISMATCH':   // payload hash doesn't match what was signed
+  }
+}
+```
+
+Your backend verifies the signature via `POST /v1/actions/verify` before executing the action. The challenge is single-use — replaying the same `challengeId` returns `ACTION_ALREADY_CLAIMED`.
+
 ### Capabilities
 
 ```typescript
@@ -157,6 +195,9 @@ if (result.ok) {
     case 'TIMEOUT':           // ceremony timed out
     case 'NETWORK_FAILURE':   // API unreachable
     case 'CREDENTIAL_NOT_FOUND': // no passkey registered for this user
+    case 'ACTION_CHALLENGE_EXPIRED':  // action challenge TTL exceeded (action signing)
+    case 'ACTION_ALREADY_CLAIMED':    // action challenge already used — anti-replay (action signing)
+    case 'ACTION_PAYLOAD_MISMATCH':   // payload hash doesn't match what was signed (action signing)
   }
 }
 ```

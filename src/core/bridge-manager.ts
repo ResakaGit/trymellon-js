@@ -20,7 +20,7 @@ import type {
   AuthStartResponse,
 } from '../types';
 import type { StorageLike } from './context-hash';
-import { getOrCreateContextHash } from './context-hash';
+import { getOrCreateContextHash, createInMemoryStorage } from './context-hash';
 import { createRegistrationOptions, createAuthenticationOptions } from './webauthn';
 import { serializeCredentialForRegister, serializeCredentialForAuth } from './webauthn-utils';
 import { validateCredentialStructure } from '../utils/validation';
@@ -38,6 +38,8 @@ const BRIDGE_TERMINAL_STATUSES: ReadonlySet<BridgeStatusSnapshot['status']> = ne
 
 const BRIDGE_POLL_INTERVAL_MS = 1500;
 const BRIDGE_WAIT_DEFAULT_TIMEOUT_MS = 300_000;
+/** Hard cap on poll iterations regardless of timeoutMs. 300s / 1.5s = 200 max attempts. */
+const MAX_BRIDGE_POLL_ATTEMPTS = 200;
 
 function isTerminalBridgeStatus(status: BridgeStatusSnapshot['status']): boolean {
   return BRIDGE_TERMINAL_STATUSES.has(status);
@@ -45,7 +47,7 @@ function isTerminalBridgeStatus(status: BridgeStatusSnapshot['status']): boolean
 
 /** Parses an SSE message for the bridge status stream. Returns null for non-terminal events. */
 function parseBridgeStatusMessage(
-  event: MessageEvent
+  event: MessageEvent | { data: string }
 ): Result<BridgeStatusSnapshot, TryMellonError> | null {
   try {
     const raw = typeof event.data === 'string' ? event.data : String(event.data);
@@ -112,6 +114,9 @@ async function resolvePinAndVerify(
 }
 
 export class BridgeManager {
+  /** Per-instance in-memory fallback avoids sharing hash state across SSR requests. */
+  private readonly _inMemoryFallback: StorageLike = createInMemoryStorage();
+
   constructor(
     private readonly apiClient: ApiClient,
     private readonly storage?: StorageLike
@@ -143,7 +148,7 @@ export class BridgeManager {
     const pollUntilTerminal = async (
       startAt: number
     ): Promise<Result<BridgeStatusSnapshot, TryMellonError>> => {
-      for (;;) {
+      for (let attempts = 0; attempts < MAX_BRIDGE_POLL_ATTEMPTS; attempts++) {
         if (signal?.aborted) {
           return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
         }
@@ -158,6 +163,7 @@ export class BridgeManager {
           return err(createError('ABORT_ERROR', 'Operation aborted by user or timeout'));
         }
       }
+      return err(createError('TIMEOUT', 'Bridge status wait exceeded maximum poll attempts'));
     };
 
     if (useSse && typeof EventSource !== 'undefined') {
@@ -286,7 +292,8 @@ export class BridgeManager {
       const serialized = serializeCredentialForRegister(credential as PublicKeyCredential);
 
       const effectiveStorage =
-        this.storage ?? (typeof sessionStorage !== 'undefined' ? sessionStorage : undefined);
+        this.storage ??
+        (typeof sessionStorage !== 'undefined' ? sessionStorage : this._inMemoryFallback);
       const contextHash = getOrCreateContextHash(effectiveStorage);
 
       const completeResult = await this.apiClient.completeBridgeEnrollment({
