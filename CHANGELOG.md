@@ -1,3 +1,10 @@
+## [3.1.5](https://github.com/ResakaGit/trymellon-js/compare/v3.1.4...v3.1.5) (2026-04-09)
+
+
+### Bug Fixes
+
+* **sdk:** close EventSource on abort, snake_case body fields, test alignment ([b402f94](https://github.com/ResakaGit/trymellon-js/commit/b402f94625975f611ec159a30da16c54e1c69418))
+
 ## [3.1.5] - 2026-04-08
 
 ### Fixed
