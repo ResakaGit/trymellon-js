@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/ResakaGit/trymellon-js/compare/v3.1.5...v3.2.0) (2026-04-09)
+
+
+### Features
+
+* **release:** v3.2.0 — ActionManager (KP-ACTION-01) ([4271818](https://github.com/ResakaGit/trymellon-js/commit/4271818dc179396864e9746d241618dce37c826b))
+
 ## [3.2.0] - 2026-04-08
 
 ### Added
