@@ -4,6 +4,7 @@ import { OnboardingManager } from './onboarding-manager';
 import { EnrollmentManager } from './enrollment-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { BridgeManager } from './bridge-manager';
+import { ActionManager } from './action-manager';
 import { getOrCreateContextHash, createInMemoryStorage } from './context-hash';
 import { EventEmitter } from './events';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
@@ -46,6 +47,8 @@ import type {
   BridgeResult,
   BridgeCompleteOptions,
   BridgeStatusSnapshot,
+  ActionSignOptions,
+  ActionSignResult,
 } from '../types';
 import { ok, err, type Result } from '../utils/result';
 import { type TryMellonError, isTryMellonError } from '../errors';
@@ -80,6 +83,7 @@ export class TryMellon {
   private readonly onboardingManager: OnboardingManager;
   private readonly enrollmentManager: EnrollmentManager;
   private readonly bridgeManager: BridgeManager;
+  private readonly actionManager: ActionManager;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
 
   private static validateConfig(config: TryMellonConfig): void {
@@ -178,6 +182,7 @@ export class TryMellon {
     this.enrollmentManager = new EnrollmentManager(this.apiClient, this.contextHashStorage);
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
+    this.actionManager = new ActionManager(this.apiClient);
     this.warnIfSandboxOnProd();
   }
 
@@ -336,6 +341,22 @@ export class TryMellon {
   passkey = {
     recover: (options: RecoverAccountOptions) => this.recoveryService.recover(options),
   };
+
+  /**
+   * Action signing (KP-SDK-01): prompt the user to authorize a specific operation
+   * with their passkey. Returns a short-lived JWT action token (120s) scoped to
+   * the provided actionType + payloadHash.
+   *
+   * The action token proves the authenticated user explicitly approved this exact payload.
+   * Your backend must verify the token before executing the action.
+   */
+  get action(): {
+    sign(opts: ActionSignOptions): Promise<Result<ActionSignResult, TryMellonError>>;
+  } {
+    return {
+      sign: (opts) => this.actionManager.sign(opts),
+    };
+  }
 
   platform = {
     signUp: (

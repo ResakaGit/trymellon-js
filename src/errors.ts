@@ -17,7 +17,11 @@ export type TryMellonErrorCode =
   | 'RATE_LIMIT_EXCEEDED'
   | 'FORBIDDEN'
   | 'SERVER_ERROR'
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  // Action signing (KP-SDK-01)
+  | 'ACTION_CHALLENGE_EXPIRED'
+  | 'ACTION_ALREADY_CLAIMED'
+  | 'ACTION_PAYLOAD_MISMATCH';
 
 export class TryMellonError extends Error {
   readonly code: TryMellonErrorCode;
@@ -56,6 +60,11 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   FORBIDDEN: 'You do not have permission to perform this action.',
   SERVER_ERROR: 'A server error occurred. Try again later.',
   UNKNOWN_ERROR: 'An unknown error occurred',
+  // Action signing (KP-SDK-01)
+  ACTION_CHALLENGE_EXPIRED: 'Action challenge has expired. Request a new one.',
+  ACTION_ALREADY_CLAIMED: 'Action challenge was already used. Request a new one.',
+  ACTION_PAYLOAD_MISMATCH:
+    'Payload mismatch — the signed data does not match the requested action.',
 };
 
 export function createError(
@@ -223,6 +232,11 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     session_not_found: 'BRIDGE_SESSION_EXPIRED',
     origin_not_allowed: 'INVALID_ARGUMENT',
     origin_not_allowed_for_application: 'INVALID_ARGUMENT',
+    // Action signing (KP-SDK-01 / ADR-028)
+    action_challenge_expired: 'ACTION_CHALLENGE_EXPIRED',
+    challenge_already_claimed: 'ACTION_ALREADY_CLAIMED',
+    already_claimed: 'ACTION_ALREADY_CLAIMED',
+    action_payload_mismatch: 'ACTION_PAYLOAD_MISMATCH',
     // Cross-device QR domain errors (backend emits QR_ prefix)
     qr_expired: 'SESSION_EXPIRED',
     qr_session_not_found: 'SESSION_EXPIRED',

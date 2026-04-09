@@ -409,6 +409,90 @@ export type BridgeCompleteOptions = BridgeOptions & {
 };
 
 // ============================================================================
+// Action Signing Types (KP-SDK-01)
+// ============================================================================
+
+/** Input to client.action.sign() */
+export interface ActionSignOptions {
+  /**
+   * Semantic action label. Format: 'namespace:verb'.
+   * Example: 'approve:transfer', 'finance:wire_transfer'.
+   * Backend validates: ^[a-z0-9_]+:[a-z0-9_]+$
+   */
+  actionType: string;
+  /**
+   * 64-char lowercase hex SHA-256 of the payload being authorized.
+   * The SDK validates the format but does NOT compute this hash — caller supplies it.
+   */
+  payloadHash: string;
+  /** Challenge TTL in seconds. Default: 300. Backend clamps to 60–900. */
+  ttlSeconds?: number;
+  /** WebAuthn Relying Party ID. Must match the domain the passkey was registered under. */
+  rpId: string;
+  /** Aborts the WebAuthn ceremony. Does not cancel in-flight HTTP requests. */
+  signal?: AbortSignal;
+}
+
+/** Successful result of client.action.sign() */
+export interface ActionSignResult {
+  /** Short-lived JWT (120s TTL). Verify signature server-side before trusting. */
+  token: string;
+  /** ISO 8601 timestamp of server-side verification. */
+  verifiedAt: string;
+  /** Echoed from request. Assert it matches your intent before using the token. */
+  actionType: string;
+  /** WebAuthn credential ID that produced the assertion. */
+  credentialId: string;
+}
+
+// Backend DTOs — snake_case, used internally by validators and ApiClient
+
+/** Request body for POST /v1/actions/challenges */
+export type IssueActionChallengeRequest = {
+  action_type: string;
+  payload_hash: string;
+  rp_id: string;
+  ttl_seconds?: number;
+};
+
+/** Response from POST /v1/actions/challenges */
+export type IssueActionChallengeResponse = {
+  challenge_id: string;
+  webauthn_options: {
+    challenge: string;
+    rpId: string;
+    allowCredentials?: Array<{ id: string; type: 'public-key'; transports?: string[] }>;
+    timeout?: number;
+    userVerification?: 'required' | 'preferred' | 'discouraged';
+  };
+  expires_at: string;
+};
+
+/** Request body for POST /v1/actions/:challengeId/verify */
+export type VerifyActionSignatureRequest = {
+  authentication_response: {
+    id: string;
+    rawId: string;
+    response: {
+      authenticatorData: string;
+      clientDataJSON: string;
+      signature: string;
+      userHandle?: string;
+    };
+    type: 'public-key';
+  };
+  rp_id: string;
+};
+
+/** Response from POST /v1/actions/:challengeId/verify */
+export type VerifyActionSignatureResponse = {
+  token: string;
+  verified_at: string;
+  action_type: string;
+  credential_id: string;
+};
+
+// ============================================================================
 // API Request Types
 // ============================================================================
 

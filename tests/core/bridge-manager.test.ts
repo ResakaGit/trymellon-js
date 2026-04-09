@@ -12,7 +12,10 @@ import { createError } from '../../src/errors';
 const FIXED_CONTEXT_HASH = 'a'.repeat(64);
 vi.mock('../../src/core/context-hash', () => ({
   getOrCreateContextHash: vi.fn(() => FIXED_CONTEXT_HASH),
-  createInMemoryStorage: vi.fn(() => ({ getItem: vi.fn().mockReturnValue(null), setItem: vi.fn() })),
+  createInMemoryStorage: vi.fn(() => ({
+    getItem: vi.fn().mockReturnValue(null),
+    setItem: vi.fn(),
+  })),
 }));
 
 const validContext = {

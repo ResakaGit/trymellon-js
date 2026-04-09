@@ -29,6 +29,10 @@ import {
   validateBridgeCompleteAuthResponse,
   validateBridgeStatusResponse,
 } from './validators';
+import {
+  validateIssueActionChallengeResponse,
+  validateVerifyActionSignatureResponse,
+} from './validators/action';
 import type {
   RegisterStartRequest,
   RegisterStartResponse,
@@ -60,6 +64,10 @@ import type {
   BridgeCompleteEnrollmentResult,
   BridgeCompleteAuthResult,
   BridgeStatusSnapshot,
+  IssueActionChallengeRequest,
+  IssueActionChallengeResponse,
+  VerifyActionSignatureRequest,
+  VerifyActionSignatureResponse,
 } from '../types';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
 
@@ -438,6 +446,36 @@ export class ApiClient {
    */
   getBridgeStatusUrl(sessionId: string, kind: BridgeKind): string {
     return `${this.baseUrl}${this.bridgePrefix(kind)}/status/${sessionId}`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Action Signing (KP-SDK-01 / ADR-028)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Issues an action challenge. Server derives challenge as
+   * SHA256(actionType|payloadHash|tenantId|userId|nonce) — binding this specific payload.
+   */
+  async issueActionChallenge(
+    body: IssueActionChallengeRequest
+  ): Promise<Result<IssueActionChallengeResponse, TryMellonError>> {
+    return this.post('/v1/actions/challenges', body, validateIssueActionChallengeResponse);
+  }
+
+  /**
+   * Verifies a WebAuthn assertion against the issued action challenge.
+   * Backend enforces anti-replay (Redis SET NX) and payload binding before returning
+   * a short-lived action token (120s JWT).
+   */
+  async verifyActionSignature(
+    challengeId: string,
+    body: VerifyActionSignatureRequest
+  ): Promise<Result<VerifyActionSignatureResponse, TryMellonError>> {
+    return this.post(
+      `/v1/actions/${challengeId}/verify`,
+      body,
+      validateVerifyActionSignatureResponse
+    );
   }
 
   async getBridgeStatus(

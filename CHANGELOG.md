@@ -1,3 +1,17 @@
+## [3.2.0] - 2026-04-08
+
+### Added
+
+- **`ActionManager` — API pública para Action Signing (KP-ACTION-01):** Nueva clase `ActionManager` exportada desde `@trymellon/js`. Expone `client.action.issueChallenge(payload)` y `client.action.verify(challenge, payload, options)` para el flujo de firma WebAuthn de acciones críticas (transfers, confirmaciones). Integrado en `TryMellon` como `this.action`. Tipos `ActionChallenge`, `ActionVerifyOptions`, `ActionVerifyResult` exportados desde el índice público.
+- **`createError` — nuevo código `ACTION_SIGN_ERROR`:** Agregado a `errors.ts` para errores específicos del flujo de firma de acción.
+- **Tipos de SDK extendidos:** `src/types.ts` incluye los nuevos tipos de Action Signing. `src/index.ts` exporta `ActionManager`, tipos de acción y `ACTION_SIGN_ERROR`.
+- **Tests unitarios para `ActionManager` y validators:** 38 tests cubriendo happy path, sad paths de seguridad (challenge expirado, payload mismatch, signature inválida) y edge cases.
+- **`validateIssueActionChallengeResponse` / `validateVerifyActionSignatureResponse`:** Validators en `src/core/validators/action.ts` para verificar shapes de respuesta del backend.
+
+### Changed
+
+- **`README.MD` actualizado:** Documentación del nuevo flujo de Action Signing con ejemplos de uso de `client.action.issueChallenge()` y `client.action.verify()`.
+
 ## [3.1.5](https://github.com/ResakaGit/trymellon-js/compare/v3.1.4...v3.1.5) (2026-04-09)
 
 

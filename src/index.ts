@@ -37,6 +37,9 @@ export type {
   BridgeEnrollmentResult,
   BridgeAuthResult,
   BridgeStatusSnapshot,
+  // Action signing (KP-SDK-01)
+  ActionSignOptions,
+  ActionSignResult,
 } from './types';
 
 export {

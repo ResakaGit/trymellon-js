@@ -575,7 +575,8 @@ describe('CrossDeviceManager', () => {
 
     it('Given pollingToken provided, when waitForSession is called, then X-Polling-Token header is sent via fetch SSE (no EventSource)', async () => {
       // pollingToken is sent via X-Polling-Token header using fetch-based SSE, not as a query param.
-      const sseBody = 'data: {"status":"completed","session_token":"tok_ok","user_id":"usr_ok"}\n\n';
+      const sseBody =
+        'data: {"status":"completed","session_token":"tok_ok","user_id":"usr_ok"}\n\n';
       const mockResponse = new Response(
         new ReadableStream({
           start(controller) {
