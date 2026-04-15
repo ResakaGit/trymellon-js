@@ -40,6 +40,7 @@ import type {
   EmailFallbackVerifyOptions,
   EmailFallbackVerifyResult,
   SessionValidateResponse,
+  SessionClaims,
   RecoverAccountOptions,
   EnrollOptions,
   EnrollmentResult,
@@ -55,6 +56,7 @@ import { ok, err, type Result } from '../utils/result';
 import { type TryMellonError, isTryMellonError } from '../errors';
 import { AuthService } from './services/auth-service';
 import { RecoveryService } from './services/recovery-service';
+import { verifyJwtOffline } from './session-verifier';
 
 declare const __VERSION__: string;
 
@@ -85,6 +87,7 @@ export class TryMellon {
   private readonly enrollmentManager: EnrollmentManager;
   private readonly bridgeManager: BridgeManager;
   private readonly actionManager: ActionManager;
+  private readonly apiBaseUrl: string;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
   readonly preset: TryMellonPreset;
 
@@ -169,6 +172,7 @@ export class TryMellon {
       ...(originHeader && { Origin: originHeader }),
     };
 
+    this.apiBaseUrl = apiBaseUrl;
     this.apiClient = new ApiClient(httpClient, apiBaseUrl, defaultHeaders);
     this.eventEmitter = new EventEmitter();
     this.preset = config.preset ?? 'saas';
@@ -303,6 +307,23 @@ export class TryMellon {
         );
       }
       return this.apiClient.validateSession(sessionToken);
+    },
+    verifyOffline: async (sessionToken: string): Promise<Result<SessionClaims, TryMellonError>> => {
+      if (this.sandbox && sessionToken === this.sandboxToken) {
+        const now = Math.floor(Date.now() / 1000);
+        return Promise.resolve(
+          ok({
+            userId: 'sandbox-user',
+            externalUserId: 'sandbox',
+            tenantId: 'sandbox-tenant',
+            appId: 'sandbox-app',
+            iat: now,
+            exp: now + 3600,
+          })
+        );
+      }
+      const jwksUrl = `${this.apiBaseUrl.replace(/\/$/, '')}/.well-known/jwks.json`;
+      return verifyJwtOffline({ token: sessionToken, jwksUrl });
     },
   };
 

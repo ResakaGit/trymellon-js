@@ -182,6 +182,49 @@ describe('TryMellon sandbox mode', () => {
     });
   });
 
+  describe('session.verifyOffline() in sandbox mode', () => {
+    it('Given sandbox token, when verifyOffline, then returns fake claims without fetching JWKS', async () => {
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy as unknown as typeof fetch;
+      const createResult = TryMellon.create({
+        sandbox: true,
+        appId: 'sandbox',
+        publishableKey: 'sandbox',
+      });
+      if (!createResult.ok) throw new Error('expected ok');
+      const client = createResult.value;
+
+      const result = await client.session.verifyOffline(SANDBOX_SESSION_TOKEN);
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.userId).toBe('sandbox-user');
+        expect(result.value.externalUserId).toBe('sandbox');
+        expect(result.value.tenantId).toBe('sandbox-tenant');
+        expect(result.value.appId).toBe('sandbox-app');
+        expect(result.value.exp).toBeGreaterThan(result.value.iat);
+      }
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('Given non-sandbox token under sandbox: true, when verifyOffline, then falls through to real verify', async () => {
+      globalThis.fetch = vi.fn(
+        async () => new Response('bad', { status: 500 })
+      ) as unknown as typeof fetch;
+      const createResult = TryMellon.create({
+        sandbox: true,
+        appId: 'sandbox',
+        publishableKey: 'sandbox',
+      });
+      if (!createResult.ok) throw new Error('expected ok');
+      const client = createResult.value;
+
+      const result = await client.session.verifyOffline('not.the.sandbox');
+
+      expect(result.ok).toBe(false);
+    });
+  });
+
   describe('sandbox console warning (warnIfSandboxOnProd)', () => {
     it('calls console.warn with message containing "Sandbox mode is ON" when sandbox true and origin is production', () => {
       setWindowOrigin('https://myapp.com');

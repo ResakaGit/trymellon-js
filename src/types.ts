@@ -696,6 +696,55 @@ export type SessionValidateResponse = {
 };
 
 // ============================================================================
+// Offline JWT Verification (ADR-SDK-003)
+// ============================================================================
+
+/** Decoded session token claims returned by `client.session.verifyOffline`. */
+export type SessionClaims = {
+  /** Falls back to the JWT `sub` claim when `user_id` is absent (e.g. oauth2 service tokens). */
+  userId: string;
+  externalUserId?: string;
+  tenantId: string;
+  appId: string;
+  /** Flattened from the namespaced `https://trymellon.dev/claims` object. */
+  customClaims?: Record<string, string | number | boolean>;
+  iat: number;
+  exp: number;
+  kid?: string;
+};
+
+/** Subset of RFC 7517 JWK members the verifier consumes. */
+export type Jwk = {
+  kty: string;
+  kid: string;
+  alg?: string;
+  use?: 'sig';
+  n?: string;
+  e?: string;
+  x?: string;
+  y?: string;
+  crv?: string;
+};
+
+/** Protected header of a JWT after base64url decoding. */
+export type JwtHeader = {
+  alg: string;
+  kid?: string;
+  typ?: string;
+};
+
+/** Unvalidated JWT payload; keys are whatever the signer emitted. */
+export type JwtPayloadRaw = Record<string, unknown> & {
+  sub?: unknown;
+  tenant_id?: unknown;
+  app_id?: unknown;
+  user_id?: unknown;
+  external_user_id?: unknown;
+  iat?: unknown;
+  exp?: unknown;
+};
+
+// ============================================================================
 // Onboarding API Request Types
 // ============================================================================
 

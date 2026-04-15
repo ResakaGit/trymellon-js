@@ -209,6 +209,59 @@ if (result.ok && result.value.valid) {
 
 ---
 
+### `session.verifyOffline()`
+
+Validates a session JWT locally using the backend's JWKS (`/.well-known/jwks.json`). No round-trip to `/v1/sessions/validate`. Zero runtime dependencies (native WebCrypto).
+
+```typescript
+session.verifyOffline(sessionToken: string): Promise<Result<SessionClaims, TryMellonError>>
+```
+
+**Behaviour:**
+
+- Fetches and caches the JWKS for 1 hour (module-level singleton). Second call reuses the cache.
+- Verifies `RS256` signature against the matching `kid`; rejects anything else (alg-confusion defense).
+- Applies **±30s clock skew** on `exp` (reloj cliente atrasado no invalida tokens). `iat` strict — rejects future-dated tokens.
+- Flattens the `https://trymellon.dev/claims` namespace into `customClaims` on the result.
+
+**When to use:** high-traffic middleware, latency-sensitive paths, resilience when TryMellon is unreachable.
+**When to use `session.verify` instead:** you need revocation check in real time (introspection) — offline verify cannot detect server-side revocation; relies on webhooks.
+
+**Error codes:**
+
+| Code | Cause |
+|---|---|
+| `JWT_KID_MISMATCH` | kid not in JWKS, signature invalid, or algorithm mismatch |
+| `SESSION_EXPIRED` | `exp` exceeded (with 30s skew) |
+| `INVALID_ARGUMENT` | Malformed token, missing required claims, future `iat` |
+| `NETWORK_FAILURE` | JWKS fetch failed (network / 5xx / malformed body) |
+
+**Example (Node / Express middleware):**
+
+```typescript
+app.use(async (req, res, next) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).end();
+  const result = await client.session.verifyOffline(token);
+  if (!result.ok) return res.status(401).json({ error: result.error.code });
+  req.user = { id: result.value.userId, tenantId: result.value.tenantId };
+  next();
+});
+```
+
+**Example (browser):**
+
+```typescript
+const result = await client.session.verifyOffline(localStorage.getItem('token') ?? '');
+if (result.ok) {
+  console.log('Plan:', result.value.customClaims?.plan);
+}
+```
+
+**Design notes:** see ADR-SDK-003 for JWKS cache TTL, clock skew rationale, and algorithm lock.
+
+---
+
 ### `capabilities()`
 
 Gets WebAuthn support status on the client device.

@@ -20,6 +20,7 @@ export type {
   EmailFallbackVerifyOptions,
   EmailFallbackVerifyResult,
   SessionValidateResponse,
+  SessionClaims,
   OnboardingStartOptions,
   OnboardingStartResult,
   OnboardingStatusResult,

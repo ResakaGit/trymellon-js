@@ -2,6 +2,7 @@
 
 ### Added
 
+- **`client.session.verifyOffline(token)`:** local JWT validation consuming the backend JWKS (`/.well-known/jwks.json`). Zero runtime dependencies (native WebCrypto). Module-level JWKS cache (TTL 1h). Clock skew ±30s on `exp`. Rejects anything other than RS256 (algorithm-confusion defense). Flattens `https://trymellon.dev/claims` into `customClaims` on the returned `SessionClaims`. New exported type `SessionClaims`. Design and trade-offs documented in ADR-SDK-003.
 - **`preset` field in `TryMellonConfig`:** opt-in mechanism for future F1/F2 feature namespaces. Default is `'saas'` (only value accepted in F0 — reserves the API surface without shipping unimplemented namespaces). Unknown values fail validation with `INVALID_ARGUMENT`.
 - **`customClaims` parameter in `signUp`, `signIn`, and `enroll`:** integrators can inject allow-listed claims into the session JWT under the `https://trymellon.dev/claims` namespace. Validated server-side against the application's `custom_claims_schema`. Limits: 10 keys, 2KB serialized. Backend rejects with `CUSTOM_CLAIM_NOT_ALLOWED` or `CUSTOM_CLAIMS_TOO_LARGE`.
 - **Webhook types + HMAC verifier (`src/core/webhook.ts`):** new public surface for integrators consuming webhook deliveries.
