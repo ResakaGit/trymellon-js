@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/ResakaGit/trymellon-js/compare/v3.2.0...v3.3.0) (2026-04-15)
+
+
+### Features
+
+* **sdk:** F0 Drop-In surface — preset + customClaims + webhook types + HMAC verifier ([62a448c](https://github.com/ResakaGit/trymellon-js/commit/62a448c046db5087f39923bb09cd9ae3c407c9e0))
+
 # [Unreleased]
 
 ### Added
