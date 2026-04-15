@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/ResakaGit/trymellon-js/compare/v3.3.0...v3.4.0) (2026-04-15)
+
+
+### Features
+
+* **sdk:** client.session.verifyOffline — zero-dep JWT validation via JWKS ([203f4a0](https://github.com/ResakaGit/trymellon-js/commit/203f4a01ec9d38cb9d0bdf43f26c35e9fd222c66))
+
 # [3.3.0](https://github.com/ResakaGit/trymellon-js/compare/v3.2.0...v3.3.0) (2026-04-15)
 
 
