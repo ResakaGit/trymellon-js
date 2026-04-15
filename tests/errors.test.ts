@@ -308,6 +308,41 @@ describe('mapBackendErrorCodeToTryMellon', () => {
     expect(mapBackendErrorCodeToTryMellon('forbidden')).toBe('FORBIDDEN');
   });
 
+  it('maps WebAuthn / credential backend codes to semantic SDK codes', () => {
+    expect(mapBackendErrorCodeToTryMellon('credential_not_found')).toBe('PASSKEY_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('no_credentials')).toBe('PASSKEY_NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('replay_detected')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('gone')).toBe('CHALLENGE_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('application_not_found')).toBe('NOT_FOUND');
+    expect(mapBackendErrorCodeToTryMellon('tenant_inactive')).toBe('TENANT_INACTIVE');
+    expect(mapBackendErrorCodeToTryMellon('invitation_not_found')).toBe('INVITATION_NOT_FOUND');
+  });
+
+  it('maps email/OTP fallback + recovery backend codes', () => {
+    expect(mapBackendErrorCodeToTryMellon('invalid_or_expired_code')).toBe(
+      'OTP_INVALID_OR_EXPIRED'
+    );
+    expect(mapBackendErrorCodeToTryMellon('too_many_attempts')).toBe('RATE_LIMIT_EXCEEDED');
+    expect(mapBackendErrorCodeToTryMellon('email_required_for_fallback')).toBe('INVALID_ARGUMENT');
+    expect(mapBackendErrorCodeToTryMellon('email_required_for_recovery')).toBe('INVALID_ARGUMENT');
+  });
+
+  it('maps application rotation, JWKS, introspection and custom-claims backend codes', () => {
+    expect(mapBackendErrorCodeToTryMellon('application_rotation_not_allowed')).toBe(
+      'SECRET_ROTATION_FORBIDDEN'
+    );
+    expect(mapBackendErrorCodeToTryMellon('session_jwt_kid_mismatch')).toBe('JWT_KID_MISMATCH');
+    expect(mapBackendErrorCodeToTryMellon('session_introspection_failed')).toBe(
+      'INTROSPECTION_FAILED'
+    );
+    expect(mapBackendErrorCodeToTryMellon('session_custom_claim_not_whitelisted')).toBe(
+      'CUSTOM_CLAIM_NOT_ALLOWED'
+    );
+    expect(mapBackendErrorCodeToTryMellon('session_custom_claims_limit_exceeded')).toBe(
+      'CUSTOM_CLAIMS_TOO_LARGE'
+    );
+  });
+
   it('returns UNKNOWN_ERROR for unknown backend codes', () => {
     expect(mapBackendErrorCodeToTryMellon('')).toBe('UNKNOWN_ERROR');
     expect(mapBackendErrorCodeToTryMellon('some_random_code')).toBe('UNKNOWN_ERROR');

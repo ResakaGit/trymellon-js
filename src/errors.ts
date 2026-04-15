@@ -16,12 +16,23 @@ export type TryMellonErrorCode =
   | 'BRIDGE_SESSION_EXPIRED'
   | 'RATE_LIMIT_EXCEEDED'
   | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'TENANT_INACTIVE'
+  | 'INVITATION_NOT_FOUND'
   | 'SERVER_ERROR'
   | 'UNKNOWN_ERROR'
-  // Action signing (KP-SDK-01)
+  // Action signing
   | 'ACTION_CHALLENGE_EXPIRED'
   | 'ACTION_ALREADY_CLAIMED'
-  | 'ACTION_PAYLOAD_MISMATCH';
+  | 'ACTION_PAYLOAD_MISMATCH'
+  // Email / OTP fallback + recovery
+  | 'OTP_INVALID_OR_EXPIRED'
+  // Application rotation · JWKS validation · custom claims · introspection
+  | 'SECRET_ROTATION_FORBIDDEN'
+  | 'JWT_KID_MISMATCH'
+  | 'INTROSPECTION_FAILED'
+  | 'CUSTOM_CLAIM_NOT_ALLOWED'
+  | 'CUSTOM_CLAIMS_TOO_LARGE';
 
 export class TryMellonError extends Error {
   readonly code: TryMellonErrorCode;
@@ -58,13 +69,27 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   BRIDGE_SESSION_EXPIRED: 'Bridge session has expired',
   RATE_LIMIT_EXCEEDED: 'Too many requests. Please slow down and try again.',
   FORBIDDEN: 'You do not have permission to perform this action.',
+  NOT_FOUND: 'The requested resource was not found.',
+  TENANT_INACTIVE: 'The target tenant is inactive. Contact support to reactivate.',
+  INVITATION_NOT_FOUND: 'The invitation was not found, already consumed, or revoked.',
   SERVER_ERROR: 'A server error occurred. Try again later.',
   UNKNOWN_ERROR: 'An unknown error occurred',
-  // Action signing (KP-SDK-01)
+  // Action signing
   ACTION_CHALLENGE_EXPIRED: 'Action challenge has expired. Request a new one.',
   ACTION_ALREADY_CLAIMED: 'Action challenge was already used. Request a new one.',
   ACTION_PAYLOAD_MISMATCH:
     'Payload mismatch — the signed data does not match the requested action.',
+  // Email / OTP fallback + recovery
+  OTP_INVALID_OR_EXPIRED: 'The verification code is invalid or has expired. Request a new one.',
+  // Application rotation · JWKS validation · custom claims · introspection
+  SECRET_ROTATION_FORBIDDEN: 'You do not have permission to rotate this application secret.',
+  JWT_KID_MISMATCH:
+    'JWT key id (kid) does not match any key in the JWKS. The signing key may have rotated — refresh the JWKS cache.',
+  INTROSPECTION_FAILED: 'Token introspection failed. Check credentials and token format.',
+  CUSTOM_CLAIM_NOT_ALLOWED:
+    'A custom claim key is not in the application custom_claims_schema. Add it in the dashboard or remove it from the request.',
+  CUSTOM_CLAIMS_TOO_LARGE:
+    'Custom claims exceed the allowed limits (max 10 keys, 2KB total serialized). Reduce payload and retry.',
 };
 
 export function createError(
@@ -232,11 +257,29 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     session_not_found: 'BRIDGE_SESSION_EXPIRED',
     origin_not_allowed: 'INVALID_ARGUMENT',
     origin_not_allowed_for_application: 'INVALID_ARGUMENT',
-    // Action signing (KP-SDK-01 / ADR-028)
+    // WebAuthn ceremony / credential
+    credential_not_found: 'PASSKEY_NOT_FOUND',
+    no_credentials: 'PASSKEY_NOT_FOUND',
+    replay_detected: 'CHALLENGE_MISMATCH',
+    gone: 'CHALLENGE_MISMATCH',
+    application_not_found: 'NOT_FOUND',
+    tenant_inactive: 'TENANT_INACTIVE',
+    invitation_not_found: 'INVITATION_NOT_FOUND',
+    // Email / OTP fallback + recovery
+    invalid_or_expired_code: 'OTP_INVALID_OR_EXPIRED',
+    too_many_attempts: 'RATE_LIMIT_EXCEEDED',
+    email_required_for_fallback: 'INVALID_ARGUMENT',
+    email_required_for_recovery: 'INVALID_ARGUMENT',
+    // Action signing
     action_challenge_expired: 'ACTION_CHALLENGE_EXPIRED',
     challenge_already_claimed: 'ACTION_ALREADY_CLAIMED',
-    already_claimed: 'ACTION_ALREADY_CLAIMED',
     action_payload_mismatch: 'ACTION_PAYLOAD_MISMATCH',
+    // Application rotation · JWKS validation · custom claims · introspection
+    application_rotation_not_allowed: 'SECRET_ROTATION_FORBIDDEN',
+    session_jwt_kid_mismatch: 'JWT_KID_MISMATCH',
+    session_introspection_failed: 'INTROSPECTION_FAILED',
+    session_custom_claim_not_whitelisted: 'CUSTOM_CLAIM_NOT_ALLOWED',
+    session_custom_claims_limit_exceeded: 'CUSTOM_CLAIMS_TOO_LARGE',
     // Cross-device QR domain errors (backend emits QR_ prefix)
     qr_expired: 'SESSION_EXPIRED',
     qr_session_not_found: 'SESSION_EXPIRED',

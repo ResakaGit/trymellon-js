@@ -510,11 +510,6 @@ describe('ActionManager.sign', () => {
       );
     });
 
-    it('maps already_claimed → ACTION_ALREADY_CLAIMED', async () => {
-      const { mapBackendErrorCodeToTryMellon } = await import('../../src/errors');
-      expect(mapBackendErrorCodeToTryMellon('already_claimed')).toBe('ACTION_ALREADY_CLAIMED');
-    });
-
     it('maps action_payload_mismatch → ACTION_PAYLOAD_MISMATCH', async () => {
       const { mapBackendErrorCodeToTryMellon } = await import('../../src/errors');
       expect(mapBackendErrorCodeToTryMellon('action_payload_mismatch')).toBe(

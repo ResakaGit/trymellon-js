@@ -734,7 +734,6 @@ Available error codes:
 - `'NETWORK_FAILURE'`: Network error
 - `'INVALID_ARGUMENT'`: Invalid argument
 - `'TIMEOUT'`: Operation expired
-- `'ABORTED'`: Operation aborted
 - `'ABORT_ERROR'`: Operation aborted by user or timeout
 - `'CHALLENGE_MISMATCH'`: Challenge mismatch — link was already used or expired
 - `'TICKET_NOT_FOUND'`: Enrollment ticket not found or invalid
@@ -743,6 +742,21 @@ Available error codes:
 - `'PIN_MISMATCH'`: PIN does not match
 - `'PIN_LOCKED'`: PIN locked due to too many failed attempts
 - `'BRIDGE_SESSION_EXPIRED'`: Bridge session has expired
+- `'OTP_INVALID_OR_EXPIRED'`: Email OTP (fallback or recovery) is invalid or expired
+- `'ACTION_CHALLENGE_EXPIRED'`: Action signing challenge TTL exceeded
+- `'ACTION_ALREADY_CLAIMED'`: Action challenge already used (single-use anti-replay)
+- `'ACTION_PAYLOAD_MISMATCH'`: Signed payload hash does not match server-issued hash
+- `'SECRET_ROTATION_FORBIDDEN'`: Caller not allowed to rotate application secret
+- `'JWT_KID_MISMATCH'`: JWT `kid` not found in JWKS (key rotated)
+- `'INTROSPECTION_FAILED'`: Token introspection rejected by server
+- `'CUSTOM_CLAIM_NOT_ALLOWED'`: `customClaims` key not in application whitelist
+- `'CUSTOM_CLAIMS_TOO_LARGE'`: `customClaims` payload exceeds size cap
+- `'RATE_LIMIT_EXCEEDED'`: Too many requests (SDK retries with backoff)
+- `'FORBIDDEN'`: Access denied (missing role/scope)
+- `'NOT_FOUND'`: Requested resource (application, entity, etc.) not found
+- `'TENANT_INACTIVE'`: Target tenant is inactive
+- `'INVITATION_NOT_FOUND'`: Invitation not found, already consumed, or revoked
+- `'SERVER_ERROR'`: Unrecoverable server-side error
 - `'UNKNOWN_ERROR'`: Unknown error
 
 **Note on retries:** The SDK retries automatically with exponential backoff for HTTP 5xx, HTTP 429, and transient network errors. Not applied to 4xx (except 429), timeout, or validation errors.
