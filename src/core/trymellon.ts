@@ -28,6 +28,7 @@ import { createDefaultTelemetrySender } from './adapters/telemetry-sender';
 import type { TelemetrySender } from './ports/telemetry';
 import type {
   TryMellonConfig,
+  TryMellonPreset,
   RegisterOptions,
   RegisterResult,
   AuthenticateOptions,
@@ -85,6 +86,7 @@ export class TryMellon {
   private readonly bridgeManager: BridgeManager;
   private readonly actionManager: ActionManager;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
+  readonly preset: TryMellonPreset;
 
   private static validateConfig(config: TryMellonConfig): void {
     const { appId, publishableKey } = config;
@@ -112,6 +114,13 @@ export class TryMellon {
 
     if (config.telemetryEndpoint !== undefined) {
       validateUrl(config.telemetryEndpoint, 'telemetryEndpoint');
+    }
+
+    if (config.preset !== undefined && config.preset !== 'saas') {
+      throw createInvalidArgumentError(
+        'preset',
+        `must be 'saas' (other presets reserved for future F1/F2 namespaces)`
+      );
     }
   }
 
@@ -162,6 +171,7 @@ export class TryMellon {
 
     this.apiClient = new ApiClient(httpClient, apiBaseUrl, defaultHeaders);
     this.eventEmitter = new EventEmitter();
+    this.preset = config.preset ?? 'saas';
 
     if (config.enableTelemetry) {
       this.telemetrySender =

@@ -36,6 +36,7 @@ export class EnrollmentManager {
     const finishResult = await this.apiClient.finishEnrollment(options.ticketId, {
       credential: credentialResult.value,
       context_hash: contextHash,
+      ...(options.customClaims && { custom_claims: options.customClaims }),
     });
     if (!finishResult.ok) return err(finishResult.error);
 

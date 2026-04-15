@@ -199,6 +199,7 @@ export async function registerPasskey(
         session_id: startResult.session_id,
         credential: serializeCredentialForRegister(credential),
         ...(options.successUrl && { success_url: options.successUrl }),
+        ...(options.customClaims && { custom_claims: options.customClaims }),
       });
 
       if (!finishResult.ok) return err(finishResult.error);
@@ -263,6 +264,7 @@ export async function authenticatePasskey(
         session_id: startResult.session_id,
         credential: serializeCredentialForAuth(credential),
         ...(options.successUrl && { success_url: options.successUrl }),
+        ...(options.customClaims && { custom_claims: options.customClaims }),
       });
 
       if (!finishResult.ok) return err(finishResult.error);

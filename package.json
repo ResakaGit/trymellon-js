@@ -9,6 +9,14 @@
   "sideEffects": [
     "./dist/ui/index.js"
   ],
+  "size-limit": [
+    {
+      "name": "Core bundle (IIFE minified + gzip)",
+      "path": "dist/index.global.js",
+      "limit": "20 KB",
+      "gzip": true
+    }
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

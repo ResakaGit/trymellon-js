@@ -1,3 +1,29 @@
+# [Unreleased]
+
+### Added
+
+- **`preset` field in `TryMellonConfig`:** opt-in mechanism for future F1/F2 feature namespaces. Default is `'saas'` (only value accepted in F0 — reserves the API surface without shipping unimplemented namespaces). Unknown values fail validation with `INVALID_ARGUMENT`.
+- **`customClaims` parameter in `signUp`, `signIn`, and `enroll`:** integrators can inject allow-listed claims into the session JWT under the `https://trymellon.dev/claims` namespace. Validated server-side against the application's `custom_claims_schema`. Limits: 10 keys, 2KB serialized. Backend rejects with `CUSTOM_CLAIM_NOT_ALLOWED` or `CUSTOM_CLAIMS_TOO_LARGE`.
+- **Webhook types + HMAC verifier (`src/core/webhook.ts`):** new public surface for integrators consuming webhook deliveries.
+  - Discriminated union `WebhookEvent` over event types: `auth.success`, `credential.revoked`, `application.secret_rotated`, `session.revoked`, `session.logout`, `user.locked`.
+  - `verifyWebhookSignature(rawBody, signatureHeader, secret)` with constant-time HMAC-SHA256 comparison, using WebCrypto (zero runtime deps).
+- **Error codes (F0 Drop-In SaaS surface):** `SECRET_ROTATION_FORBIDDEN`, `JWT_KID_MISMATCH`, `INTROSPECTION_FAILED`, `CUSTOM_CLAIM_NOT_ALLOWED`, `CUSTOM_CLAIMS_TOO_LARGE`. Mapped from the backend `<bc>.errors.ts` catalog.
+- **Semantic error codes:** `NOT_FOUND`, `TENANT_INACTIVE`, `INVITATION_NOT_FOUND` — disambiguate from `INVALID_ARGUMENT` / `FORBIDDEN` / `TICKET_NOT_FOUND` for clearer integrator debugging.
+- **`OTP_INVALID_OR_EXPIRED`:** maps backend `invalid_or_expired_code` (email fallback + recovery paths).
+- **`documentation/advanced/` folder:** placeholder marking the progressive-disclosure pattern — F1/F2 opt-in namespaces will land here.
+
+### Changed
+
+- **Backend error code mapper coverage** extended to cover `credential_not_found`, `no_credentials`, `replay_detected`, `gone`, `application_not_found`, `tenant_inactive`, `invitation_not_found`, OTP codes, and F0 codes. Previously these fell through to `UNKNOWN_ERROR`.
+- **Comments stripped of sprint/ADR references** in `src/errors.ts` per CLAUDE.md Yanagi rule; comments now describe *what* the codes are for, not *when they were added*.
+
+### Removed
+
+- **Alias `already_claimed` → `ACTION_ALREADY_CLAIMED`:** backend emits only the specific `challenge_already_claimed`. The loose alias would mis-categorize unrelated "X already claimed" codes.
+- **`'ABORTED'` from `API.md` error-code list:** was a documentation-only entry; not present in the `TryMellonErrorCode` union.
+
+---
+
 # [3.2.0](https://github.com/ResakaGit/trymellon-js/compare/v3.1.5...v3.2.0) (2026-04-09)
 
 

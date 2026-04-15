@@ -62,7 +62,19 @@ export type TryMellonConfig = {
     getItem(key: string): string | null;
     setItem(key: string, value: string): void;
   };
+  /**
+   * Feature preset. Controls which namespaces are active on the client.
+   * - `'saas'` (default): core flows (signUp, signIn, enroll, otp, session, bridge, action).
+   * Future presets (`'web3'`, `'trading'`) will enable identity linking, SIWE, smart accounts
+   * and session keys namespaces.
+   */
+  preset?: TryMellonPreset;
 };
+
+export type TryMellonPreset = 'saas';
+
+/** Validated shape of custom claims the SDK accepts. */
+export type CustomClaims = Record<string, string | number | boolean>;
 
 // ============================================================================
 // Public API Types
@@ -81,6 +93,12 @@ export interface RegisterOptions {
   /** Optional URL to redirect to after success; validated against application allowlist. API returns it as redirect_url when allowed. */
   successUrl?: string;
   signal?: AbortSignal;
+  /**
+   * Claims inyectadas en el session JWT bajo `https://trymellon.dev/claims`.
+   * Must match the application's `custom_claims_schema` configured in the dashboard.
+   * Limits: 10 keys, 2KB serialized.
+   */
+  customClaims?: CustomClaims;
 }
 
 export interface AuthenticateOptions {
@@ -98,6 +116,12 @@ export interface AuthenticateOptions {
   signal?: AbortSignal;
   /** Conditional UI mediation for passkey autofill / conditional UI. */
   mediation?: 'optional' | 'conditional' | 'required';
+  /**
+   * Claims inyectadas en el session JWT bajo `https://trymellon.dev/claims`.
+   * Must match the application's `custom_claims_schema` configured in the dashboard.
+   * Limits: 10 keys, 2KB serialized.
+   */
+  customClaims?: CustomClaims;
 }
 
 export type ClientStatus = {
@@ -163,6 +187,12 @@ export type EmailFallbackVerifyResult = {
 export type EnrollOptions = {
   ticketId: string;
   signal?: AbortSignal;
+  /**
+   * Claims inyectadas en el session JWT bajo `https://trymellon.dev/claims`.
+   * Must match the application's `custom_claims_schema` configured in the dashboard.
+   * Limits: 10 keys, 2KB serialized.
+   */
+  customClaims?: CustomClaims;
 };
 
 /** Result of finish enrollment; aligns with backend envelope (session_token). */
@@ -517,6 +547,7 @@ export type RegisterFinishRequest = {
     type: 'public-key';
   };
   success_url?: string;
+  custom_claims?: CustomClaims;
 };
 
 export type AuthFinishRequest = {
@@ -533,6 +564,7 @@ export type AuthFinishRequest = {
     type: 'public-key';
   };
   success_url?: string;
+  custom_claims?: CustomClaims;
 };
 
 // ============================================================================

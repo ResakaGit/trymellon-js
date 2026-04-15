@@ -34,6 +34,7 @@ import {
   validateVerifyActionSignatureResponse,
 } from './validators/action';
 import type {
+  CustomClaims,
   RegisterStartRequest,
   RegisterStartResponse,
   AuthStartRequest,
@@ -347,7 +348,7 @@ export class ApiClient {
 
   async finishEnrollment(
     ticketId: string,
-    body: { credential: unknown; context_hash: string },
+    body: { credential: unknown; context_hash: string; custom_claims?: CustomClaims },
     headers?: Record<string, string>
   ): Promise<Result<EnrollmentFinishResponse, TryMellonError>> {
     return this.post(

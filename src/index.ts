@@ -6,6 +6,8 @@ export { ok, err } from './utils/result';
 
 export type {
   TryMellonConfig,
+  TryMellonPreset,
+  CustomClaims,
   RegisterOptions,
   RegisterResult,
   AuthenticateOptions,
@@ -37,10 +39,24 @@ export type {
   BridgeEnrollmentResult,
   BridgeAuthResult,
   BridgeStatusSnapshot,
-  // Action signing (KP-SDK-01)
+  // Action signing
   ActionSignOptions,
   ActionSignResult,
 } from './types';
+
+// Webhook types + HMAC verifier for integrators consuming delivery webhooks
+export type {
+  WebhookEventType,
+  WebhookEvent,
+  WebhookPayload,
+  AuthSuccessPayload,
+  CredentialRevokedPayload,
+  ApplicationSecretRotatedPayload,
+  SessionRevokedPayload,
+  SessionLogoutPayload,
+  UserLockedPayload,
+} from './core/webhook';
+export { verifyWebhookSignature } from './core/webhook';
 
 export {
   TryMellonError,

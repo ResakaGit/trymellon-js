@@ -294,6 +294,28 @@ describe('TryMellon', () => {
         })
       );
     });
+
+    it('should default preset to "saas" when omitted', () => {
+      const result = TryMellon.create(config);
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.preset).toBe('saas');
+    });
+
+    it('should accept preset="saas" explicitly', () => {
+      const result = TryMellon.create({ ...config, preset: 'saas' });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.preset).toBe('saas');
+    });
+
+    it('should reject unknown preset values with INVALID_ARGUMENT', () => {
+      const result = TryMellon.create({
+        ...config,
+        // @ts-expect-error — deliberately unknown preset for runtime validation
+        preset: 'web3',
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    });
   });
 
   describe('version', () => {

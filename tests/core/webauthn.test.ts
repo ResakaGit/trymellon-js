@@ -477,6 +477,40 @@ describe('registerPasskey', () => {
 
     expect(errorHandler).toHaveBeenCalled();
   });
+
+  it('Given customClaims in RegisterOptions, when registering, then forwards as custom_claims to finishRegister', async () => {
+    const mockCredential = {
+      id: 'credential_id',
+      rawId: new ArrayBuffer(8),
+      response: {
+        clientDataJSON: new ArrayBuffer(8),
+        attestationObject: new ArrayBuffer(8),
+      },
+      type: 'public-key',
+    } as unknown as PublicKeyCredential;
+    mockCreate.mockResolvedValue(mockCredential);
+
+    const finishSpy = vi.spyOn(apiClient, 'finishRegister').mockResolvedValue(
+      ok({
+        credential_id: 'cred_123',
+        status: 'verified',
+        session_token: 'session_token_123',
+        user: { user_id: 'user_uuid_123', external_user_id: 'user_123' },
+      })
+    );
+
+    await registerPasskey(
+      { externalUserId: 'user_123', customClaims: { role: 'admin', companyId: 42 } },
+      apiClient,
+      eventEmitter
+    );
+
+    expect(finishSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        custom_claims: { role: 'admin', companyId: 42 },
+      })
+    );
+  });
 });
 
 describe('authenticatePasskey', () => {
