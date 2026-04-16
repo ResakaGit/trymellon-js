@@ -17,7 +17,9 @@ export type WebhookEventType =
   | 'application.secret_rotated'
   | 'session.revoked'
   | 'session.logout'
-  | 'user.locked';
+  | 'user.locked'
+  | 'identifier.linked'
+  | 'identifier.unlinked';
 
 export type AuthSuccessPayload = {
   tenant_id: string;
@@ -73,6 +75,26 @@ export type UserLockedPayload = {
   reason?: string;
 };
 
+export type IdentifierLinkedPayload = {
+  tenant_id: string;
+  application_id: string;
+  user_id: string;
+  identifier_id: string;
+  identifier_type: 'email' | 'wallet' | 'custom';
+  identifier_value: string;
+  linked_at: string;
+};
+
+export type IdentifierUnlinkedPayload = {
+  tenant_id: string;
+  application_id: string;
+  user_id: string;
+  identifier_id: string;
+  identifier_type: 'email' | 'wallet' | 'custom';
+  identifier_value: string;
+  unlinked_at: string;
+};
+
 /**
  * Discriminated union: switch on `event` to narrow the `data` shape.
  */
@@ -86,7 +108,9 @@ export type WebhookEvent =
     }
   | { event: 'session.revoked'; timestamp: string; data: SessionRevokedPayload }
   | { event: 'session.logout'; timestamp: string; data: SessionLogoutPayload }
-  | { event: 'user.locked'; timestamp: string; data: UserLockedPayload };
+  | { event: 'user.locked'; timestamp: string; data: UserLockedPayload }
+  | { event: 'identifier.linked'; timestamp: string; data: IdentifierLinkedPayload }
+  | { event: 'identifier.unlinked'; timestamp: string; data: IdentifierUnlinkedPayload };
 
 export type WebhookPayload<E extends WebhookEventType = WebhookEventType> = Extract<
   WebhookEvent,

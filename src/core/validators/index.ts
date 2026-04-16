@@ -29,3 +29,11 @@ export {
   validateBridgeStatusResponse,
 } from './bridge';
 export type { OnboardingRegisterResponseWithChallenge } from './onboarding';
+export {
+  validateLinkChallengeResult,
+  validateLinkedIdentifierResponse,
+  validateLinkedIdentifierListResponse,
+  validateVoidResponse,
+  validateSiweNonceResult,
+  validateSiweVerifyResult,
+} from './identity';

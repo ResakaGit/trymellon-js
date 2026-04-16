@@ -8,4 +8,5 @@ export interface HttpClient {
     body: unknown,
     headers?: Record<string, string>
   ): Promise<Result<T, TryMellonError>>;
+  delete<T>(url: string, headers?: Record<string, string>): Promise<Result<T, TryMellonError>>;
 }

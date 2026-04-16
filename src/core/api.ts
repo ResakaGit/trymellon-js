@@ -33,6 +33,14 @@ import {
   validateIssueActionChallengeResponse,
   validateVerifyActionSignatureResponse,
 } from './validators/action';
+import {
+  validateLinkChallengeResult,
+  validateLinkedIdentifierResponse,
+  validateLinkedIdentifierListResponse,
+  validateVoidResponse,
+  validateSiweNonceResult,
+  validateSiweVerifyResult,
+} from './validators/identity';
 import type {
   CustomClaims,
   RegisterStartRequest,
@@ -69,6 +77,13 @@ import type {
   IssueActionChallengeResponse,
   VerifyActionSignatureRequest,
   VerifyActionSignatureResponse,
+  LinkEmailOptions,
+  LinkVerifyOptions,
+  LinkChallengeResult,
+  LinkedIdentifier,
+  SiweNonceResult,
+  SiweVerifyOptions,
+  SiweVerifyResult,
 } from '../types';
 import type { OnboardingRegisterResponseWithChallenge } from './validators';
 
@@ -120,6 +135,21 @@ export class ApiClient {
   ): Promise<Result<Res, TryMellonError>> {
     const url = `${this.baseUrl}${path}`;
     const result = await this.httpClient.get<unknown>(url, this.mergeHeaders(headers));
+
+    if (!result.ok) {
+      return err(result.error);
+    }
+
+    return validate(result.value);
+  }
+
+  private async del<Res>(
+    path: string,
+    validate: (data: unknown) => Result<Res, TryMellonError>,
+    headers?: Record<string, string>
+  ): Promise<Result<Res, TryMellonError>> {
+    const url = `${this.baseUrl}${path}`;
+    const result = await this.httpClient.delete<unknown>(url, this.mergeHeaders(headers));
 
     if (!result.ok) {
       return err(result.error);
@@ -488,6 +518,59 @@ export class ApiClient {
       `${this.bridgePrefix(kind)}/status/${sessionId}`,
       validateBridgeStatusResponse,
       headers
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // Identity Linking (F1)
+  // -------------------------------------------------------------------------
+
+  async requestLinkEmail(
+    userId: string,
+    body: LinkEmailOptions
+  ): Promise<Result<LinkChallengeResult, TryMellonError>> {
+    return this.post(
+      `/v1/users/${userId}/identifiers`,
+      { email: body.email },
+      validateLinkChallengeResult
+    );
+  }
+
+  async confirmLinkEmail(
+    userId: string,
+    body: LinkVerifyOptions
+  ): Promise<Result<LinkedIdentifier, TryMellonError>> {
+    return this.post(
+      `/v1/users/${userId}/identifiers/verify`,
+      { otp: body.otp },
+      validateLinkedIdentifierResponse
+    );
+  }
+
+  async listIdentifiers(userId: string): Promise<Result<LinkedIdentifier[], TryMellonError>> {
+    return this.get(`/v1/users/${userId}/identifiers`, validateLinkedIdentifierListResponse);
+  }
+
+  async unlinkIdentifier(
+    userId: string,
+    identifierId: string
+  ): Promise<Result<void, TryMellonError>> {
+    return this.del(`/v1/users/${userId}/identifiers/${identifierId}`, validateVoidResponse);
+  }
+
+  // -------------------------------------------------------------------------
+  // SIWE (F1)
+  // -------------------------------------------------------------------------
+
+  async getSiweNonce(): Promise<Result<SiweNonceResult, TryMellonError>> {
+    return this.post('/v1/siwe/nonce', {}, validateSiweNonceResult);
+  }
+
+  async verifySiwe(body: SiweVerifyOptions): Promise<Result<SiweVerifyResult, TryMellonError>> {
+    return this.post(
+      '/v1/siwe/verify',
+      { message: body.message, signature: body.signature },
+      validateSiweVerifyResult
     );
   }
 }

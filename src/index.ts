@@ -43,6 +43,15 @@ export type {
   // Action signing
   ActionSignOptions,
   ActionSignResult,
+  // Identity linking (F1)
+  LinkEmailOptions,
+  LinkVerifyOptions,
+  LinkChallengeResult,
+  LinkedIdentifier,
+  // SIWE (F1)
+  SiweNonceResult,
+  SiweVerifyOptions,
+  SiweVerifyResult,
 } from './types';
 
 // Webhook types + HMAC verifier for integrators consuming delivery webhooks
@@ -56,6 +65,8 @@ export type {
   SessionRevokedPayload,
   SessionLogoutPayload,
   UserLockedPayload,
+  IdentifierLinkedPayload,
+  IdentifierUnlinkedPayload,
 } from './core/webhook';
 export { verifyWebhookSignature } from './core/webhook';
 

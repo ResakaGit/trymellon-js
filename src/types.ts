@@ -523,6 +523,51 @@ export type VerifyActionSignatureResponse = {
 };
 
 // ============================================================================
+// Identity Linking Types (F1)
+// ============================================================================
+
+export interface LinkEmailOptions {
+  email: string;
+}
+
+export interface LinkVerifyOptions {
+  otp: string;
+}
+
+export interface LinkChallengeResult {
+  identifierId: string;
+  expiresAt: string;
+}
+
+export interface LinkedIdentifier {
+  id: string;
+  type: 'email' | 'wallet' | 'custom';
+  value: string;
+  verified: boolean;
+  linkedAt: string;
+}
+
+// ============================================================================
+// SIWE Types (F1)
+// ============================================================================
+
+export interface SiweNonceResult {
+  nonce: string;
+  expiresAt: string;
+}
+
+export interface SiweVerifyOptions {
+  message: string;
+  signature: string;
+}
+
+export interface SiweVerifyResult {
+  sessionToken: string;
+  userId: string;
+  walletAddress: string;
+}
+
+// ============================================================================
 // API Request Types
 // ============================================================================
 

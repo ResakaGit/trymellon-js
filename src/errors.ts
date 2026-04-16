@@ -32,7 +32,21 @@ export type TryMellonErrorCode =
   | 'JWT_KID_MISMATCH'
   | 'INTROSPECTION_FAILED'
   | 'CUSTOM_CLAIM_NOT_ALLOWED'
-  | 'CUSTOM_CLAIMS_TOO_LARGE';
+  | 'CUSTOM_CLAIMS_TOO_LARGE'
+  // Identity linking (F1)
+  | 'LINK_CHALLENGE_NOT_FOUND'
+  | 'LINK_OTP_INVALID'
+  | 'LINK_OTP_EXPIRED'
+  | 'IDENTIFIER_ALREADY_LINKED'
+  | 'EMAIL_ALREADY_TAKEN'
+  // SIWE (F1)
+  | 'SIWE_NONCE_EXPIRED'
+  | 'SIWE_NONCE_REPLAY'
+  | 'SIWE_SIGNATURE_INVALID'
+  | 'SIWE_CHAIN_NOT_ALLOWED'
+  | 'SIWE_DOMAIN_MISMATCH'
+  // Anonymous recovery (F1)
+  | 'ANONYMOUS_RECOVERY_NOT_AVAILABLE';
 
 export class TryMellonError extends Error {
   readonly code: TryMellonErrorCode;
@@ -90,6 +104,21 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
     'A custom claim key is not in the application custom_claims_schema. Add it in the dashboard or remove it from the request.',
   CUSTOM_CLAIMS_TOO_LARGE:
     'Custom claims exceed the allowed limits (max 10 keys, 2KB total serialized). Reduce payload and retry.',
+  // Identity linking (F1)
+  LINK_CHALLENGE_NOT_FOUND: 'Link challenge not found or expired. Request a new one.',
+  LINK_OTP_INVALID: 'The link verification code is invalid. Check the code and try again.',
+  LINK_OTP_EXPIRED: 'The link verification code has expired. Request a new one.',
+  IDENTIFIER_ALREADY_LINKED: 'This identifier is already linked to the account.',
+  EMAIL_ALREADY_TAKEN: 'This email address is already associated with another account.',
+  // SIWE (F1)
+  SIWE_NONCE_EXPIRED: 'SIWE nonce has expired. Request a new one.',
+  SIWE_NONCE_REPLAY: 'SIWE nonce has already been used. Request a new one.',
+  SIWE_SIGNATURE_INVALID:
+    'SIWE signature verification failed. Ensure the message was signed correctly.',
+  SIWE_CHAIN_NOT_ALLOWED: 'The specified chain is not allowed for this application.',
+  SIWE_DOMAIN_MISMATCH: 'SIWE message domain does not match the expected domain.',
+  // Anonymous recovery (F1)
+  ANONYMOUS_RECOVERY_NOT_AVAILABLE: 'Account recovery is not available for anonymous accounts.',
 };
 
 export function createError(
@@ -233,7 +262,7 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     ticket_not_found: 'TICKET_NOT_FOUND',
     ticket_expired: 'TICKET_EXPIRED',
     ticket_already_consumed: 'TICKET_ALREADY_USED',
-    // Backend enrollment domain codes (UPPERCASE → normalized)
+    // Backend enrollment domain codes (UPPERCASE -> normalized)
     not_found: 'TICKET_NOT_FOUND',
     expired: 'TICKET_EXPIRED',
     already_consumed: 'TICKET_ALREADY_USED',
@@ -274,12 +303,29 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     action_challenge_expired: 'ACTION_CHALLENGE_EXPIRED',
     challenge_already_claimed: 'ACTION_ALREADY_CLAIMED',
     action_payload_mismatch: 'ACTION_PAYLOAD_MISMATCH',
-    // Application rotation · JWKS validation · custom claims · introspection
+    // Application rotation / JWKS validation / custom claims / introspection
     application_rotation_not_allowed: 'SECRET_ROTATION_FORBIDDEN',
     session_jwt_kid_mismatch: 'JWT_KID_MISMATCH',
     session_introspection_failed: 'INTROSPECTION_FAILED',
     session_custom_claim_not_whitelisted: 'CUSTOM_CLAIM_NOT_ALLOWED',
     session_custom_claims_limit_exceeded: 'CUSTOM_CLAIMS_TOO_LARGE',
+    // Identity linking (F1)
+    identity_link_challenge_not_found: 'LINK_CHALLENGE_NOT_FOUND',
+    identity_link_otp_invalid: 'LINK_OTP_INVALID',
+    identity_link_otp_expired: 'LINK_OTP_EXPIRED',
+    identity_link_identifier_already_linked: 'IDENTIFIER_ALREADY_LINKED',
+    identity_link_email_already_taken_in_tenant: 'EMAIL_ALREADY_TAKEN',
+    identity_link_identifier_not_owned_by_user: 'FORBIDDEN',
+    identity_link_unlink_last_identifier_denied: 'IDENTIFIER_ALREADY_LINKED',
+    identity_link_identifier_not_found: 'NOT_FOUND',
+    // SIWE (F1)
+    siwe_nonce_expired: 'SIWE_NONCE_EXPIRED',
+    siwe_nonce_already_used: 'SIWE_NONCE_REPLAY',
+    siwe_signature_invalid: 'SIWE_SIGNATURE_INVALID',
+    siwe_chain_not_allowed: 'SIWE_CHAIN_NOT_ALLOWED',
+    siwe_domain_mismatch: 'SIWE_DOMAIN_MISMATCH',
+    // Anonymous recovery (F1)
+    user_anonymous_recovery_not_available: 'ANONYMOUS_RECOVERY_NOT_AVAILABLE',
     // Cross-device QR domain errors (backend emits QR_ prefix)
     qr_expired: 'SESSION_EXPIRED',
     qr_session_not_found: 'SESSION_EXPIRED',

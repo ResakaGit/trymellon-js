@@ -138,6 +138,13 @@ export class FetchHttpClient implements HttpClient {
     });
   }
 
+  async delete<T>(
+    url: string,
+    headers?: Record<string, string>
+  ): Promise<Result<T, TryMellonError>> {
+    return this.request<T>(url, { method: 'DELETE', headers });
+  }
+
   private async request<T>(url: string, config: RequestInit): Promise<Result<T, TryMellonError>> {
     const method = (config.method ?? 'GET').toUpperCase();
     const requestId = generateRequestId();

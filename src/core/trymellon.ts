@@ -5,6 +5,8 @@ import { EnrollmentManager } from './enrollment-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { BridgeManager } from './bridge-manager';
 import { ActionManager } from './action-manager';
+import { IdentityManager } from './identity-manager';
+import { SiweManager } from './siwe-manager';
 import { getOrCreateContextHash, createInMemoryStorage } from './context-hash';
 import { EventEmitter } from './events';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
@@ -51,6 +53,13 @@ import type {
   BridgeStatusSnapshot,
   ActionSignOptions,
   ActionSignResult,
+  LinkEmailOptions,
+  LinkVerifyOptions,
+  LinkChallengeResult,
+  LinkedIdentifier,
+  SiweNonceResult,
+  SiweVerifyOptions,
+  SiweVerifyResult,
 } from '../types';
 import { ok, err, type Result } from '../utils/result';
 import { type TryMellonError, isTryMellonError } from '../errors';
@@ -87,6 +96,8 @@ export class TryMellon {
   private readonly enrollmentManager: EnrollmentManager;
   private readonly bridgeManager: BridgeManager;
   private readonly actionManager: ActionManager;
+  private readonly identityManager: IdentityManager;
+  private readonly siweManager: SiweManager;
   private readonly apiBaseUrl: string;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
   readonly preset: TryMellonPreset;
@@ -197,6 +208,8 @@ export class TryMellon {
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
     this.actionManager = new ActionManager(this.apiClient);
+    this.identityManager = new IdentityManager(this.apiClient);
+    this.siweManager = new SiweManager(this.apiClient);
     this.warnIfSandboxOnProd();
   }
 
@@ -388,6 +401,37 @@ export class TryMellon {
       sign: (opts) => this.actionManager.sign(opts),
     };
   }
+
+  /**
+   * Identity linking (F1): associate additional identifiers (email, wallet) to an existing user.
+   * Flow: link → OTP verify → confirmed identifier. Use list/unlink to manage.
+   */
+  identity = {
+    link: (
+      userId: string,
+      options: LinkEmailOptions
+    ): Promise<Result<LinkChallengeResult, TryMellonError>> =>
+      this.identityManager.link(userId, options),
+    verify: (
+      userId: string,
+      options: LinkVerifyOptions
+    ): Promise<Result<LinkedIdentifier, TryMellonError>> =>
+      this.identityManager.verify(userId, options),
+    list: (userId: string): Promise<Result<LinkedIdentifier[], TryMellonError>> =>
+      this.identityManager.list(userId),
+    unlink: (userId: string, identifierId: string): Promise<Result<void, TryMellonError>> =>
+      this.identityManager.unlink(userId, identifierId),
+  };
+
+  /**
+   * SIWE (Sign-In with Ethereum) (F1): authenticate users via EIP-4361 message signing.
+   * Flow: getNonce → sign message in wallet → verify signature → receive session token.
+   */
+  siwe = {
+    getNonce: (): Promise<Result<SiweNonceResult, TryMellonError>> => this.siweManager.getNonce(),
+    verify: (options: SiweVerifyOptions): Promise<Result<SiweVerifyResult, TryMellonError>> =>
+      this.siweManager.verify(options),
+  };
 
   platform = {
     signUp: (
