@@ -769,9 +769,8 @@ describe('TryMellon', () => {
   // ---------------------------------------------------------------------------
   describe('siwe (F1 namespace)', () => {
     it('should expose getNonce that delegates to apiClient.getSiweNonce', async () => {
-      const mockInstance = (
-        tryMellon as { apiClient: { getSiweNonce: ReturnType<typeof vi.fn> } }
-      ).apiClient;
+      const mockInstance = (tryMellon as { apiClient: { getSiweNonce: ReturnType<typeof vi.fn> } })
+        .apiClient;
       mockInstance.getSiweNonce.mockResolvedValue(
         ok({ nonce: 'abc12345', expiresAt: '2026-04-17T00:05:00Z' })
       );
@@ -808,9 +807,8 @@ describe('TryMellon', () => {
     });
 
     it('Given verifySiwe succeeds, when siwe.verifyAndSignIn, then emits success event and returns ok', async () => {
-      const mockInstance = (
-        tryMellon as { apiClient: { verifySiwe: ReturnType<typeof vi.fn> } }
-      ).apiClient;
+      const mockInstance = (tryMellon as { apiClient: { verifySiwe: ReturnType<typeof vi.fn> } })
+        .apiClient;
       mockInstance.verifySiwe.mockResolvedValue(
         ok({
           sessionToken: 'sess_tok',
@@ -843,9 +841,8 @@ describe('TryMellon', () => {
     });
 
     it('Given verifySiwe fails, when siwe.verifyAndSignIn, then emits error event and returns err', async () => {
-      const mockInstance = (
-        tryMellon as { apiClient: { verifySiwe: ReturnType<typeof vi.fn> } }
-      ).apiClient;
+      const mockInstance = (tryMellon as { apiClient: { verifySiwe: ReturnType<typeof vi.fn> } })
+        .apiClient;
       mockInstance.verifySiwe.mockResolvedValue(
         err(createError('SIWE_SIGNATURE_INVALID', 'bad signature'))
       );

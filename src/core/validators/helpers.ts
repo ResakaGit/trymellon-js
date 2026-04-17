@@ -232,10 +232,9 @@ export function validateUserEntity(
 
   const externalUserIdRaw = user.external_user_id;
   if (externalUserIdRaw !== null && !isString(externalUserIdRaw)) {
-    return validationError(
-      'Invalid API response: user.external_user_id must be string or null',
-      { originalData: data }
-    );
+    return validationError('Invalid API response: user.external_user_id must be string or null', {
+      originalData: data,
+    });
   }
 
   const email = user.email;

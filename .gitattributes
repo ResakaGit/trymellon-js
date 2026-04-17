@@ -1,0 +1,14 @@
+# Normalize line endings across platforms.
+# All text files are stored with LF in the repository.
+# On checkout, git may convert to CRLF only if core.autocrlf=true AND the file is not locked here.
+* text=auto eol=lf
+
+# Binary — never normalize
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
