@@ -22,6 +22,15 @@
 
 # [Unreleased]
 
+### Added (F1.4 — anonymous user signal exposed in SDK)
+
+- **`RegisterResult.user.isAnonymous`** and **`AuthenticateResult.user.isAnonymous`** — optional boolean reflecting whether the user was registered anonymously (no `externalUserId`). Backend already emits `is_anonymous` in `POST /v1/passkeys/{register,auth}/finish` responses (F1 · ADR-039); SDK now propagates it through the validators + camelCase transform. Absent when the backend omits the field (older deployments — back-compat preserved).
+
+### Fixed (F1.4)
+
+- **`validateUserEntity` accepts `external_user_id: null`** for anonymous users. Previous strict `isString` check rejected the anonymous response shape at validator level, making the flow unreachable via SDK end-to-end. Null is mapped to `undefined` on the camelCase side (`RegisterResult.user.externalUserId` stays optional).
+- **`validateUserEntity` validates optional `is_anonymous: boolean`** — non-boolean values return `INVALID_ARGUMENT` with the `is_anonymous` field hint.
+
 ### Added (F1 — Web3 identity interop)
 
 - **`client.identity.*` namespace** (preset `'web3'`): `linkEmail(email)`, `verifyEmailLink({ identifierId, otp })`, `list()`, `unlink(identifierId)`. `userId` is read from the active session (no parameter needed). Backed by `POST /v1/users/:id/identifiers(/verify)` and `DELETE /v1/users/:id/identifiers/:identifier_id`.

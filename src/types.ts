@@ -671,9 +671,12 @@ export interface RegisterFinishResponse {
   session_token: string;
   user: {
     user_id: string;
-    external_user_id: string;
+    /** `null` when the user was registered anonymously (no `external_user_id` provided). */
+    external_user_id: string | null;
     email?: string;
     metadata?: Record<string, unknown>;
+    /** Optional — backend added in F1 (ADR-039). Older backends may omit the field. */
+    is_anonymous?: boolean;
   };
   /** Present when success_url was sent and allowed by application allowlist */
   redirect_url?: string;
@@ -683,9 +686,12 @@ export interface AuthFinishResponse {
   authenticated: boolean;
   user: {
     user_id: string;
-    external_user_id: string;
+    /** `null` when the authenticated user was registered anonymously. */
+    external_user_id: string | null;
     email?: string;
     metadata?: Record<string, unknown>;
+    /** Optional — backend added in F1 (ADR-039). Older backends may omit the field. */
+    is_anonymous?: boolean;
   };
   signals?: {
     userVerification?: boolean;
@@ -709,9 +715,12 @@ export interface RegisterResult {
   sessionToken: string;
   user: {
     userId: string;
+    /** Undefined when the user was registered anonymously. Consumers can read `isAnonymous` to branch. */
     externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
+    /** `true` when the user was registered without `externalUserId` (F1 anonymous signup · ADR-039). */
+    isAnonymous?: boolean;
   };
   /** Set when successUrl was passed and allowed by application allowlist */
   redirectUrl?: string;
@@ -722,9 +731,12 @@ export interface AuthenticateResult {
   sessionToken: string;
   user: {
     userId: string;
+    /** Undefined when the authenticated user was registered anonymously. */
     externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
+    /** `true` when the authenticated user was registered anonymously (F1 · ADR-039). */
+    isAnonymous?: boolean;
   };
   signals?: {
     userVerification?: boolean;

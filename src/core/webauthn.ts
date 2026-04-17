@@ -212,9 +212,14 @@ export async function registerPasskey(
         sessionToken: finishResult.value.session_token,
         user: {
           userId: finishResult.value.user.user_id,
-          externalUserId: finishResult.value.user.external_user_id,
+          ...(finishResult.value.user.external_user_id !== null && {
+            externalUserId: finishResult.value.user.external_user_id,
+          }),
           email: finishResult.value.user.email,
           metadata: finishResult.value.user.metadata,
+          ...(finishResult.value.user.is_anonymous !== undefined && {
+            isAnonymous: finishResult.value.user.is_anonymous,
+          }),
         },
         ...(finishResult.value.redirect_url && { redirectUrl: finishResult.value.redirect_url }),
       });
@@ -274,9 +279,14 @@ export async function authenticatePasskey(
         sessionToken: finishResult.value.session_token,
         user: {
           userId: finishResult.value.user.user_id,
-          externalUserId: finishResult.value.user.external_user_id,
+          ...(finishResult.value.user.external_user_id !== null && {
+            externalUserId: finishResult.value.user.external_user_id,
+          }),
           email: finishResult.value.user.email,
           metadata: finishResult.value.user.metadata,
+          ...(finishResult.value.user.is_anonymous !== undefined && {
+            isAnonymous: finishResult.value.user.is_anonymous,
+          }),
         },
         signals: finishResult.value.signals,
         ...(finishResult.value.redirect_url && { redirectUrl: finishResult.value.redirect_url }),

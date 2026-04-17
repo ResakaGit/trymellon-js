@@ -511,6 +511,105 @@ describe('registerPasskey', () => {
       })
     );
   });
+
+  // ---------------------------------------------------------------------------
+  // F1 — anonymous user propagation (ADR-039 · SPRINT-F1.4-BACK-ANONYMOUS-FLAG)
+  // ---------------------------------------------------------------------------
+  it('Given backend returns is_anonymous=true + external_user_id=null, when registerPasskey, then RegisterResult.user.isAnonymous=true and externalUserId is undefined', async () => {
+    vi.spyOn(apiClient, 'finishRegister').mockResolvedValue(
+      ok({
+        credential_id: 'cred_anon',
+        status: 'verified',
+        session_token: 'session_anon',
+        user: {
+          user_id: 'user_uuid_anon',
+          external_user_id: null,
+          is_anonymous: true,
+        },
+      })
+    );
+
+    const mockCredential = {
+      id: 'credential_id',
+      rawId: new ArrayBuffer(8),
+      response: { clientDataJSON: new ArrayBuffer(8), attestationObject: new ArrayBuffer(8) },
+      type: 'public-key',
+    } as unknown as PublicKeyCredential;
+    mockCreate.mockResolvedValue(mockCredential);
+
+    // Consumer passes a placeholder externalUserId at start (guard at webauthn.ts:176),
+    // but backend flags the user as anonymous. SDK must reflect that.
+    const result = await registerPasskey(
+      { external_user_id: 'placeholder_for_start' },
+      apiClient,
+      eventEmitter
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.user.userId).toBe('user_uuid_anon');
+    expect(result.value.user.externalUserId).toBeUndefined();
+    expect(result.value.user.isAnonymous).toBe(true);
+  });
+
+  it('Given backend returns is_anonymous=false + external_user_id, when registerPasskey, then RegisterResult.user.isAnonymous=false', async () => {
+    vi.spyOn(apiClient, 'finishRegister').mockResolvedValue(
+      ok({
+        credential_id: 'cred_std',
+        status: 'verified',
+        session_token: 'session_std',
+        user: {
+          user_id: 'user_uuid_std',
+          external_user_id: 'ext_std',
+          is_anonymous: false,
+        },
+      })
+    );
+
+    const mockCredential = {
+      id: 'credential_id',
+      rawId: new ArrayBuffer(8),
+      response: { clientDataJSON: new ArrayBuffer(8), attestationObject: new ArrayBuffer(8) },
+      type: 'public-key',
+    } as unknown as PublicKeyCredential;
+    mockCreate.mockResolvedValue(mockCredential);
+
+    const result = await registerPasskey({ external_user_id: 'ext_std' }, apiClient, eventEmitter);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.user.externalUserId).toBe('ext_std');
+    expect(result.value.user.isAnonymous).toBe(false);
+  });
+
+  it('Given older backend omits is_anonymous, when registerPasskey, then RegisterResult.user.isAnonymous is undefined (back-compat)', async () => {
+    vi.spyOn(apiClient, 'finishRegister').mockResolvedValue(
+      ok({
+        credential_id: 'cred_legacy',
+        status: 'verified',
+        session_token: 'session_legacy',
+        user: { user_id: 'user_uuid_legacy', external_user_id: 'ext_legacy' },
+      })
+    );
+
+    const mockCredential = {
+      id: 'credential_id',
+      rawId: new ArrayBuffer(8),
+      response: { clientDataJSON: new ArrayBuffer(8), attestationObject: new ArrayBuffer(8) },
+      type: 'public-key',
+    } as unknown as PublicKeyCredential;
+    mockCreate.mockResolvedValue(mockCredential);
+
+    const result = await registerPasskey(
+      { external_user_id: 'ext_legacy' },
+      apiClient,
+      eventEmitter
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.user.isAnonymous).toBeUndefined();
+  });
 });
 
 describe('authenticatePasskey', () => {
@@ -834,5 +933,47 @@ describe('authenticatePasskey', () => {
     expect(result.ok).toBe(false);
 
     expect(errorHandler).toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // F1 — anonymous user propagation on signIn (ADR-039)
+  // ---------------------------------------------------------------------------
+  it('Given authenticated anonymous user (external_user_id=null + is_anonymous=true), when authenticatePasskey, then AuthenticateResult.user.isAnonymous=true', async () => {
+    const mockCredential = {
+      id: 'credential_id',
+      rawId: new ArrayBuffer(8),
+      response: {
+        authenticatorData: new ArrayBuffer(8),
+        clientDataJSON: new ArrayBuffer(8),
+        signature: new ArrayBuffer(8),
+      },
+      type: 'public-key',
+    } as unknown as PublicKeyCredential;
+    mockGet.mockResolvedValue(mockCredential);
+
+    vi.spyOn(apiClient, 'finishAuthentication').mockResolvedValue(
+      ok({
+        authenticated: true,
+        session_token: 'session_anon',
+        user: {
+          user_id: 'user_uuid_anon',
+          external_user_id: null,
+          is_anonymous: true,
+        },
+        signals: {},
+      })
+    );
+
+    const result = await authenticatePasskey(
+      { external_user_id: 'placeholder_for_start' },
+      apiClient,
+      eventEmitter
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.user.userId).toBe('user_uuid_anon');
+    expect(result.value.user.externalUserId).toBeUndefined();
+    expect(result.value.user.isAnonymous).toBe(true);
   });
 });

@@ -207,7 +207,13 @@ export function validateUserEntity(
   user: unknown,
   data: unknown
 ): Result<
-  { user_id: string; external_user_id: string; email?: string; metadata?: Record<string, unknown> },
+  {
+    user_id: string;
+    external_user_id: string | null;
+    email?: string;
+    metadata?: Record<string, unknown>;
+    is_anonymous?: boolean;
+  },
   TryMellonError
 > {
   if (!isObject(user)) {
@@ -218,10 +224,16 @@ export function validateUserEntity(
   }
 
   const userId = required(user, 'user_id');
-  const externalUserId = required(user, 'external_user_id');
-  if (!isString(userId) || !isString(externalUserId)) {
+  if (!isString(userId)) {
+    return validationError('Invalid API response: user.user_id must be string', {
+      originalData: data,
+    });
+  }
+
+  const externalUserIdRaw = user.external_user_id;
+  if (externalUserIdRaw !== null && !isString(externalUserIdRaw)) {
     return validationError(
-      'Invalid API response: user must have user_id and external_user_id strings',
+      'Invalid API response: user.external_user_id must be string or null',
       { originalData: data }
     );
   }
@@ -239,10 +251,18 @@ export function validateUserEntity(
     });
   }
 
+  const isAnonymous = user.is_anonymous;
+  if (isAnonymous !== undefined && !isBoolean(isAnonymous)) {
+    return validationError('Invalid API response: user.is_anonymous must be boolean', {
+      originalData: data,
+    });
+  }
+
   return ok({
     user_id: userId,
-    external_user_id: externalUserId,
+    external_user_id: externalUserIdRaw as string | null,
     ...(email !== undefined && { email }),
     ...(metadata !== undefined && { metadata: metadata as Record<string, unknown> }),
+    ...(isAnonymous !== undefined && { is_anonymous: isAnonymous }),
   });
 }
