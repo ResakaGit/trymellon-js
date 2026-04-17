@@ -1,3 +1,10 @@
+# [3.7.0](https://github.com/ResakaGit/trymellon-js/compare/v3.6.0...v3.7.0) (2026-04-17)
+
+
+### Features
+
+* **sdk:** F1-R.4 B2B recovery error codes + webhook event types ([0191f5b](https://github.com/ResakaGit/trymellon-js/commit/0191f5bafff9fc69e7d49046b1ef1b43cc599430))
+
 # [Unreleased]
 
 ### feat(sdk): map B2B recovery enrollment errors + webhook types (F1-R.4)
