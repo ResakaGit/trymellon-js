@@ -821,4 +821,144 @@ describe('ApiClient', () => {
       );
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Identity linking (F1) — ADR-SDK-004 §2.1
+  // ---------------------------------------------------------------------------
+  describe('identity linking (F1)', () => {
+    const userId = 'usr_123';
+
+    it('Given email, when requestLinkEmail, then POSTs to /v1/users/:id/identifiers with { email }', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({ identifier_id: 'idf_abc', expires_at: '2026-05-01T00:00:00Z' })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.requestLinkEmail(userId, { email: 'alice@example.com' });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.identifierId).toBe('idf_abc');
+        expect(result.value.expiresAt).toBe('2026-05-01T00:00:00Z');
+      }
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/users/usr_123/identifiers',
+        { email: 'alice@example.com' },
+        expect.any(Object)
+      );
+    });
+
+    // Regression guard for ADR-SDK-004 §2.6 bug fix: body MUST include identifier_id.
+    // Backend schema identity-link.schemas.ts:13-23 requires it; sending only { otp } 400s silently.
+    it('Given identifierId + otp, when confirmLinkEmail, then body is { identifier_id, otp }', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          id: 'idf_abc',
+          type: 'email',
+          value: 'alice@example.com',
+          verified: true,
+          linked_at: '2026-04-17T00:00:00Z',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.confirmLinkEmail(userId, {
+        identifierId: 'idf_abc',
+        otp: '123456',
+      });
+      expect(result.ok).toBe(true);
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/users/usr_123/identifiers/verify',
+        { identifier_id: 'idf_abc', otp: '123456' },
+        expect.any(Object)
+      );
+    });
+
+    it('Given userId, when listIdentifiers, then GETs the identifier collection', async () => {
+      mockHttpClient.get.mockResolvedValue(
+        ok([
+          {
+            id: 'idf_1',
+            type: 'email',
+            value: 'alice@example.com',
+            verified: true,
+            linked_at: '2026-04-17T00:00:00Z',
+          },
+        ])
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.listIdentifiers(userId);
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value).toHaveLength(1);
+      expect(mockHttpClient.get).toHaveBeenCalledWith(
+        'https://api.example.com/v1/users/usr_123/identifiers',
+        expect.any(Object)
+      );
+    });
+
+    it('Given identifierId, when unlinkIdentifier, then DELETEs the identifier', async () => {
+      mockHttpClient.delete = vi.fn().mockResolvedValue(ok(undefined));
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.unlinkIdentifier(userId, 'idf_abc');
+      expect(result.ok).toBe(true);
+      expect(mockHttpClient.delete).toHaveBeenCalledWith(
+        'https://api.example.com/v1/users/usr_123/identifiers/idf_abc',
+        expect.any(Object)
+      );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // SIWE (F1) — ADR-SDK-004 §2.1
+  // ---------------------------------------------------------------------------
+  describe('SIWE (F1)', () => {
+    it('Given nothing, when getSiweNonce, then POSTs /v1/siwe/nonce with empty body', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({ nonce: '32891757abcd', expires_at: '2026-04-17T00:05:00Z' })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const result = await client.getSiweNonce();
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.nonce).toBe('32891757abcd');
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/siwe/nonce',
+        {},
+        expect.any(Object)
+      );
+    });
+
+    it('Given message + signature, when verifySiwe, then POSTs them verbatim', async () => {
+      mockHttpClient.post.mockResolvedValue(
+        ok({
+          session_token: 'sess_tok',
+          user_id: 'u_1',
+          wallet_address: '0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB',
+        })
+      );
+      const client = new ApiClient(
+        mockHttpClient as unknown as HttpClient,
+        'https://api.example.com'
+      );
+      const body = { message: 'example.com wants ...', signature: '0xsig' };
+      const result = await client.verifySiwe(body);
+      expect(result.ok).toBe(true);
+      expect(mockHttpClient.post).toHaveBeenCalledWith(
+        'https://api.example.com/v1/siwe/verify',
+        body,
+        expect.any(Object)
+      );
+    });
+  });
 });

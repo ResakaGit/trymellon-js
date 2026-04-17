@@ -155,6 +155,14 @@ describe('prepareSiweMessage — validation errors', () => {
     expect(result.error.code).toBe('INVALID_ARGUMENT');
   });
 
+  it('Given non-string statement (type cast), when built, then INVALID_ARGUMENT on field "statement"', () => {
+    const result = prepareSiweMessage({ ...valid, statement: 123 as unknown as string });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe('INVALID_ARGUMENT');
+    expect(result.error.details).toEqual(expect.objectContaining({ field: 'statement' }));
+  });
+
   it('Given invalid resource URI, when built, then INVALID_ARGUMENT pointing at the index', () => {
     const result = prepareSiweMessage({
       ...valid,

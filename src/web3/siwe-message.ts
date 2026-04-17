@@ -84,7 +84,10 @@ function validateNonce(nonce: string): Result<string, TryMellonError> {
   return ok(nonce);
 }
 
-function validateStatement(statement: string): Result<string, TryMellonError> {
+function validateStatement(statement: unknown): Result<string, TryMellonError> {
+  if (typeof statement !== 'string') {
+    return invalid('statement', 'must be a string');
+  }
   if (statement.includes('\n')) {
     return invalid('statement', 'must not contain line breaks');
   }

@@ -32,7 +32,17 @@
 ### Changed (F1)
 
 - **`TryMellonPreset`** expanded from `'saas'` to `'saas' | 'web3'`. Default remains `'saas'` — existing integrators are not affected.
-- **`client.session.verifyAndSignIn` emits** the standard `success` event (`operation: 'signIn'`), wiring SIWE sign-ins into the existing observability surface.
+- **`client.siwe.verifyAndSignIn` emits** the standard `success` event (`operation: 'signIn'`), wiring SIWE sign-ins into the existing observability surface.
+
+### Fixed (F1 audit)
+
+- **CHANGELOG typo:** F1 entry referenced `client.session.verifyAndSignIn` — corrected to `client.siwe.verifyAndSignIn` (the `session` namespace never exposed this method).
+- **`prepareSiweMessage` — `statement` runtime guard:** the field is typed `string`, but a consumer passing a non-string via `as any` previously reached `.includes('\n')` and threw a `TypeError`. Now validates `typeof === 'string'` and returns `INVALID_ARGUMENT` — consistent with every other SIWE field validator.
+
+### Tests (F1 audit)
+
+- **`tests/core/api.test.ts`** — added 6 F1 contract tests: regression guard for `confirmLinkEmail` body shape (must include `identifier_id`, per ADR-SDK-004 §2.6 bug fix), happy paths for `requestLinkEmail` / `listIdentifiers` / `unlinkIdentifier` / `getSiweNonce` / `verifySiwe`.
+- **`tests/core/siwe-message.test.ts`** — added non-string `statement` test covering the new runtime guard.
 
 ### Migrating from F0
 
