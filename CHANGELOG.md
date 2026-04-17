@@ -1,3 +1,10 @@
+# [3.6.0](https://github.com/ResakaGit/trymellon-js/compare/v3.5.0...v3.6.0) (2026-04-17)
+
+
+### Features
+
+* **sdk:** expose isAnonymous in RegisterResult + AuthenticateResult (F1.4) ([a9c9b85](https://github.com/ResakaGit/trymellon-js/commit/a9c9b85adbd1acb80a531b2c8ba197c7f54535c0))
+
 # [3.5.0](https://github.com/ResakaGit/trymellon-js/compare/v3.4.0...v3.5.0) (2026-04-17)
 
 
