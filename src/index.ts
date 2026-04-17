@@ -70,6 +70,8 @@ export type {
   UserLockedPayload,
   IdentifierLinkedPayload,
   IdentifierUnlinkedPayload,
+  RecoveryEnrollmentIssuedPayload,
+  RecoveryEnrollmentCompletedPayload,
 } from './core/webhook';
 export { verifyWebhookSignature } from './core/webhook';
 

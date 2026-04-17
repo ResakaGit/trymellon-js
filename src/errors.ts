@@ -50,7 +50,10 @@ export type TryMellonErrorCode =
   | 'SIWE_DOMAIN_MISMATCH'
   | 'SIWE_ADDRESS_MISMATCH'
   // Anonymous recovery (F1)
-  | 'ANONYMOUS_RECOVERY_NOT_AVAILABLE';
+  | 'ANONYMOUS_RECOVERY_NOT_AVAILABLE'
+  // B2B recovery enrollment (F1-R.4, ADR-045)
+  | 'RECOVERY_USER_NOT_FOUND'
+  | 'RECOVERY_TICKET_LIMIT_EXCEEDED';
 
 export class TryMellonError extends Error {
   readonly code: TryMellonErrorCode;
@@ -130,6 +133,9 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
     'SIWE recovered address does not match the address declared in the message.',
   // Anonymous recovery (F1)
   ANONYMOUS_RECOVERY_NOT_AVAILABLE: 'Account recovery is not available for anonymous accounts.',
+  // B2B recovery enrollment (F1-R.4, ADR-045)
+  RECOVERY_USER_NOT_FOUND: 'Recovery target user not found.',
+  RECOVERY_TICKET_LIMIT_EXCEEDED: 'Recovery ticket limit reached for this user.',
 };
 
 export function createError(
@@ -254,6 +260,107 @@ export function isOriginNotAllowedBackendCode(code: string): boolean {
 }
 
 /**
+ * Backend wire code → SDK code lookup. Module-level so the literal is
+ * allocated once at module init instead of per invocation (hot path for
+ * every backend error response).
+ */
+const BACKEND_ERROR_MAP: Readonly<Record<string, TryMellonErrorCode>> = {
+  challenge_mismatch: 'CHALLENGE_MISMATCH',
+  session_expired: 'SESSION_EXPIRED',
+  unauthorized: 'SESSION_EXPIRED',
+  validation_error: 'INVALID_ARGUMENT',
+  invalid_argument: 'INVALID_ARGUMENT',
+  user_not_found: 'SESSION_EXPIRED',
+  passkey_not_found: 'PASSKEY_NOT_FOUND',
+  ticket_not_found: 'TICKET_NOT_FOUND',
+  ticket_expired: 'TICKET_EXPIRED',
+  ticket_already_consumed: 'TICKET_ALREADY_USED',
+  // Backend enrollment domain codes (UPPERCASE -> normalized)
+  not_found: 'TICKET_NOT_FOUND',
+  expired: 'TICKET_EXPIRED',
+  already_consumed: 'TICKET_ALREADY_USED',
+  context_mismatch: 'CHALLENGE_MISMATCH',
+  challenge_not_found: 'CHALLENGE_MISMATCH',
+  invalid_ticket_id: 'INVALID_ARGUMENT',
+  invalid_context_hash: 'INVALID_ARGUMENT',
+  invalid_ticket_status: 'INVALID_ARGUMENT',
+  invalid_config: 'INVALID_ARGUMENT',
+  enrollment_not_enabled: 'INVALID_ARGUMENT',
+  // Bridge (KP-BRIDGE)
+  pin_mismatch: 'PIN_MISMATCH',
+  pin_locked: 'PIN_LOCKED',
+  bridge_not_enabled: 'FORBIDDEN',
+  user_inactive: 'FORBIDDEN',
+  forbidden: 'FORBIDDEN',
+  internal_error: 'SERVER_ERROR',
+  bridge_session_expired: 'BRIDGE_SESSION_EXPIRED',
+  rate_limit_exceeded: 'RATE_LIMIT_EXCEEDED',
+  too_many_requests: 'RATE_LIMIT_EXCEEDED',
+  session_not_found: 'BRIDGE_SESSION_EXPIRED',
+  origin_not_allowed: 'INVALID_ARGUMENT',
+  origin_not_allowed_for_application: 'INVALID_ARGUMENT',
+  // WebAuthn ceremony / credential
+  credential_not_found: 'PASSKEY_NOT_FOUND',
+  no_credentials: 'PASSKEY_NOT_FOUND',
+  replay_detected: 'CHALLENGE_MISMATCH',
+  gone: 'CHALLENGE_MISMATCH',
+  application_not_found: 'NOT_FOUND',
+  tenant_inactive: 'TENANT_INACTIVE',
+  invitation_not_found: 'INVITATION_NOT_FOUND',
+  // Email / OTP fallback + recovery
+  invalid_or_expired_code: 'OTP_INVALID_OR_EXPIRED',
+  too_many_attempts: 'RATE_LIMIT_EXCEEDED',
+  email_required_for_fallback: 'INVALID_ARGUMENT',
+  email_required_for_recovery: 'INVALID_ARGUMENT',
+  // Action signing
+  action_challenge_expired: 'ACTION_CHALLENGE_EXPIRED',
+  challenge_already_claimed: 'ACTION_ALREADY_CLAIMED',
+  action_payload_mismatch: 'ACTION_PAYLOAD_MISMATCH',
+  // Application rotation / JWKS validation / custom claims / introspection
+  application_rotation_not_allowed: 'SECRET_ROTATION_FORBIDDEN',
+  session_jwt_kid_mismatch: 'JWT_KID_MISMATCH',
+  session_introspection_failed: 'INTROSPECTION_FAILED',
+  session_custom_claim_not_whitelisted: 'CUSTOM_CLAIM_NOT_ALLOWED',
+  session_custom_claims_limit_exceeded: 'CUSTOM_CLAIMS_TOO_LARGE',
+  // Identity linking (F1) — ADR-SDK-004 §2.6
+  identity_link_challenge_not_found: 'LINK_CHALLENGE_NOT_FOUND',
+  identity_link_otp_invalid: 'LINK_OTP_INVALID',
+  identity_link_otp_expired: 'LINK_OTP_EXPIRED',
+  identity_link_identifier_already_linked: 'IDENTIFIER_ALREADY_LINKED',
+  identity_link_email_already_taken_in_tenant: 'EMAIL_ALREADY_TAKEN',
+  identity_link_identifier_not_owned_by_user: 'IDENTIFIER_NOT_OWNED',
+  identity_link_unlink_last_identifier_denied: 'UNLINK_LAST_IDENTIFIER_DENIED',
+  identity_link_identifier_not_found: 'LINK_CHALLENGE_NOT_FOUND',
+  // SIWE (F1) — ADR-SDK-004 §2.6
+  siwe_nonce_expired: 'SIWE_NONCE_EXPIRED',
+  siwe_nonce_already_used: 'SIWE_NONCE_REPLAY',
+  siwe_signature_invalid: 'SIWE_SIGNATURE_INVALID',
+  siwe_message_malformed: 'SIWE_MESSAGE_MALFORMED',
+  siwe_chain_not_allowed: 'SIWE_CHAIN_NOT_ALLOWED',
+  siwe_domain_mismatch: 'SIWE_DOMAIN_MISMATCH',
+  siwe_address_mismatch: 'SIWE_ADDRESS_MISMATCH',
+  // Anonymous recovery (F1)
+  user_anonymous_recovery_not_available: 'ANONYMOUS_RECOVERY_NOT_AVAILABLE',
+  // B2B recovery enrollment (F1-R.4) — ADR-045
+  recovery_user_not_found: 'RECOVERY_USER_NOT_FOUND',
+  recovery_ticket_limit_exceeded: 'RECOVERY_TICKET_LIMIT_EXCEEDED',
+  // Cross-device QR domain errors (backend emits QR_ prefix)
+  qr_expired: 'SESSION_EXPIRED',
+  qr_session_not_found: 'SESSION_EXPIRED',
+  qr_rate_limited: 'RATE_LIMIT_EXCEEDED',
+  qr_origin_not_allowed: 'INVALID_ARGUMENT',
+  qr_tenant_mismatch: 'INVALID_ARGUMENT',
+  qr_polling_token_required: 'INVALID_ARGUMENT',
+  qr_replay_detected: 'CHALLENGE_MISMATCH',
+  qr_invalid_response: 'CHALLENGE_MISMATCH',
+  qr_credential_not_found: 'PASSKEY_NOT_FOUND',
+  qr_user_not_found: 'PASSKEY_NOT_FOUND',
+  qr_invalid_state: 'UNKNOWN_ERROR',
+  qr_no_challenge: 'UNKNOWN_ERROR',
+  qr_internal_error: 'UNKNOWN_ERROR',
+};
+
+/**
  * Maps backend API error codes (fintech envelope) to TryMellonErrorCode.
  * Pure, testable. Unknown codes map to UNKNOWN_ERROR.
  * Defensive: non-string input returns UNKNOWN_ERROR (no throw).
@@ -261,100 +368,7 @@ export function isOriginNotAllowedBackendCode(code: string): boolean {
  */
 export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonErrorCode {
   if (typeof backendCode !== 'string') return 'UNKNOWN_ERROR';
-  const normalized = backendCode.toLowerCase().trim();
-  const map: Record<string, TryMellonErrorCode> = {
-    challenge_mismatch: 'CHALLENGE_MISMATCH',
-    session_expired: 'SESSION_EXPIRED',
-    unauthorized: 'SESSION_EXPIRED',
-    validation_error: 'INVALID_ARGUMENT',
-    invalid_argument: 'INVALID_ARGUMENT',
-    user_not_found: 'SESSION_EXPIRED',
-    passkey_not_found: 'PASSKEY_NOT_FOUND',
-    ticket_not_found: 'TICKET_NOT_FOUND',
-    ticket_expired: 'TICKET_EXPIRED',
-    ticket_already_consumed: 'TICKET_ALREADY_USED',
-    // Backend enrollment domain codes (UPPERCASE -> normalized)
-    not_found: 'TICKET_NOT_FOUND',
-    expired: 'TICKET_EXPIRED',
-    already_consumed: 'TICKET_ALREADY_USED',
-    context_mismatch: 'CHALLENGE_MISMATCH',
-    challenge_not_found: 'CHALLENGE_MISMATCH',
-    invalid_ticket_id: 'INVALID_ARGUMENT',
-    invalid_context_hash: 'INVALID_ARGUMENT',
-    invalid_ticket_status: 'INVALID_ARGUMENT',
-    invalid_config: 'INVALID_ARGUMENT',
-    enrollment_not_enabled: 'INVALID_ARGUMENT',
-    // Bridge (KP-BRIDGE)
-    pin_mismatch: 'PIN_MISMATCH',
-    pin_locked: 'PIN_LOCKED',
-    bridge_not_enabled: 'FORBIDDEN',
-    user_inactive: 'FORBIDDEN',
-    forbidden: 'FORBIDDEN',
-    internal_error: 'SERVER_ERROR',
-    bridge_session_expired: 'BRIDGE_SESSION_EXPIRED',
-    rate_limit_exceeded: 'RATE_LIMIT_EXCEEDED',
-    too_many_requests: 'RATE_LIMIT_EXCEEDED',
-    session_not_found: 'BRIDGE_SESSION_EXPIRED',
-    origin_not_allowed: 'INVALID_ARGUMENT',
-    origin_not_allowed_for_application: 'INVALID_ARGUMENT',
-    // WebAuthn ceremony / credential
-    credential_not_found: 'PASSKEY_NOT_FOUND',
-    no_credentials: 'PASSKEY_NOT_FOUND',
-    replay_detected: 'CHALLENGE_MISMATCH',
-    gone: 'CHALLENGE_MISMATCH',
-    application_not_found: 'NOT_FOUND',
-    tenant_inactive: 'TENANT_INACTIVE',
-    invitation_not_found: 'INVITATION_NOT_FOUND',
-    // Email / OTP fallback + recovery
-    invalid_or_expired_code: 'OTP_INVALID_OR_EXPIRED',
-    too_many_attempts: 'RATE_LIMIT_EXCEEDED',
-    email_required_for_fallback: 'INVALID_ARGUMENT',
-    email_required_for_recovery: 'INVALID_ARGUMENT',
-    // Action signing
-    action_challenge_expired: 'ACTION_CHALLENGE_EXPIRED',
-    challenge_already_claimed: 'ACTION_ALREADY_CLAIMED',
-    action_payload_mismatch: 'ACTION_PAYLOAD_MISMATCH',
-    // Application rotation / JWKS validation / custom claims / introspection
-    application_rotation_not_allowed: 'SECRET_ROTATION_FORBIDDEN',
-    session_jwt_kid_mismatch: 'JWT_KID_MISMATCH',
-    session_introspection_failed: 'INTROSPECTION_FAILED',
-    session_custom_claim_not_whitelisted: 'CUSTOM_CLAIM_NOT_ALLOWED',
-    session_custom_claims_limit_exceeded: 'CUSTOM_CLAIMS_TOO_LARGE',
-    // Identity linking (F1) — ADR-SDK-004 §2.6
-    identity_link_challenge_not_found: 'LINK_CHALLENGE_NOT_FOUND',
-    identity_link_otp_invalid: 'LINK_OTP_INVALID',
-    identity_link_otp_expired: 'LINK_OTP_EXPIRED',
-    identity_link_identifier_already_linked: 'IDENTIFIER_ALREADY_LINKED',
-    identity_link_email_already_taken_in_tenant: 'EMAIL_ALREADY_TAKEN',
-    identity_link_identifier_not_owned_by_user: 'IDENTIFIER_NOT_OWNED',
-    identity_link_unlink_last_identifier_denied: 'UNLINK_LAST_IDENTIFIER_DENIED',
-    identity_link_identifier_not_found: 'LINK_CHALLENGE_NOT_FOUND',
-    // SIWE (F1) — ADR-SDK-004 §2.6
-    siwe_nonce_expired: 'SIWE_NONCE_EXPIRED',
-    siwe_nonce_already_used: 'SIWE_NONCE_REPLAY',
-    siwe_signature_invalid: 'SIWE_SIGNATURE_INVALID',
-    siwe_message_malformed: 'SIWE_MESSAGE_MALFORMED',
-    siwe_chain_not_allowed: 'SIWE_CHAIN_NOT_ALLOWED',
-    siwe_domain_mismatch: 'SIWE_DOMAIN_MISMATCH',
-    siwe_address_mismatch: 'SIWE_ADDRESS_MISMATCH',
-    // Anonymous recovery (F1)
-    user_anonymous_recovery_not_available: 'ANONYMOUS_RECOVERY_NOT_AVAILABLE',
-    // Cross-device QR domain errors (backend emits QR_ prefix)
-    qr_expired: 'SESSION_EXPIRED',
-    qr_session_not_found: 'SESSION_EXPIRED',
-    qr_rate_limited: 'RATE_LIMIT_EXCEEDED',
-    qr_origin_not_allowed: 'INVALID_ARGUMENT',
-    qr_tenant_mismatch: 'INVALID_ARGUMENT',
-    qr_polling_token_required: 'INVALID_ARGUMENT',
-    qr_replay_detected: 'CHALLENGE_MISMATCH',
-    qr_invalid_response: 'CHALLENGE_MISMATCH',
-    qr_credential_not_found: 'PASSKEY_NOT_FOUND',
-    qr_user_not_found: 'PASSKEY_NOT_FOUND',
-    qr_invalid_state: 'UNKNOWN_ERROR',
-    qr_no_challenge: 'UNKNOWN_ERROR',
-    qr_internal_error: 'UNKNOWN_ERROR',
-  };
-  return map[normalized] ?? 'UNKNOWN_ERROR';
+  return BACKEND_ERROR_MAP[backendCode.toLowerCase().trim()] ?? 'UNKNOWN_ERROR';
 }
 
 export function mapWebAuthnError(error: unknown): TryMellonError {

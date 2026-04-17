@@ -19,7 +19,9 @@ export type WebhookEventType =
   | 'session.logout'
   | 'user.locked'
   | 'identifier.linked'
-  | 'identifier.unlinked';
+  | 'identifier.unlinked'
+  | 'recovery.enrollment.issued'
+  | 'recovery.enrollment.completed';
 
 export type AuthSuccessPayload = {
   tenant_id: string;
@@ -96,6 +98,40 @@ export type IdentifierUnlinkedPayload = {
 };
 
 /**
+ * B2B recovery enrollment ticket issued via S2S (ADR-045, F1-R.4).
+ * Backend emits this when an integrator calls
+ * `POST /v1/users/:external_user_id/recovery/enroll`. The integrator is
+ * responsible for delivering the ticket to the user through its own
+ * channel — the `enrollment_url` is NOT included in this payload because
+ * the ticket is live and the URL would leak into webhook logs.
+ */
+export type RecoveryEnrollmentIssuedPayload = {
+  tenant_id: string;
+  application_id: string;
+  user_id: string;
+  external_user_id: string;
+  ticket_id: string;
+  context_hash: string;
+  expires_at: string;
+  issued_at: string;
+};
+
+/**
+ * B2B recovery enrollment completed successfully (ADR-045, F1-R.4).
+ * `reason: 'b2b_enrollment'` distinguishes this from the legacy OTP-based
+ * recovery flow — allows consumers to route the two flows differently.
+ */
+export type RecoveryEnrollmentCompletedPayload = {
+  tenant_id: string;
+  application_id: string;
+  user_id: string;
+  ticket_id: string;
+  credential_id: string;
+  reason: 'b2b_enrollment';
+  completed_at: string;
+};
+
+/**
  * Discriminated union: switch on `event` to narrow the `data` shape.
  */
 export type WebhookEvent =
@@ -110,7 +146,17 @@ export type WebhookEvent =
   | { event: 'session.logout'; timestamp: string; data: SessionLogoutPayload }
   | { event: 'user.locked'; timestamp: string; data: UserLockedPayload }
   | { event: 'identifier.linked'; timestamp: string; data: IdentifierLinkedPayload }
-  | { event: 'identifier.unlinked'; timestamp: string; data: IdentifierUnlinkedPayload };
+  | { event: 'identifier.unlinked'; timestamp: string; data: IdentifierUnlinkedPayload }
+  | {
+      event: 'recovery.enrollment.issued';
+      timestamp: string;
+      data: RecoveryEnrollmentIssuedPayload;
+    }
+  | {
+      event: 'recovery.enrollment.completed';
+      timestamp: string;
+      data: RecoveryEnrollmentCompletedPayload;
+    };
 
 export type WebhookPayload<E extends WebhookEventType = WebhookEventType> = Extract<
   WebhookEvent,

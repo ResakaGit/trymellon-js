@@ -327,6 +327,22 @@ describe('mapBackendErrorCodeToTryMellon', () => {
     expect(mapBackendErrorCodeToTryMellon('email_required_for_recovery')).toBe('INVALID_ARGUMENT');
   });
 
+  it('maps B2B recovery enrollment backend codes (F1-R.4)', () => {
+    // Backend emits UPPERCASE enum values; mapper normalizes via toLowerCase
+    expect(mapBackendErrorCodeToTryMellon('recovery_user_not_found')).toBe(
+      'RECOVERY_USER_NOT_FOUND'
+    );
+    expect(mapBackendErrorCodeToTryMellon('RECOVERY_USER_NOT_FOUND')).toBe(
+      'RECOVERY_USER_NOT_FOUND'
+    );
+    expect(mapBackendErrorCodeToTryMellon('recovery_ticket_limit_exceeded')).toBe(
+      'RECOVERY_TICKET_LIMIT_EXCEEDED'
+    );
+    expect(mapBackendErrorCodeToTryMellon('RECOVERY_TICKET_LIMIT_EXCEEDED')).toBe(
+      'RECOVERY_TICKET_LIMIT_EXCEEDED'
+    );
+  });
+
   it('maps application rotation, JWKS, introspection and custom-claims backend codes', () => {
     expect(mapBackendErrorCodeToTryMellon('application_rotation_not_allowed')).toBe(
       'SECRET_ROTATION_FORBIDDEN'

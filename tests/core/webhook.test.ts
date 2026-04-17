@@ -72,6 +72,14 @@ describe('WebhookEvent discriminated union type narrowing', () => {
           return e.data.logged_out_at;
         case 'user.locked':
           return e.data.lockout_level;
+        case 'identifier.linked':
+          return e.data.linked_at;
+        case 'identifier.unlinked':
+          return e.data.unlinked_at;
+        case 'recovery.enrollment.issued':
+          return e.data.ticket_id;
+        case 'recovery.enrollment.completed':
+          return e.data.reason;
       }
     };
     const sample: WebhookPayload<'user.locked'> = {
@@ -86,5 +94,41 @@ describe('WebhookEvent discriminated union type narrowing', () => {
       },
     };
     expect(handle(sample)).toBe('hard');
+  });
+
+  it('Given a recovery.enrollment.issued payload, when handled, then narrows to ticket_id', () => {
+    const sample: WebhookPayload<'recovery.enrollment.issued'> = {
+      event: 'recovery.enrollment.issued',
+      timestamp: '2026-04-17T12:00:00.000Z',
+      data: {
+        tenant_id: 't_1',
+        application_id: 'a_1',
+        user_id: 'u_1',
+        external_user_id: 'ext_42',
+        ticket_id: 'tkt_abc',
+        context_hash: 'a'.repeat(64),
+        expires_at: '2026-04-18T12:00:00.000Z',
+        issued_at: '2026-04-17T12:00:00.000Z',
+      },
+    };
+    expect(sample.data.ticket_id).toBe('tkt_abc');
+  });
+
+  it('Given a recovery.enrollment.completed payload, when handled, then reason is literal b2b_enrollment', () => {
+    const sample: WebhookPayload<'recovery.enrollment.completed'> = {
+      event: 'recovery.enrollment.completed',
+      timestamp: '2026-04-17T12:05:00.000Z',
+      data: {
+        tenant_id: 't_1',
+        application_id: 'a_1',
+        user_id: 'u_1',
+        ticket_id: 'tkt_abc',
+        credential_id: 'cred_xyz',
+        reason: 'b2b_enrollment',
+        completed_at: '2026-04-17T12:05:00.000Z',
+      },
+    };
+    expect(sample.data.reason).toBe('b2b_enrollment');
+    expect(sample.data.credential_id).toBe('cred_xyz');
   });
 });

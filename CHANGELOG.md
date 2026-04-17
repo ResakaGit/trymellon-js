@@ -1,3 +1,15 @@
+# [Unreleased]
+
+### feat(sdk): map B2B recovery enrollment errors + webhook types (F1-R.4)
+
+- **`TryMellonErrorCode`** gains `RECOVERY_USER_NOT_FOUND` (maps backend HTTP 404) and `RECOVERY_TICKET_LIMIT_EXCEEDED` (maps backend HTTP 409). Added to `DEFAULT_MESSAGES` with B2B-oriented wording.
+- **`mapBackendErrorCodeToTryMellon`** covers the two new backend wire codes (`recovery_user_not_found` / `recovery_ticket_limit_exceeded`). Case normalization already handled by the existing `toLowerCase().trim()` pipeline.
+- **`WebhookEventType`** gains `recovery.enrollment.issued` + `recovery.enrollment.completed`.
+- **`WebhookEvent`** discriminated union extended with both events and their payload types `RecoveryEnrollmentIssuedPayload` / `RecoveryEnrollmentCompletedPayload`. Both exported from the main entry.
+- `recovery.enrollment.completed` payload carries `reason: 'b2b_enrollment'` (literal) — distinguishes the B2B flow from the legacy OTP-based recovery at the webhook consumer level.
+- **No new `TryMellonClient` surface** — B2B recovery completion reuses the existing `client.enroll({ ticketId })` (ADR-045). Integrators issue the ticket via the backend S2S endpoint and deliver the enrollment URL through their own channel.
+- **Backend counterpart:** `feat(backend)` commit with the same `Session-Id: 2026-04-17-opus47-f1r4` promotes the domain error codes to real throw points and emits the webhooks this SDK change maps.
+
 # [3.6.0](https://github.com/ResakaGit/trymellon-js/compare/v3.5.0...v3.6.0) (2026-04-17)
 
 
