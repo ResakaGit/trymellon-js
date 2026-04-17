@@ -1,3 +1,11 @@
+# [3.5.0](https://github.com/ResakaGit/trymellon-js/compare/v3.4.0...v3.5.0) (2026-04-17)
+
+
+### Features
+
+* **sdk:** F1 Identity Interop — converge to ADR-SDK-004 ([25ff4dd](https://github.com/ResakaGit/trymellon-js/commit/25ff4dddbafb87e7ff16cfee5080a06cef16e379))
+* **sdk:** F1 Identity Interop — identity + siwe namespaces, error codes, webhook types ([4bf81cf](https://github.com/ResakaGit/trymellon-js/commit/4bf81cffd1ebebf03ccd4f0b63b735b15fa7af91))
+
 # [3.4.0](https://github.com/ResakaGit/trymellon-js/compare/v3.3.0...v3.4.0) (2026-04-15)
 
 
