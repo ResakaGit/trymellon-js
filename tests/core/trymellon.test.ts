@@ -658,4 +658,209 @@ describe('TryMellon', () => {
       if (!result.ok) expect(result.error.code).toBe('NETWORK_ERROR');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Identity namespace (F1) — ADR-SDK-004 §2.1–§2.2
+  // ---------------------------------------------------------------------------
+  describe('identity (F1 namespace)', () => {
+    const setSession = (userId: string): void => {
+      (tryMellon as unknown as { currentUserId: string | null }).currentUserId = userId;
+    };
+
+    it('Given no authenticated session, when identity.linkEmail, then returns err INVALID_ARGUMENT', async () => {
+      const result = await tryMellon.identity.linkEmail('alice@example.com');
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    });
+
+    it('Given authenticated session, when identity.linkEmail, then delegates to apiClient.requestLinkEmail with userId+email', async () => {
+      setSession('usr_1');
+      const mockInstance = (
+        tryMellon as { apiClient: { requestLinkEmail: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.requestLinkEmail.mockResolvedValue(
+        ok({ identifierId: 'idf_abc', expiresAt: '2026-05-01T00:00:00Z' })
+      );
+
+      const result = await tryMellon.identity.linkEmail('alice@example.com');
+
+      expect(result.ok).toBe(true);
+      expect(mockInstance.requestLinkEmail).toHaveBeenCalledWith('usr_1', {
+        email: 'alice@example.com',
+      });
+    });
+
+    it('Given authenticated session, when identity.verifyEmailLink, then delegates to apiClient.confirmLinkEmail', async () => {
+      setSession('usr_1');
+      const mockInstance = (
+        tryMellon as { apiClient: { confirmLinkEmail: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.confirmLinkEmail.mockResolvedValue(
+        ok({
+          id: 'idf_abc',
+          type: 'email',
+          value: 'alice@example.com',
+          verified: true,
+          linkedAt: '2026-04-17T00:00:00Z',
+        })
+      );
+
+      const result = await tryMellon.identity.verifyEmailLink({
+        identifierId: 'idf_abc',
+        otp: '123456',
+      });
+
+      expect(result.ok).toBe(true);
+      expect(mockInstance.confirmLinkEmail).toHaveBeenCalledWith('usr_1', {
+        identifierId: 'idf_abc',
+        otp: '123456',
+      });
+    });
+
+    it('Given no session, when identity.verifyEmailLink, then returns err INVALID_ARGUMENT', async () => {
+      const result = await tryMellon.identity.verifyEmailLink({
+        identifierId: 'idf_abc',
+        otp: '123456',
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    });
+
+    it('Given authenticated session, when identity.list, then delegates to apiClient.listIdentifiers', async () => {
+      setSession('usr_1');
+      const mockInstance = (
+        tryMellon as { apiClient: { listIdentifiers: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.listIdentifiers.mockResolvedValue(ok([]));
+
+      const result = await tryMellon.identity.list();
+
+      expect(result.ok).toBe(true);
+      expect(mockInstance.listIdentifiers).toHaveBeenCalledWith('usr_1');
+    });
+
+    it('Given no session, when identity.list, then returns err INVALID_ARGUMENT', async () => {
+      const result = await tryMellon.identity.list();
+      expect(result.ok).toBe(false);
+    });
+
+    it('Given authenticated session, when identity.unlink, then delegates to apiClient.unlinkIdentifier with userId+identifierId', async () => {
+      setSession('usr_1');
+      const mockInstance = (
+        tryMellon as { apiClient: { unlinkIdentifier: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.unlinkIdentifier.mockResolvedValue(ok(undefined));
+
+      const result = await tryMellon.identity.unlink('idf_abc');
+
+      expect(result.ok).toBe(true);
+      expect(mockInstance.unlinkIdentifier).toHaveBeenCalledWith('usr_1', 'idf_abc');
+    });
+
+    it('Given no session, when identity.unlink, then returns err INVALID_ARGUMENT', async () => {
+      const result = await tryMellon.identity.unlink('idf_abc');
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // SIWE namespace (F1) — ADR-SDK-004 §2.1
+  // ---------------------------------------------------------------------------
+  describe('siwe (F1 namespace)', () => {
+    it('should expose getNonce that delegates to apiClient.getSiweNonce', async () => {
+      const mockInstance = (
+        tryMellon as { apiClient: { getSiweNonce: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.getSiweNonce.mockResolvedValue(
+        ok({ nonce: 'abc12345', expiresAt: '2026-04-17T00:05:00Z' })
+      );
+
+      const result = await tryMellon.siwe.getNonce();
+
+      expect(result.ok).toBe(true);
+      expect(mockInstance.getSiweNonce).toHaveBeenCalledTimes(1);
+    });
+
+    it('Given valid EIP-4361 inputs, when siwe.prepareMessage, then returns ok with canonical message', () => {
+      const result = tryMellon.siwe.prepareMessage({
+        domain: 'example.com',
+        address: '0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB',
+        uri: 'https://example.com/login',
+        chainId: 1,
+        nonce: '32891757',
+        issuedAt: '2026-04-17T00:00:00Z',
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value).toContain('example.com wants you to sign in');
+    });
+
+    it('Given invalid address, when siwe.prepareMessage, then returns err INVALID_ARGUMENT', () => {
+      const result = tryMellon.siwe.prepareMessage({
+        domain: 'example.com',
+        address: 'not-an-address',
+        uri: 'https://example.com/login',
+        chainId: 1,
+        nonce: '32891757',
+        issuedAt: '2026-04-17T00:00:00Z',
+      });
+      expect(result.ok).toBe(false);
+    });
+
+    it('Given verifySiwe succeeds, when siwe.verifyAndSignIn, then emits success event and returns ok', async () => {
+      const mockInstance = (
+        tryMellon as { apiClient: { verifySiwe: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.verifySiwe.mockResolvedValue(
+        ok({
+          sessionToken: 'sess_tok',
+          userId: 'u_1',
+          walletAddress: '0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB',
+        })
+      );
+      const successHandler = vi.fn();
+      const startHandler = vi.fn();
+      tryMellon.on('success', successHandler);
+      tryMellon.on('start', startHandler);
+
+      const result = await tryMellon.siwe.verifyAndSignIn({
+        message: 'example.com wants ...',
+        signature: '0xsig',
+      });
+
+      expect(result.ok).toBe(true);
+      expect(startHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'start', operation: 'signIn' })
+      );
+      expect(successHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'success',
+          operation: 'signIn',
+          token: 'sess_tok',
+          user: { userId: 'u_1' },
+        })
+      );
+    });
+
+    it('Given verifySiwe fails, when siwe.verifyAndSignIn, then emits error event and returns err', async () => {
+      const mockInstance = (
+        tryMellon as { apiClient: { verifySiwe: ReturnType<typeof vi.fn> } }
+      ).apiClient;
+      mockInstance.verifySiwe.mockResolvedValue(
+        err(createError('SIWE_SIGNATURE_INVALID', 'bad signature'))
+      );
+      const errorHandler = vi.fn();
+      tryMellon.on('error', errorHandler);
+
+      const result = await tryMellon.siwe.verifyAndSignIn({
+        message: 'example.com wants ...',
+        signature: '0xbadsig',
+      });
+
+      expect(result.ok).toBe(false);
+      expect(errorHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'error', operation: 'signIn' })
+      );
+    });
+  });
 });
