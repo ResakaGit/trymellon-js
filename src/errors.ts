@@ -38,13 +38,17 @@ export type TryMellonErrorCode =
   | 'LINK_OTP_INVALID'
   | 'LINK_OTP_EXPIRED'
   | 'IDENTIFIER_ALREADY_LINKED'
+  | 'IDENTIFIER_NOT_OWNED'
   | 'EMAIL_ALREADY_TAKEN'
+  | 'UNLINK_LAST_IDENTIFIER_DENIED'
   // SIWE (F1)
   | 'SIWE_NONCE_EXPIRED'
   | 'SIWE_NONCE_REPLAY'
   | 'SIWE_SIGNATURE_INVALID'
+  | 'SIWE_MESSAGE_MALFORMED'
   | 'SIWE_CHAIN_NOT_ALLOWED'
   | 'SIWE_DOMAIN_MISMATCH'
+  | 'SIWE_ADDRESS_MISMATCH'
   // Anonymous recovery (F1)
   | 'ANONYMOUS_RECOVERY_NOT_AVAILABLE';
 
@@ -108,15 +112,22 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   LINK_CHALLENGE_NOT_FOUND: 'Link challenge not found or expired. Request a new one.',
   LINK_OTP_INVALID: 'The link verification code is invalid. Check the code and try again.',
   LINK_OTP_EXPIRED: 'The link verification code has expired. Request a new one.',
-  IDENTIFIER_ALREADY_LINKED: 'This identifier is already linked to the account.',
+  IDENTIFIER_ALREADY_LINKED: 'This identifier is already linked to an account.',
+  IDENTIFIER_NOT_OWNED: 'This identifier belongs to a different user.',
   EMAIL_ALREADY_TAKEN: 'This email address is already associated with another account.',
+  UNLINK_LAST_IDENTIFIER_DENIED:
+    'Cannot unlink the last identifier of an anonymous account; link another identifier first.',
   // SIWE (F1)
   SIWE_NONCE_EXPIRED: 'SIWE nonce has expired. Request a new one.',
   SIWE_NONCE_REPLAY: 'SIWE nonce has already been used. Request a new one.',
   SIWE_SIGNATURE_INVALID:
     'SIWE signature verification failed. Ensure the message was signed correctly.',
+  SIWE_MESSAGE_MALFORMED:
+    'SIWE message is malformed. It must follow the EIP-4361 canonical format.',
   SIWE_CHAIN_NOT_ALLOWED: 'The specified chain is not allowed for this application.',
   SIWE_DOMAIN_MISMATCH: 'SIWE message domain does not match the expected domain.',
+  SIWE_ADDRESS_MISMATCH:
+    'SIWE recovered address does not match the address declared in the message.',
   // Anonymous recovery (F1)
   ANONYMOUS_RECOVERY_NOT_AVAILABLE: 'Account recovery is not available for anonymous accounts.',
 };
@@ -309,21 +320,23 @@ export function mapBackendErrorCodeToTryMellon(backendCode: string): TryMellonEr
     session_introspection_failed: 'INTROSPECTION_FAILED',
     session_custom_claim_not_whitelisted: 'CUSTOM_CLAIM_NOT_ALLOWED',
     session_custom_claims_limit_exceeded: 'CUSTOM_CLAIMS_TOO_LARGE',
-    // Identity linking (F1)
+    // Identity linking (F1) — ADR-SDK-004 §2.6
     identity_link_challenge_not_found: 'LINK_CHALLENGE_NOT_FOUND',
     identity_link_otp_invalid: 'LINK_OTP_INVALID',
     identity_link_otp_expired: 'LINK_OTP_EXPIRED',
     identity_link_identifier_already_linked: 'IDENTIFIER_ALREADY_LINKED',
     identity_link_email_already_taken_in_tenant: 'EMAIL_ALREADY_TAKEN',
-    identity_link_identifier_not_owned_by_user: 'FORBIDDEN',
-    identity_link_unlink_last_identifier_denied: 'IDENTIFIER_ALREADY_LINKED',
-    identity_link_identifier_not_found: 'NOT_FOUND',
-    // SIWE (F1)
+    identity_link_identifier_not_owned_by_user: 'IDENTIFIER_NOT_OWNED',
+    identity_link_unlink_last_identifier_denied: 'UNLINK_LAST_IDENTIFIER_DENIED',
+    identity_link_identifier_not_found: 'LINK_CHALLENGE_NOT_FOUND',
+    // SIWE (F1) — ADR-SDK-004 §2.6
     siwe_nonce_expired: 'SIWE_NONCE_EXPIRED',
     siwe_nonce_already_used: 'SIWE_NONCE_REPLAY',
     siwe_signature_invalid: 'SIWE_SIGNATURE_INVALID',
+    siwe_message_malformed: 'SIWE_MESSAGE_MALFORMED',
     siwe_chain_not_allowed: 'SIWE_CHAIN_NOT_ALLOWED',
     siwe_domain_mismatch: 'SIWE_DOMAIN_MISMATCH',
+    siwe_address_mismatch: 'SIWE_ADDRESS_MISMATCH',
     // Anonymous recovery (F1)
     user_anonymous_recovery_not_available: 'ANONYMOUS_RECOVERY_NOT_AVAILABLE',
     // Cross-device QR domain errors (backend emits QR_ prefix)

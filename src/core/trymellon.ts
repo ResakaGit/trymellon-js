@@ -5,12 +5,11 @@ import { EnrollmentManager } from './enrollment-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { BridgeManager } from './bridge-manager';
 import { ActionManager } from './action-manager';
-import { IdentityManager } from './identity-manager';
-import { SiweManager } from './siwe-manager';
 import { getOrCreateContextHash, createInMemoryStorage } from './context-hash';
 import { EventEmitter } from './events';
 import { isWebAuthnSupported, getClientStatus } from '../utils/support';
-import { validateUrl, validateRange, createInvalidArgumentError } from '../errors';
+import { createError, validateUrl, validateRange, createInvalidArgumentError } from '../errors';
+import { prepareSiweMessage, type SiwePrepareOptions } from '../web3/siwe-message';
 import {
   DEFAULT_API_BASE_URL,
   DEFAULT_TIMEOUT_MS,
@@ -53,7 +52,6 @@ import type {
   BridgeStatusSnapshot,
   ActionSignOptions,
   ActionSignResult,
-  LinkEmailOptions,
   LinkVerifyOptions,
   LinkChallengeResult,
   LinkedIdentifier,
@@ -96,10 +94,9 @@ export class TryMellon {
   private readonly enrollmentManager: EnrollmentManager;
   private readonly bridgeManager: BridgeManager;
   private readonly actionManager: ActionManager;
-  private readonly identityManager: IdentityManager;
-  private readonly siweManager: SiweManager;
   private readonly apiBaseUrl: string;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
+  private currentUserId: string | null = null;
   readonly preset: TryMellonPreset;
 
   private static validateConfig(config: TryMellonConfig): void {
@@ -130,18 +127,17 @@ export class TryMellon {
       validateUrl(config.telemetryEndpoint, 'telemetryEndpoint');
     }
 
-    if (config.preset !== undefined && config.preset !== 'saas') {
-      throw createInvalidArgumentError(
-        'preset',
-        `must be 'saas' (other presets reserved for future F1/F2 namespaces)`
-      );
+    if (config.preset !== undefined && config.preset !== 'saas' && config.preset !== 'web3') {
+      throw createInvalidArgumentError('preset', "must be 'saas' or 'web3'");
     }
   }
 
-  static create(config: TryMellonConfig): Result<TryMellon, TryMellonError> {
+  static create<P extends TryMellonPreset = 'saas'>(
+    config: TryMellonConfig & { preset?: P }
+  ): Result<TryMellonClient<P>, TryMellonError> {
     try {
       TryMellon.validateConfig(config);
-      return ok(new TryMellon(config));
+      return ok(new TryMellon(config) as unknown as TryMellonClient<P>);
     } catch (e) {
       if (isTryMellonError(e)) {
         return err(e);
@@ -186,6 +182,11 @@ export class TryMellon {
     this.apiBaseUrl = apiBaseUrl;
     this.apiClient = new ApiClient(httpClient, apiBaseUrl, defaultHeaders);
     this.eventEmitter = new EventEmitter();
+    this.eventEmitter.on('success', (p) => {
+      if (p.type === 'success' && p.user?.userId !== undefined) {
+        this.currentUserId = p.user.userId;
+      }
+    });
     this.preset = config.preset ?? 'saas';
 
     if (config.enableTelemetry) {
@@ -208,8 +209,6 @@ export class TryMellon {
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
     this.actionManager = new ActionManager(this.apiClient);
-    this.identityManager = new IdentityManager(this.apiClient);
-    this.siweManager = new SiweManager(this.apiClient);
     this.warnIfSandboxOnProd();
   }
 
@@ -283,6 +282,7 @@ export class TryMellon {
         type: 'success',
         operation: 'enroll',
         token: result.value.sessionToken,
+        user: { userId: result.value.userId },
       });
     } else {
       this.eventEmitter.emit('error', {
@@ -292,6 +292,18 @@ export class TryMellon {
       });
     }
     return result;
+  }
+
+  private requireAuthenticatedUserId(): Result<string, TryMellonError> {
+    if (this.currentUserId === null) {
+      return err(
+        createError(
+          'INVALID_ARGUMENT',
+          'identity.* requires an authenticated session; call signIn/signUp/enroll first.'
+        )
+      );
+    }
+    return ok(this.currentUserId);
   }
 
   getContextHash(): string {
@@ -403,34 +415,64 @@ export class TryMellon {
   }
 
   /**
-   * Identity linking (F1): associate additional identifiers (email, wallet) to an existing user.
-   * Flow: link → OTP verify → confirmed identifier. Use list/unlink to manage.
+   * Identity linking (F1): associate email/wallet identifiers to the authenticated user.
+   * `userId` is read from the active session. See ADR-SDK-004 §2.1–§2.2.
    */
   identity = {
-    link: (
-      userId: string,
-      options: LinkEmailOptions
-    ): Promise<Result<LinkChallengeResult, TryMellonError>> =>
-      this.identityManager.link(userId, options),
-    verify: (
-      userId: string,
+    linkEmail: async (email: string): Promise<Result<LinkChallengeResult, TryMellonError>> => {
+      const userIdR = this.requireAuthenticatedUserId();
+      if (!userIdR.ok) return userIdR;
+      return this.apiClient.requestLinkEmail(userIdR.value, { email });
+    },
+    verifyEmailLink: async (
       options: LinkVerifyOptions
-    ): Promise<Result<LinkedIdentifier, TryMellonError>> =>
-      this.identityManager.verify(userId, options),
-    list: (userId: string): Promise<Result<LinkedIdentifier[], TryMellonError>> =>
-      this.identityManager.list(userId),
-    unlink: (userId: string, identifierId: string): Promise<Result<void, TryMellonError>> =>
-      this.identityManager.unlink(userId, identifierId),
+    ): Promise<Result<LinkedIdentifier, TryMellonError>> => {
+      const userIdR = this.requireAuthenticatedUserId();
+      if (!userIdR.ok) return userIdR;
+      return this.apiClient.confirmLinkEmail(userIdR.value, options);
+    },
+    list: async (): Promise<Result<LinkedIdentifier[], TryMellonError>> => {
+      const userIdR = this.requireAuthenticatedUserId();
+      if (!userIdR.ok) return userIdR;
+      return this.apiClient.listIdentifiers(userIdR.value);
+    },
+    unlink: async (identifierId: string): Promise<Result<void, TryMellonError>> => {
+      const userIdR = this.requireAuthenticatedUserId();
+      if (!userIdR.ok) return userIdR;
+      return this.apiClient.unlinkIdentifier(userIdR.value, identifierId);
+    },
   };
 
   /**
-   * SIWE (Sign-In with Ethereum) (F1): authenticate users via EIP-4361 message signing.
-   * Flow: getNonce → sign message in wallet → verify signature → receive session token.
+   * SIWE (EIP-4361): sign in via wallet signature.
+   * Flow: `getNonce` → `prepareMessage` (pure) → wallet signs → `verifyAndSignIn`.
+   * See ADR-SDK-004 §2.1.
    */
   siwe = {
-    getNonce: (): Promise<Result<SiweNonceResult, TryMellonError>> => this.siweManager.getNonce(),
-    verify: (options: SiweVerifyOptions): Promise<Result<SiweVerifyResult, TryMellonError>> =>
-      this.siweManager.verify(options),
+    getNonce: (): Promise<Result<SiweNonceResult, TryMellonError>> => this.apiClient.getSiweNonce(),
+    prepareMessage: (options: SiwePrepareOptions): Result<string, TryMellonError> =>
+      prepareSiweMessage(options),
+    verifyAndSignIn: async (
+      options: SiweVerifyOptions
+    ): Promise<Result<SiweVerifyResult, TryMellonError>> => {
+      this.eventEmitter.emit('start', { type: 'start', operation: 'signIn' });
+      const result = await this.apiClient.verifySiwe(options);
+      if (result.ok) {
+        this.eventEmitter.emit('success', {
+          type: 'success',
+          operation: 'signIn',
+          token: result.value.sessionToken,
+          user: { userId: result.value.userId },
+        });
+      } else {
+        this.eventEmitter.emit('error', {
+          type: 'error',
+          operation: 'signIn',
+          error: result.error,
+        });
+      }
+      return result;
+    },
   };
 
   platform = {
@@ -440,3 +482,17 @@ export class TryMellon {
     ) => this.onboardingManager.startFlow(options, signal),
   };
 }
+
+/**
+ * Narrowed public view of `TryMellon` based on the selected preset.
+ * With `preset: 'saas'` (default), `identity` and `siwe` are typed `never` —
+ * the IDE hides them from autocomplete and the type checker rejects usage.
+ * See ADR-SDK-004 §2.3.
+ */
+export type TryMellonClient<P extends TryMellonPreset = 'saas'> = Omit<
+  TryMellon,
+  'identity' | 'siwe'
+> & {
+  readonly identity: P extends 'web3' ? TryMellon['identity'] : never;
+  readonly siwe: P extends 'web3' ? TryMellon['siwe'] : never;
+};

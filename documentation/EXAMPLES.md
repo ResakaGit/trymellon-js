@@ -493,3 +493,79 @@ async function useEmailFallback() {
   });
 }
 ```
+
+## F1 — Web3 interop (preset `'web3'`)
+
+Opt-in surface. See `documentation/advanced/web3.md` for the full guide.
+
+### Link an email to the authenticated user
+
+```typescript
+import { TryMellon } from '@trymellon/js';
+
+const clientR = TryMellon.create({
+  appId: 'app_...',
+  publishableKey: 'pk_...',
+  preset: 'web3',
+});
+if (!clientR.ok) throw clientR.error;
+const client = clientR.value;
+
+// User already signed in via passkey earlier in the session.
+await client.signIn({ externalUserId: 'alice' });
+
+const challenge = await client.identity.linkEmail('alice@example.com');
+if (!challenge.ok) return;
+
+const otp = prompt('Enter the 6-digit code:');
+const linked = await client.identity.verifyEmailLink({
+  identifierId: challenge.value.identifierId,
+  otp: otp ?? '',
+});
+```
+
+### Sign in with Ethereum (SIWE) using wagmi
+
+```typescript
+import { TryMellon } from '@trymellon/js';
+import { useAccount, useSignMessage } from 'wagmi';
+
+const clientR = TryMellon.create({
+  appId: 'app_...',
+  publishableKey: 'pk_...',
+  preset: 'web3',
+});
+if (!clientR.ok) throw clientR.error;
+const client = clientR.value;
+
+async function siweLogin() {
+  const { address, chain } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+
+  const nonceR = await client.siwe.getNonce();
+  if (!nonceR.ok) return;
+
+  const messageR = client.siwe.prepareMessage({
+    domain: window.location.host,
+    address: address!,
+    chainId: chain!.id,
+    uri: window.location.origin,
+    nonce: nonceR.value.nonce,
+    statement: 'Sign in to Example App',
+  });
+  if (!messageR.ok) return;
+
+  const signature = await signMessageAsync({ message: messageR.value });
+  const authR = await client.siwe.verifyAndSignIn({
+    message: messageR.value,
+    signature,
+  });
+  if (!authR.ok) return;
+
+  await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionToken: authR.value.sessionToken }),
+  });
+}
+```

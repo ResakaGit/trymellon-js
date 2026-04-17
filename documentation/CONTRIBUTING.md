@@ -250,4 +250,19 @@ If you have questions, you can:
 
 ---
 
+## Adding a new namespace (preset + sub-path pattern)
+
+When introducing a phased feature set (F2 onchain actions, F2 session keys, etc.), follow the pattern established for F1 Web3:
+
+1. **Extend the preset union.** `src/types.ts` → add the new preset literal (e.g. `'trading'`). Update `TryMellon.validateConfig` to accept it. Document in an ADR.
+2. **Add a sub-path.** Create `src/<namespace>/index.ts` that re-exports pure helpers + types. Add a `tsup` entry pointing at it (`outDir: 'dist/<namespace>'`). Add the `exports` field in `package.json` and a `size-limit` gate with a realistic budget.
+3. **Type-narrow the client surface.** Extend `TryMellonClient<P>` in `src/core/trymellon.ts` so the new namespace is typed `never` unless the matching preset is selected. The runtime instantiates managers unconditionally — the type narrowing is the discovery gate.
+4. **Wire namespaces with implicit state.** Public methods should not ask the integrator for state the SDK already has (e.g. `userId`). Cache it by subscribing to `eventEmitter.on('success', ...)` — same approach used for `client.identity.*`.
+5. **Error codes.** Add backend codes to `mapBackendErrorCodeToTryMellon` and extend `TryMellonErrorCode`. Add a contract test in `tests/core/error-code-mapper.test.ts` — an unknown backend code must fall through to `UNKNOWN_ERROR` and fail the test.
+6. **Docs.** Add a `documentation/advanced/<namespace>.md` guide and a short section in `documentation/API.md`. Keep the root `README.md` limited to the 3 core methods.
+
+Reference: ADR-SDK-002 (surface pattern), ADR-SDK-004 (F1 concrete application).
+
+---
+
 Thank you for contributing to `@trymellon/js`! 🎉

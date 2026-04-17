@@ -1,4 +1,5 @@
 export { TryMellon } from './core/trymellon';
+export type { TryMellonClient } from './core/trymellon';
 export { SANDBOX_SESSION_TOKEN } from './core/constants';
 
 export type { Result } from './utils/result';
@@ -53,6 +54,8 @@ export type {
   SiweVerifyOptions,
   SiweVerifyResult,
 } from './types';
+
+export type { SiwePrepareOptions } from './web3/siwe-message';
 
 // Webhook types + HMAC verifier for integrators consuming delivery webhooks
 export type {

@@ -307,11 +307,17 @@ describe('TryMellon', () => {
       if (result.ok) expect(result.value.preset).toBe('saas');
     });
 
+    it('should accept preset="web3" (F1 opt-in)', () => {
+      const result = TryMellon.create({ ...config, preset: 'web3' });
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.value.preset).toBe('web3');
+    });
+
     it('should reject unknown preset values with INVALID_ARGUMENT', () => {
       const result = TryMellon.create({
         ...config,
         // @ts-expect-error — deliberately unknown preset for runtime validation
-        preset: 'web3',
+        preset: 'trading',
       });
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.error.code).toBe('INVALID_ARGUMENT');

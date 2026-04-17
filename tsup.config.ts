@@ -55,6 +55,17 @@ export default defineConfig([
   },
   {
     ...sharedOptions,
+    entry: { index: 'src/web3/index.ts' },
+    outDir: 'dist/web3',
+    format: ['esm', 'cjs'],
+    dts: true,
+    clean: false,
+    splitting: false,
+    treeshake: { preset: 'smallest', moduleSideEffects: false },
+    minify: true,
+  },
+  {
+    ...sharedOptions,
     entry: { index: 'src/ui/index.ts' },
     outDir: 'dist/ui',
     format: ['esm'],

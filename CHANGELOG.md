@@ -14,6 +14,40 @@
 
 # [Unreleased]
 
+### Added (F1 — Web3 identity interop)
+
+- **`client.identity.*` namespace** (preset `'web3'`): `linkEmail(email)`, `verifyEmailLink({ identifierId, otp })`, `list()`, `unlink(identifierId)`. `userId` is read from the active session (no parameter needed). Backed by `POST /v1/users/:id/identifiers(/verify)` and `DELETE /v1/users/:id/identifiers/:identifier_id`.
+- **`client.siwe.*` namespace** (preset `'web3'`, EIP-4361): `getNonce()`, `prepareMessage(opts)` (pure, zero-dep), `verifyAndSignIn({ message, signature })`. Signing is always the wallet's responsibility.
+- **Preset `'web3'` + type narrowing:** `TryMellon.create({ preset: 'web3' })` exposes the new namespaces; `'saas'` (default) types them as `never`, hiding them from autocomplete. Exported helper type `TryMellonClient<P>`.
+- **Sub-path export `@trymellon/js/web3`:** tree-shakeable entry exposing `prepareSiweMessage` and F1 types without loading the core client. Size-limit gate `< 10 KB` gzipped.
+- **Error codes (F1):** `IDENTIFIER_NOT_OWNED`, `UNLINK_LAST_IDENTIFIER_DENIED`, `SIWE_MESSAGE_MALFORMED`, `SIWE_ADDRESS_MISMATCH`. Full mapping documented in ADR-SDK-004 §2.6.
+- **Docs:** `documentation/advanced/web3.md` — integration guide (wagmi / viem / ethers).
+
+### Fixed (F1)
+
+- **`confirmLinkEmail` request body:** the SDK was sending `{ otp }` but the backend schema requires `{ identifier_id, otp }`. Requests now include `identifier_id` propagated from `linkEmail` challenge. `LinkVerifyOptions` gained the `identifierId` field.
+- **Error mapping — `identity_link_unlink_last_identifier_denied`:** previously aliased to `IDENTIFIER_ALREADY_LINKED` (wrong semantics); now maps to the new `UNLINK_LAST_IDENTIFIER_DENIED` code.
+- **Error mapping — `identity_link_identifier_not_owned_by_user`:** previously aliased to `FORBIDDEN`; now maps to the specific `IDENTIFIER_NOT_OWNED` code.
+
+### Changed (F1)
+
+- **`TryMellonPreset`** expanded from `'saas'` to `'saas' | 'web3'`. Default remains `'saas'` — existing integrators are not affected.
+- **`client.session.verifyAndSignIn` emits** the standard `success` event (`operation: 'signIn'`), wiring SIWE sign-ins into the existing observability surface.
+
+### Migrating from F0
+
+Existing integrators using the default `'saas'` preset see no behavior changes. To opt into F1:
+
+```ts
+const client = TryMellon.create({ ..., preset: 'web3' });
+```
+
+Then `client.value.identity` and `client.value.siwe` become available. No import changes needed — the main entry re-exports everything. For tree-shaken sub-path usage:
+
+```ts
+import { prepareSiweMessage } from '@trymellon/js/web3';
+```
+
 ### Added
 
 - **`client.session.verifyOffline(token)`:** local JWT validation consuming the backend JWKS (`/.well-known/jwks.json`). Zero runtime dependencies (native WebCrypto). Module-level JWKS cache (TTL 1h). Clock skew ±30s on `exp`. Rejects anything other than RS256 (algorithm-confusion defense). Flattens `https://trymellon.dev/claims` into `customClaims` on the returned `SessionClaims`. New exported type `SessionClaims`. Design and trade-offs documented in ADR-SDK-003.

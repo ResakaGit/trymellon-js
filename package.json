@@ -15,6 +15,12 @@
       "path": "dist/index.global.js",
       "limit": "20 KB",
       "gzip": true
+    },
+    {
+      "name": "Web3 sub-path (ESM minified + gzip)",
+      "path": "dist/web3/index.js",
+      "limit": "10 KB",
+      "gzip": true
     }
   ],
   "exports": {
@@ -41,6 +47,12 @@
       "import": "./dist/angular.js",
       "require": "./dist/angular.cjs",
       "default": "./dist/angular.js"
+    },
+    "./web3": {
+      "types": "./dist/web3/index.d.ts",
+      "import": "./dist/web3/index.js",
+      "require": "./dist/web3/index.cjs",
+      "default": "./dist/web3/index.js"
     },
     "./ui": {
       "types": "./dist/ui/index.d.ts",

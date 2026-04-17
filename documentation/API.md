@@ -558,6 +558,67 @@ getContextHash(): string
 
 ---
 
+## Advanced — Web3 (F1)
+
+Opt-in surface gated by `preset: 'web3'`. See `documentation/advanced/web3.md` for the full guide and `ADR-SDK-004` for design rationale.
+
+### `identity.linkEmail(email)`
+
+```typescript
+client.identity.linkEmail(
+  email: string
+): Promise<Result<{ identifierId: string; expiresAt: string }, TryMellonError>>
+```
+
+Requires an authenticated session. Sends an OTP to `email` and returns the `identifierId` used for verification.
+
+### `identity.verifyEmailLink({ identifierId, otp })`
+
+```typescript
+client.identity.verifyEmailLink(opts: {
+  identifierId: string;
+  otp: string;
+}): Promise<Result<LinkedIdentifier, TryMellonError>>
+```
+
+Confirms the OTP. On success the identifier is marked `verified: true`.
+
+### `identity.list()` / `identity.unlink(identifierId)`
+
+```typescript
+client.identity.list(): Promise<Result<LinkedIdentifier[], TryMellonError>>
+client.identity.unlink(identifierId: string): Promise<Result<void, TryMellonError>>
+```
+
+`unlink` fails with `UNLINK_LAST_IDENTIFIER_DENIED` when removing the only identifier of an anonymous user.
+
+### `siwe.getNonce()`
+
+```typescript
+client.siwe.getNonce(): Promise<Result<{ nonce: string; expiresAt: string }, TryMellonError>>
+```
+
+### `siwe.prepareMessage(opts)` — pure, zero-dep
+
+```typescript
+client.siwe.prepareMessage(opts: SiwePrepareOptions): Result<string, TryMellonError>
+```
+
+Also exported standalone from `@trymellon/js/web3` as `prepareSiweMessage` for tree-shaken usage.
+
+### `siwe.verifyAndSignIn({ message, signature })`
+
+```typescript
+client.siwe.verifyAndSignIn(opts: {
+  message: string;
+  signature: string;
+}): Promise<Result<{ sessionToken: string; userId: string; walletAddress: string }, TryMellonError>>
+```
+
+Emits the standard `success` event with `operation: 'signIn'`.
+
+---
+
 ## Types
 
 ### `TryMellonConfig`

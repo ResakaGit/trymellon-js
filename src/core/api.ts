@@ -542,7 +542,7 @@ export class ApiClient {
   ): Promise<Result<LinkedIdentifier, TryMellonError>> {
     return this.post(
       `/v1/users/${userId}/identifiers/verify`,
-      { otp: body.otp },
+      { identifier_id: body.identifierId, otp: body.otp },
       validateLinkedIdentifierResponse
     );
   }

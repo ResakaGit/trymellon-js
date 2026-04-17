@@ -71,7 +71,8 @@ export type TryMellonConfig = {
   preset?: TryMellonPreset;
 };
 
-export type TryMellonPreset = 'saas';
+/** Feature preset selector. `'saas'` (default) hides F1 namespaces; `'web3'` exposes them. See ADR-SDK-004 §2.3. */
+export type TryMellonPreset = 'saas' | 'web3';
 
 /** Validated shape of custom claims the SDK accepts. */
 export type CustomClaims = Record<string, string | number | boolean>;
@@ -531,6 +532,8 @@ export interface LinkEmailOptions {
 }
 
 export interface LinkVerifyOptions {
+  /** Challenge id returned by `linkEmail`. Backend requires it in the body. */
+  identifierId: string;
   otp: string;
 }
 
