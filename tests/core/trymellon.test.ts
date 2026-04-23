@@ -283,16 +283,19 @@ describe('TryMellon', () => {
     });
 
     it('should pass Origin in defaultHeaders when config.origin is set (WebAuthn protocol)', () => {
+      // ADR-SDK-001 Amendment 2026-04-23 · SDK-02 — `X-App-Id` removed from
+      // defaultHeaders (backend never read it). Asserting header shape without it.
       TryMellon.create({ ...config, origin: 'https://app.example.com' });
       expect(vi.mocked(ApiClient)).toHaveBeenCalledWith(
         expect.anything(),
         expect.any(String),
         expect.objectContaining({
-          'X-App-Id': config.appId,
           Authorization: `Bearer ${config.publishableKey}`,
           Origin: 'https://app.example.com',
         })
       );
+      const [, , headers] = vi.mocked(ApiClient).mock.calls[0]!;
+      expect(headers).not.toHaveProperty('X-App-Id');
     });
 
     it('should default preset to "saas" when omitted', () => {
@@ -642,22 +645,9 @@ describe('TryMellon', () => {
     });
   });
 
-  describe('platform.signUp', () => {
-    it('delegates to onboardingManager.startFlow and returns its result', async () => {
-      const mockApiClientInstance = (
-        tryMellon as { apiClient: { startOnboarding: ReturnType<typeof vi.fn> } }
-      ).apiClient;
-      mockApiClientInstance.startOnboarding.mockResolvedValue(
-        err(createError('NETWORK_ERROR', 'network failure'))
-      );
-
-      const result = await tryMellon.platform.signUp({ user_role: 'app_user' });
-
-      expect(mockApiClientInstance.startOnboarding).toHaveBeenCalled();
-      expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.error.code).toBe('NETWORK_ERROR');
-    });
-  });
+  // ADR-SDK-005 · SDK-01 — `platform.signUp` was removed from the main client.
+  // Hosted onboarding lives in `@trymellon/js/platform` (see platform/* tests).
+  // This `describe` block was deleted atomically with the API surface change.
 
   // ---------------------------------------------------------------------------
   // Identity namespace (F1) — ADR-SDK-004 §2.1–§2.2

@@ -65,6 +65,18 @@ export default defineConfig([
     minify: true,
   },
   {
+    // ADR-SDK-005 · SDK-01 — hosted onboarding sub-path.
+    ...sharedOptions,
+    entry: { index: 'src/platform/index.ts' },
+    outDir: 'dist/platform',
+    format: ['esm', 'cjs'],
+    dts: true,
+    clean: false,
+    splitting: false,
+    treeshake: { preset: 'smallest', moduleSideEffects: false },
+    minify: true,
+  },
+  {
     ...sharedOptions,
     entry: { index: 'src/ui/index.ts' },
     outDir: 'dist/ui',

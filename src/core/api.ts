@@ -486,26 +486,41 @@ export class ApiClient {
   /**
    * Issues an action challenge. Server derives challenge as
    * SHA256(actionType|payloadHash|tenantId|userId|nonce) — binding this specific payload.
+   *
+   * ADR-028 Amendment 2026-04-23 + ADR-SDK-001 Amendment 2026-04-23 — the
+   * endpoint requires Bearer user_session (aud='end-user'). The caller MUST
+   * pass `sessionToken`; the default publishable key header is overridden for
+   * this call so the backend authPlugin sees the end-user session JWT.
    */
   async issueActionChallenge(
-    body: IssueActionChallengeRequest
+    body: IssueActionChallengeRequest,
+    sessionToken: string
   ): Promise<Result<IssueActionChallengeResponse, TryMellonError>> {
-    return this.post('/v1/actions/challenges', body, validateIssueActionChallengeResponse);
+    return this.post(
+      '/v1/actions/challenges',
+      body,
+      validateIssueActionChallengeResponse,
+      { Authorization: `Bearer ${sessionToken}` }
+    );
   }
 
   /**
    * Verifies a WebAuthn assertion against the issued action challenge.
    * Backend enforces anti-replay (Redis SET NX) and payload binding before returning
    * a short-lived action token (120s JWT).
+   *
+   * ADR-028 Amendment 2026-04-23 — Bearer user_session required. See `issueActionChallenge`.
    */
   async verifyActionSignature(
     challengeId: string,
-    body: VerifyActionSignatureRequest
+    body: VerifyActionSignatureRequest,
+    sessionToken: string
   ): Promise<Result<VerifyActionSignatureResponse, TryMellonError>> {
     return this.post(
       `/v1/actions/${challengeId}/verify`,
       body,
-      validateVerifyActionSignatureResponse
+      validateVerifyActionSignatureResponse,
+      { Authorization: `Bearer ${sessionToken}` }
     );
   }
 

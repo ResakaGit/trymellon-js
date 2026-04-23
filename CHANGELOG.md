@@ -7,6 +7,51 @@
 
 # [Unreleased]
 
+### feat(sdk)!: hosted onboarding via `@trymellon/js/platform` + action signing session token (SPRINT-ENDPOINT-AUDIT-REMEDIATION-2026-04-23)
+
+**BREAKING — major bump expected:** `client.platform.signUp()` and the `OnboardingManager` class were removed from the main client. The hosted onboarding surface moves to a dedicated sub-path (ADR-SDK-005). `client.platform` is now typed `never` across every preset.
+
+**Added:**
+- **`@trymellon/js/platform`** sub-path — stateless `createPlatform()` factory. Public surface (3 methods, stateless, no publishable key required):
+  - `createSignupLink({ returnUrl, refreshUrl?, prefill?, userRole? })` → `{ sessionId, hostedUrl, expiresInSeconds }`.
+  - `getSignupStatus(sessionId)` → snapshot of the onboarding FSM.
+  - `awaitSignupCompletion(sessionId, { signal?, intervalMs?, maxAttempts? })` — loop polling with `AbortSignal` + backoff; resolves on `completed`, rejects `SESSION_EXPIRED`/`SERVER_ERROR` on terminal failure, `ABORT_ERROR` on cancel.
+- `package.json` exports `./platform` + tsup entry + `size-limit` gate **< 5 KB gzip** (measured: **2.92 KB**).
+- `TryMellonErrorCode` gains `INVALID_STATE` — emitted by `client.action.sign()` when called without an active session (fail-fast, zero HTTP).
+
+**Changed (behavior):**
+- **`client.action.sign()`** — ADR-028 Amendment + ADR-SDK-001 Amendment 2026-04-23. The SDK now passes the current user_session JWT as an explicit `Authorization: Bearer <session>` override for `/v1/actions/challenges` + `/v1/actions/:id/verify`. The default publishable-key header is replaced on those two calls. No session = `INVALID_STATE` before any network I/O. `ApiClient.issueActionChallenge(body, sessionToken)` + `ApiClient.verifyActionSignature(challengeId, body, sessionToken)` now require the session token as a positional argument.
+- **`TryMellon.create(config).platform`** typed `never` (ADR-SDK-005 §2.3) — the TS compiler rejects `client.platform.signUp` on all presets. Migration snippet in README/docs.
+- `OnboardingManager` class, `OnboardingStartOptions` + `OnboardingCompleteResult` removed from the main bundle; re-exported under new types in `@trymellon/js/platform`.
+
+**Removed:**
+- `X-App-Id` header removed from `defaultHeaders` (backend never read it — ghost header cleanup). The `appId` config field is still validated at construction-time for back-compat but no longer attached.
+
+**Bundle:**
+- **Core bundle:** `19.97 KB` → **`19.69 KB`** gzip (−0.28 KB thanks to the OnboardingManager removal).
+- **Web3 sub-path:** 2.70 KB / 10 KB budget (unchanged).
+- **Platform sub-path:** **2.92 KB / 5 KB budget** (new).
+
+**Migration:**
+
+```ts
+// Before
+const client = TryMellon.create({ apiBaseUrl, appId, publishableKey });
+const result = await client.platform.signUp({ user_role: 'founder', company_name: 'ACME' });
+
+// After
+import { createPlatform } from '@trymellon/js/platform';
+const platform = createPlatform({ apiBaseUrl });
+const link = await platform.createSignupLink({
+  returnUrl: 'https://acme.com/onboarded',
+  prefill: { companyName: 'ACME' },
+  userRole: 'maintainer',
+});
+if (link.ok) {
+  window.location.href = link.value.hostedUrl; // or render as QR
+}
+```
+
 ### feat(sdk): map B2B recovery enrollment errors + webhook types (F1-R.4)
 
 - **`TryMellonErrorCode`** gains `RECOVERY_USER_NOT_FOUND` (maps backend HTTP 404) and `RECOVERY_TICKET_LIMIT_EXCEEDED` (maps backend HTTP 409). Added to `DEFAULT_MESSAGES` with B2B-oriented wording.

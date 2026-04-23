@@ -1,6 +1,8 @@
 import { ApiClient } from './api';
 import { FetchHttpClient } from './fetch-client';
-import { OnboardingManager } from './onboarding-manager';
+// ADR-SDK-005 · SDK-01 — `OnboardingManager` was removed; hosted onboarding
+// lives in `@trymellon/js/platform` sub-path (stateless, no WebAuthn ceremony
+// in the integrator browser).
 import { EnrollmentManager } from './enrollment-manager';
 import { CrossDeviceManager } from './cross-device-manager';
 import { BridgeManager } from './bridge-manager';
@@ -90,13 +92,20 @@ export class TryMellon {
   private crossDeviceManager: CrossDeviceManager;
   private authService: AuthService;
   private recoveryService: RecoveryService;
-  private readonly onboardingManager: OnboardingManager;
   private readonly enrollmentManager: EnrollmentManager;
   private readonly bridgeManager: BridgeManager;
   private readonly actionManager: ActionManager;
   private readonly apiBaseUrl: string;
   private readonly contextHashStorage: TryMellonConfig['contextHashStorage'];
   private currentUserId: string | null = null;
+  /**
+   * ADR-SDK-001 Amendment 2026-04-23 · SDK-02 — session token of the most recent
+   * successful sign-in/sign-up/enroll. Used by `ActionManager.sign()` to authenticate
+   * calls to `/v1/actions/*` (aud='end-user') instead of the default publishable
+   * key header. `null` when there is no active session — `action.sign` returns
+   * INVALID_STATE before any HTTP call.
+   */
+  private currentSessionToken: string | null = null;
   readonly preset: TryMellonPreset;
 
   private static validateConfig(config: TryMellonConfig): void {
@@ -159,7 +168,10 @@ export class TryMellon {
 
     TryMellon.validateConfig(config);
 
-    const appId = config.appId as string;
+    // SDK-02 — `appId` validated in `validateConfig` but no longer attached as
+    // a header (ADR-SDK-001 Amendment). Kept as a required config field for
+    // back-compat of the public surface.
+    void config.appId;
     const publishableKey = config.publishableKey as string;
     const apiBaseUrl = config.apiBaseUrl ?? DEFAULT_API_BASE_URL;
     const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -173,8 +185,10 @@ export class TryMellon {
         ? window.location.origin
         : undefined);
 
+    // ADR-SDK-001 Amendment 2026-04-23 · SDK-02 — `X-App-Id` removed; backend
+    // resolves the app from publishable key + origin or from the JWT `app_id`
+    // claim. Header fantasma, nunca leído por el backend.
     const defaultHeaders: Record<string, string> = {
-      'X-App-Id': appId.trim(),
       Authorization: `Bearer ${publishableKey.trim()}`,
       ...(originHeader && { Origin: originHeader }),
     };
@@ -185,6 +199,10 @@ export class TryMellon {
     this.eventEmitter.on('success', (p) => {
       if (p.type === 'success' && p.user?.userId !== undefined) {
         this.currentUserId = p.user.userId;
+      }
+      // ADR-SDK-001 Amendment 2026-04-23 · SDK-02 — capture session token for action signing.
+      if (p.type === 'success' && typeof p.token === 'string' && p.token.length > 0) {
+        this.currentSessionToken = p.token;
       }
     });
     this.preset = config.preset ?? 'saas';
@@ -204,11 +222,10 @@ export class TryMellon {
     );
     this.recoveryService = new RecoveryService(this.apiClient, this.eventEmitter);
     this.contextHashStorage = config.contextHashStorage;
-    this.onboardingManager = new OnboardingManager(this.apiClient);
     this.enrollmentManager = new EnrollmentManager(this.apiClient, this.contextHashStorage);
     this.crossDeviceManager = new CrossDeviceManager(this.apiClient);
     this.bridgeManager = new BridgeManager(this.apiClient, this.contextHashStorage);
-    this.actionManager = new ActionManager(this.apiClient);
+    this.actionManager = new ActionManager(this.apiClient, () => this.currentSessionToken);
     this.warnIfSandboxOnProd();
   }
 
@@ -475,24 +492,24 @@ export class TryMellon {
     },
   };
 
-  platform = {
-    signUp: (
-      options: import('../types').OnboardingStartOptions & { company_name?: string },
-      signal?: AbortSignal
-    ) => this.onboardingManager.startFlow(options, signal),
-  };
+  // ADR-SDK-005 · SDK-01 — `platform.signUp` removed from the main client.
+  // Hosted onboarding lives in `@trymellon/js/platform` (see `createPlatform`).
+  // `TryMellonClient<P>` narrows `platform` to `never` so the type checker
+  // rejects `client.platform.*` in all presets.
 }
 
 /**
  * Narrowed public view of `TryMellon` based on the selected preset.
  * With `preset: 'saas'` (default), `identity` and `siwe` are typed `never` —
  * the IDE hides them from autocomplete and the type checker rejects usage.
- * See ADR-SDK-004 §2.3.
+ * See ADR-SDK-004 §2.3 (web3) + ADR-SDK-005 §2.3 (platform).
  */
 export type TryMellonClient<P extends TryMellonPreset = 'saas'> = Omit<
   TryMellon,
   'identity' | 'siwe'
 > & {
+  /** ADR-SDK-005 — `platform` lives in `@trymellon/js/platform`; never on the main client. */
+  readonly platform: never;
   readonly identity: P extends 'web3' ? TryMellon['identity'] : never;
   readonly siwe: P extends 'web3' ? TryMellon['siwe'] : never;
 };

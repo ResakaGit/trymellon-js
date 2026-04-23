@@ -89,7 +89,7 @@ describe('ActionManager.sign', () => {
         ...navigator,
         credentials: { get: vi.fn().mockResolvedValue(createFakePublicKeyCredential()) },
       });
-      const manager = new ActionManager(apiClient);
+      const manager = new ActionManager(apiClient, () => 'test-session-token');
 
       // When
       const result = await manager.sign({
@@ -114,7 +114,7 @@ describe('ActionManager.sign', () => {
         ...navigator,
         credentials: { get: vi.fn().mockResolvedValue(createFakePublicKeyCredential()) },
       });
-      const manager = new ActionManager(apiClient);
+      const manager = new ActionManager(apiClient, () => 'test-session-token');
 
       // When
       await manager.sign({
@@ -124,13 +124,16 @@ describe('ActionManager.sign', () => {
         ttlSeconds: 120,
       });
 
-      // Then
-      expect(apiClient.issueActionChallenge).toHaveBeenCalledWith({
-        action_type: VALID_ACTION_TYPE,
-        payload_hash: VALID_PAYLOAD_HASH,
-        rp_id: VALID_RP_ID,
-        ttl_seconds: 120,
-      });
+      // Then — ADR-SDK-001 Amendment · SDK-02 — session token is passed as 2nd arg.
+      expect(apiClient.issueActionChallenge).toHaveBeenCalledWith(
+        {
+          action_type: VALID_ACTION_TYPE,
+          payload_hash: VALID_PAYLOAD_HASH,
+          rp_id: VALID_RP_ID,
+          ttl_seconds: 120,
+        },
+        'test-session-token',
+      );
     });
 
     it('When sign() is called, Then verifyActionSignature receives challengeId and serialized response', async () => {
@@ -140,7 +143,7 @@ describe('ActionManager.sign', () => {
         ...navigator,
         credentials: { get: vi.fn().mockResolvedValue(createFakePublicKeyCredential()) },
       });
-      const manager = new ActionManager(apiClient);
+      const manager = new ActionManager(apiClient, () => 'test-session-token');
 
       // When
       await manager.sign({
@@ -149,7 +152,7 @@ describe('ActionManager.sign', () => {
         rpId: VALID_RP_ID,
       });
 
-      // Then
+      // Then — session token passed as 3rd arg (ADR-SDK-001 Amendment · SDK-02).
       expect(apiClient.verifyActionSignature).toHaveBeenCalledWith(
         validIssueResponse.challenge_id,
         expect.objectContaining({
@@ -158,8 +161,34 @@ describe('ActionManager.sign', () => {
             id: 'cred_abc123',
             type: 'public-key',
           }),
-        })
+        }),
+        'test-session-token',
       );
+    });
+
+    it('Given no active session (getSessionToken returns null), when sign() is called, then INVALID_STATE without HTTP calls', async () => {
+      // Given
+      const apiClient = createMockApiClient();
+      vi.stubGlobal('navigator', {
+        ...navigator,
+        credentials: { get: vi.fn() },
+      });
+      const manager = new ActionManager(apiClient, () => null);
+
+      // When
+      const result = await manager.sign({
+        actionType: VALID_ACTION_TYPE,
+        payloadHash: VALID_PAYLOAD_HASH,
+        rpId: VALID_RP_ID,
+      });
+
+      // Then
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.error.code).toBe('INVALID_STATE');
+      expect(apiClient.issueActionChallenge).not.toHaveBeenCalled();
+      expect(apiClient.verifyActionSignature).not.toHaveBeenCalled();
+      expect(navigator.credentials.get).not.toHaveBeenCalled();
     });
 
     it('When ttlSeconds is omitted, Then ttl_seconds is not sent to issueActionChallenge', async () => {
@@ -171,7 +200,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      await new ActionManager(apiClient).sign({
+      await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -193,7 +222,7 @@ describe('ActionManager.sign', () => {
       const apiClient = createMockApiClient();
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: '',
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -211,7 +240,7 @@ describe('ActionManager.sign', () => {
       const apiClient = createMockApiClient();
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: 'invalid-format',
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -229,7 +258,7 @@ describe('ActionManager.sign', () => {
 
       for (const bad of ['', 'abc', 'A'.repeat(64), 'z'.repeat(64)]) {
         // When
-        const result = await new ActionManager(apiClient).sign({
+        const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
           actionType: VALID_ACTION_TYPE,
           payloadHash: bad,
           rpId: VALID_RP_ID,
@@ -248,7 +277,7 @@ describe('ActionManager.sign', () => {
       const apiClient = createMockApiClient();
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: '   ',
@@ -274,7 +303,7 @@ describe('ActionManager.sign', () => {
       controller.abort();
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -305,7 +334,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -329,7 +358,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -352,7 +381,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -379,7 +408,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -404,7 +433,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -429,7 +458,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -454,7 +483,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,
@@ -478,7 +507,7 @@ describe('ActionManager.sign', () => {
       });
 
       // When
-      const result = await new ActionManager(apiClient).sign({
+      const result = await new ActionManager(apiClient, () => 'test-session-token').sign({
         actionType: VALID_ACTION_TYPE,
         payloadHash: VALID_PAYLOAD_HASH,
         rpId: VALID_RP_ID,

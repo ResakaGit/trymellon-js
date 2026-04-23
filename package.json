@@ -21,6 +21,12 @@
       "path": "dist/web3/index.js",
       "limit": "10 KB",
       "gzip": true
+    },
+    {
+      "name": "Platform sub-path (ESM minified + gzip)",
+      "path": "dist/platform/index.js",
+      "limit": "5 KB",
+      "gzip": true
     }
   ],
   "exports": {
@@ -53,6 +59,12 @@
       "import": "./dist/web3/index.js",
       "require": "./dist/web3/index.cjs",
       "default": "./dist/web3/index.js"
+    },
+    "./platform": {
+      "types": "./dist/platform/index.d.ts",
+      "import": "./dist/platform/index.js",
+      "require": "./dist/platform/index.cjs",
+      "default": "./dist/platform/index.js"
     },
     "./ui": {
       "types": "./dist/ui/index.d.ts",
