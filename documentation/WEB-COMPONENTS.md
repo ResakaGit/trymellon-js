@@ -117,7 +117,7 @@ The modal shows by default a **button with QR icon** (illustration), not a scann
 To show a **scannable QR**, the host must:
 
 1. Listen for `mellon:fallback` when `detail.fallbackType === 'qr'`.
-2. Call the TryMellon client: `client.auth.crossDevice.init()` (login) or `initRegistration({ externalUserId })` (register; `externalUserId` is optional for anonymous registration).
+2. Call the TryMellon client: `client.crossDevice.start()` (login) or `client.crossDevice.startRegistration({ externalUserId })` (register; `externalUserId` is optional for anonymous registration).
 3. Get `qr_url` from the response and generate an image (e.g. with a lib like `qrcode`).
 4. Inject the image into the slot: create a node with `slot="cross-device"` (e.g. `<div slot="cross-device"><img src="data:..."></div>`) and `appendChild` to the `<trymellon-auth-modal>` element. That content replaces the default button.
 
@@ -129,17 +129,18 @@ To show a **scannable QR**, the host must:
 
 Listen on the WC **element** (not on `document`), so the token is not exposed to third-party scripts.
 
-| Event                 | Detail                                                   | Description                               |
-| --------------------- | -------------------------------------------------------- | ----------------------------------------- |
-| `mellon:open`         | `{}`                                                     | Modal opened                              |
-| `mellon:close`        | `{ reason: 'success' \| 'cancel' \| 'error' \| 'user' }` | Modal closed                              |
-| `mellon:open-request` | `{}`                                                     | Button click (when `action="open-modal"`) |
-| `mellon:start`        | `{ operation }`                                          | Auth operation started                    |
-| `mellon:success`      | `{ token, user, nonce? }`                                | Auth succeeded                            |
-| `mellon:error`        | `{ error }`                                              | Auth error                                |
-| `mellon:cancelled`    | `{}`                                                     | Auth cancelled                            |
-| `mellon:fallback`     | `{ operation? }`                                         | Fallback (email/QR) triggered             |
-| `mellon:tab-change`   | `{ tab }`                                                | Tab change                                |
+| Event                 | Detail                                                   | Description                                                     |
+| --------------------- | -------------------------------------------------------- | --------------------------------------------------------------- |
+| `mellon:open`         | `{}`                                                     | Modal opened                                                    |
+| `mellon:close`        | `{ reason: 'success' \| 'cancel' \| 'error' \| 'user' }` | Modal closed                                                    |
+| `mellon:open-request` | `{}`                                                     | Button click (when `action="open-modal"`)                       |
+| `mellon:start`        | `{ operation }`                                          | Auth operation started (`'signUp' \| 'signIn' \| 'enroll'`)     |
+| `mellon:success`      | `{ token, user, nonce? }`                                | Auth succeeded                                                  |
+| `mellon:error`        | `{ error }`                                              | Auth error (`error.code: TryMellonErrorCode`)                   |
+| `mellon:cancelled`    | `{}`                                                     | Auth cancelled                                                  |
+| `mellon:fallback`     | `{ operation?, fallbackType? }`                          | Fallback (email/QR) triggered                                   |
+| `mellon:tab-change`   | `{ tab }`                                                | Tab change                                                      |
+| `mellon:context-ready`| `{ contextHash }`                                        | SHA-256 context hash bound to this enrollment session is ready  |
 
 ### Example: send token to backend
 

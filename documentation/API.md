@@ -1,729 +1,312 @@
-# API Reference
+# API Reference — `@trymellon/js` v4.0.0
 
-Complete reference for the public API of the `@trymellon/js` SDK.
+Complete reference for the public surface of the `@trymellon/js` SDK.
+Every symbol documented below is exported from the package and ships in
+the TypeScript `.d.ts` — nothing here is internal.
 
----
+The SDK is organised into one main entry and five sub-path entries:
 
-## TryMellon Class
-
-Main SDK class for passwordless authentication with Passkeys/WebAuthn.
-
-### Constructor
-
-> **Deprecated.** Use `TryMellon.create()` instead. The constructor throws on invalid config and cannot be used safely in environments where exceptions are undesirable. It is kept for backward compatibility only.
-
-```typescript
-/** @deprecated Use TryMellon.create() */
-new TryMellon(config: TryMellonConfig)
-```
-
-Throws `TryMellonError` with code `'INVALID_ARGUMENT'` if config is invalid.
+| Import path                | What it exposes                                                                |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `@trymellon/js`            | `TryMellon` client, types, errors, webhook verifier, logger, AAGUID helpers   |
+| `@trymellon/js/platform`   | `createPlatform()` — stateless hosted-signup helper (ADR-SDK-005)              |
+| `@trymellon/js/web3`       | `prepareSiweMessage()` + EIP-4361 types; pure, wallet-agnostic                 |
+| `@trymellon/js/ui`         | Web Components `<trymellon-auth>` / `<trymellon-auth-modal>` (side-effectful)  |
+| `@trymellon/js/react`      | `TryMellonProvider`, `useTryMellon`, `useSignUp`, `useSignIn`, `useEnroll`    |
+| `@trymellon/js/vue`        | `provideTryMellon`, `useTryMellon`, `useSignUp`, `useSignIn`, `useEnroll`     |
+| `@trymellon/js/angular`    | `provideTryMellon`, `TryMellonService`, `TRYMELLON_CLIENT`                     |
 
 ---
 
-## Static Methods
+## Table of Contents
 
-### `TryMellon.create(config)` ✓ Recommended
+1. [Conventions](#conventions)
+2. [TryMellon Client](#trymellon-client)
+   - [`TryMellon.create(config)`](#trymelloncreateconfig)
+   - [`TryMellon.isSupported()`](#trymellonissupported)
+   - [`client.signUp(options)`](#clientsignupoptions)
+   - [`client.signIn(options)`](#clientsigninoptions)
+   - [`client.enroll(options)`](#clientenrolloptions)
+   - [`client.capabilities()`](#clientcapabilities)
+   - [`client.getContextHash()`](#clientgetcontexthash)
+   - [`client.version()`](#clientversion)
+   - [`client.on(event, handler)`](#clientonevent-handler)
+3. [Session Namespace — `client.session`](#session-namespace)
+4. [OTP Namespace — `client.otp`](#otp-namespace)
+5. [Passkey Recovery — `client.passkey`](#passkey-recovery)
+6. [Cross-Device Namespace — `client.crossDevice`](#cross-device-namespace)
+7. [Bridge Namespace — `client.bridge`](#bridge-namespace)
+8. [Action Signing — `client.action`](#action-signing)
+9. [Identity Linking — `client.identity` (preset: `web3`)](#identity-linking)
+10. [SIWE — `client.siwe` (preset: `web3`)](#siwe)
+11. [Webhook Verification](#webhook-verification)
+12. [Logger & Device Helpers](#logger--device-helpers)
+13. [`@trymellon/js/platform`](#trymellonjsplatform)
+14. [`@trymellon/js/web3`](#trymellonjsweb3)
+15. [`@trymellon/js/ui` — Web Components](#trymellonjsui--web-components)
+16. [Framework Wrappers](#framework-wrappers)
+17. [Error Codes](#error-codes)
 
-Validates the configuration and creates an instance without throwing. Returns `Result<TryMellon, TryMellonError>`.
+---
 
-```typescript
-static create(config: TryMellonConfig): Result<TryMellon, TryMellonError>
-```
+## Conventions
 
-**Parameters:**
+### Result pattern
 
-- `config.appId` (string, required): Application ID (UUID). Get it from Dashboard → Your app → App ID.
-- `config.publishableKey` (string, required): Client ID (value starting with `cli_`). Get it from Dashboard → Your app → Client ID.
-- `config.apiBaseUrl` (string, optional): API base URL. Default: `'https://api.trymellonauth.com'`. Must be a valid URL.
-- `config.timeoutMs` (number, optional): HTTP request timeout in ms. Default: `30000`. Valid range: `1000`–`300000`.
-- `config.maxRetries` (number, optional): Max retries for failed requests. Default: `3`. Valid range: `0`–`10`. Only 5xx and transient errors are retried.
-- `config.retryDelayMs` (number, optional): Initial retry delay in ms (exponential backoff). Default: `1000`. Valid range: `100`–`10000`.
-- `config.sandbox` (boolean, optional): When `true`, `signUp()` and `signIn()` return a fixed sandbox token immediately — no API or WebAuthn calls. For local development only.
-- `config.origin` (string, optional): Explicit origin for API requests. Defaults to `window.location.origin`. Set when running in Node/SSR.
-- `config.contextHashStorage` (object, optional): Custom storage for context hash (e.g. `sessionStorage`). Must implement `getItem`/`setItem`.
+Every async operation in the SDK returns `Result<T, TryMellonError>`. The SDK
+never throws from its public methods — you narrow the result with the `ok`
+discriminant:
 
-**Example:**
+```ts
+import type { Result } from '@trymellon/js';
 
-```typescript
-import { TryMellon } from '@trymellon/js';
+const result = await client.signIn({ externalUserId: 'user_123' });
 
-const clientResult = TryMellon.create({
-  appId: 'your-app-id-uuid', // Dashboard → Your app → App ID
-  publishableKey: 'cli_xxxx', // Dashboard → Your app → Client ID
-});
-
-if (!clientResult.ok) {
-  console.error(clientResult.error.code, clientResult.error.message);
-  throw clientResult.error;
+if (!result.ok) {
+  // result.error is a TryMellonError with .code + .message + .details
+  return renderError(result.error);
 }
 
-const client = clientResult.value;
+// result.value is the typed success payload
+return renderSession(result.value.sessionToken);
 ```
+
+Helpers re-exported from `@trymellon/js`:
+
+```ts
+import { ok, err, type Result } from '@trymellon/js';
+
+const wrap = (token: string): Result<{ token: string }, never> => ok({ token });
+```
+
+### Error handling
+
+```ts
+import { isTryMellonError, type TryMellonError } from '@trymellon/js';
+
+function handle(error: unknown) {
+  if (!isTryMellonError(error)) return;
+  switch (error.code) {
+    case 'USER_CANCELLED':
+      return showToast('Prompt cancelled');
+    case 'RATE_LIMIT_EXCEEDED':
+      return showToast('Slow down and try again');
+    default:
+      return reportToSentry(error);
+  }
+}
+```
+
+See [Error Codes](#error-codes) for the full list.
+
+### Event bus
+
+`client.on(event, handler)` subscribes to lifecycle signals (`start` / `success`
+/ `error` / `cancelled`). The handler receives a discriminated `EventPayload`
+whose `operation` field is one of `'signUp' | 'signIn' | 'enroll'`. Use this for
+analytics, telemetry, or driving UI state without re-implementing the flow.
+
+### Preset gating
+
+`TryMellonConfig.preset` selects which namespaces are active on the client:
+
+- `'saas'` (default) — `signUp`, `signIn`, `enroll`, `otp`, `session`, `bridge`,
+  `crossDevice`, `action`, `passkey`. `identity` and `siwe` are typed `never`.
+- `'web3'` — everything in `'saas'` plus `identity.*` and `siwe.*`.
+
+The type checker rejects `client.identity.linkEmail(...)` on a `'saas'` client
+at compile time.
+
+---
+
+## TryMellon Client
+
+### `TryMellon.create(config)`
+
+Validates configuration and constructs a client without throwing. This is the
+recommended constructor — the class `new TryMellon(config)` form is
+`@deprecated` and only retained for backward compatibility.
+
+```ts
+static create<P extends TryMellonPreset = 'saas'>(
+  config: TryMellonConfig & { preset?: P },
+): Result<TryMellonClient<P>, TryMellonError>
+```
+
+#### Parameters
+
+| Field                 | Type                                      | Required | Description                                                                                                      |
+| --------------------- | ----------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `appId`               | `string`                                  | yes      | Application identifier from the dashboard.                                                                       |
+| `publishableKey`      | `string`                                  | yes      | Publishable key (`cli_…`). Safe to embed in client bundles.                                                      |
+| `apiBaseUrl`          | `string`                                  | no       | Override the API base URL. Default: `'https://api.trymellonauth.com'`. Must be http/https.                        |
+| `timeoutMs`           | `number`                                  | no       | HTTP timeout. Default `30000`. Range `1000`–`300000`.                                                            |
+| `maxRetries`          | `number`                                  | no       | Max retries on transient errors. Default `3`. Range `0`–`10`.                                                    |
+| `retryDelayMs`        | `number`                                  | no       | Initial backoff. Default `1000`. Range `100`–`10000`.                                                            |
+| `logger`              | `Logger`                                  | no       | Injected logger. See [Logger & Device Helpers](#logger--device-helpers).                                         |
+| `enableTelemetry`     | `boolean`                                 | no       | When `true`, emits anonymous latency telemetry after successful `signUp` / `signIn`. Opt-in only.                |
+| `telemetrySender`     | `TelemetrySender`                         | no       | Custom sender for telemetry. Used only when `enableTelemetry === true`.                                          |
+| `telemetryEndpoint`   | `string`                                  | no       | Endpoint for the default telemetry sender. Default `'https://api.trymellonauth.com/v1/telemetry'`.               |
+| `sandbox`             | `boolean`                                 | no       | When `true`, `signUp` / `signIn` bypass WebAuthn and return a fixed token. Development only.                     |
+| `sandboxToken`        | `string`                                  | no       | Override the sandbox token. Defaults to `SANDBOX_SESSION_TOKEN`.                                                 |
+| `origin`              | `string`                                  | no       | Explicit `Origin` header. Defaults to `window.location.origin`. Required in Node/SSR contexts.                   |
+| `contextHashStorage`  | `{ getItem; setItem }`                    | no       | Storage for context hash. Defaults to `sessionStorage`, then an in-memory fallback.                              |
+| `preset`              | `'saas' \| 'web3'`                        | no       | Feature preset. Default `'saas'`. Controls `identity` / `siwe` visibility.                                       |
+
+#### Returns
+
+```ts
+Result<TryMellonClient<P>, TryMellonError>
+```
+
+`TryMellonClient<P>` narrows the instance by preset:
+
+```ts
+type TryMellonClient<P extends TryMellonPreset = 'saas'> = Omit<
+  TryMellon,
+  'identity' | 'siwe'
+> & {
+  readonly platform: never;
+  readonly identity: P extends 'web3' ? TryMellon['identity'] : never;
+  readonly siwe: P extends 'web3' ? TryMellon['siwe'] : never;
+};
+```
+
+#### Example
+
+```ts
+import { TryMellon } from '@trymellon/js';
+
+const creation = TryMellon.create({
+  appId: 'app_abc123',
+  publishableKey: 'cli_xyz789',
+  preset: 'saas',
+});
+
+if (!creation.ok) {
+  throw creation.error;
+}
+
+const client = creation.value;
+```
+
+#### Errors
+
+- `INVALID_ARGUMENT` — any field fails validation (`appId` empty, `timeoutMs`
+  out of range, `apiBaseUrl` not a URL, `preset` not one of `'saas' | 'web3'`).
 
 ---
 
 ### `TryMellon.isSupported()`
 
-Checks whether the browser supports WebAuthn/Passkeys.
+Synchronous feature detection — `true` when the current environment exposes the
+WebAuthn APIs.
 
-```typescript
+```ts
 static isSupported(): boolean
 ```
 
-**Returns:**
+#### Example
 
-- `true` if WebAuthn is supported
-- `false` if not supported
-
-**Example:**
-
-```typescript
+```ts
 if (!TryMellon.isSupported()) {
-  console.log('WebAuthn is not available');
-  // Show fallback
+  window.location.assign('/login/fallback');
 }
 ```
 
 ---
 
-## Instance Methods
+### `client.signUp(options)`
 
-### `signUp()`
+Registers a new credential (passkey) for the user and returns a session token.
 
-Registers a new passkey for a user.
-
-```typescript
+```ts
 signUp(options: RegisterOptions): Promise<Result<RegisterResult, TryMellonError>>
 ```
 
-**Parameters:**
-
-- `options.externalUserId` (string, optional): External user ID. Omit for anonymous registration — backend creates a user and returns the id. Also accepts `external_user_id` (deprecated).
-- `options.authenticatorType` ('platform' | 'cross-platform', optional): Preferred authenticator type.
-- `options.successUrl` (string, optional): Redirect URL after success (must be in allowlist).
-- `options.signal` (AbortSignal, optional): Signal to cancel the operation.
-
-**Returns:**
-
-- `Promise<Result<RegisterResult, TryMellonError>>`: `ok: true` with `value` (sessionToken, credentialId, user) or `ok: false` with `error`.
-
-**Example:**
-
-```typescript
-const result = await client.signUp({
-  externalUserId: 'user_123',
-  authenticatorType: 'platform',
-});
-
-if (result.ok) {
-  await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
-  });
-} else {
-  if (result.error.code === 'USER_CANCELLED') {
-    console.log('User cancelled registration');
-  }
-}
-```
-
-**Errors (result.error.code):**
-
-- `NOT_SUPPORTED`: WebAuthn is not available
-- `USER_CANCELLED`: User cancelled the operation
-- `INVALID_ARGUMENT`: `externalUserId` missing or invalid
-- `NETWORK_FAILURE`: Network error
-- `TIMEOUT`: Operation expired
-
----
-
-### `signIn()`
-
-Authenticates a user with their passkey.
-
-```typescript
-signIn(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>>
-```
-
-**Parameters:**
-
-- `options.externalUserId` (string, optional): External user ID. Omit to trigger discoverable credential flow. Also accepts `external_user_id` (deprecated).
-- `options.hint` (string, optional): Hint to help the user select the correct passkey (e.g. email).
-- `options.successUrl` (string, optional): Redirect URL after success (must be in allowlist).
-- `options.signal` (AbortSignal, optional): Signal to cancel the operation.
-- `options.mediation` ('optional' | 'conditional' | 'required', optional): For conditional UI / autofill.
-
-**Returns:**
-
-- `Promise<Result<AuthenticateResult, TryMellonError>>`: `ok: true` with `value` (sessionToken, user) or `ok: false` with `error`.
-
-**Example:**
-
-```typescript
-const result = await client.signIn({
-  externalUserId: 'user_123',
-  hint: 'user@example.com',
-});
-
-if (result.ok) {
-  await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionToken: result.value.sessionToken }),
-  });
-} else {
-  if (result.error.code === 'PASSKEY_NOT_FOUND') {
-    console.log('No passkey found for this user');
-  }
-}
-```
-
-**Errors (result.error.code):**
-
-- `NOT_SUPPORTED`: WebAuthn is not available
-- `USER_CANCELLED`: User cancelled the operation
-- `PASSKEY_NOT_FOUND`: No passkey found for the user
-- `NETWORK_FAILURE`: Network error
-- `TIMEOUT`: Operation expired
-
----
-
-### `session.verify()`
-
-Validates a session token against the API. Client-side only; always validate on the backend for access control.
-
-```typescript
-session.verify(sessionToken: string): Promise<Result<SessionValidateResponse, TryMellonError>>
-```
-
-**Example:**
-
-```typescript
-const result = await client.session.verify(sessionToken);
-if (result.ok && result.value.valid) {
-  console.log('User:', result.value.externalUserId);
-}
-```
-
----
-
-### `session.verifyOffline()`
-
-Validates a session JWT locally using the backend's JWKS (`/.well-known/jwks.json`). No round-trip to `/v1/sessions/validate`. Zero runtime dependencies (native WebCrypto).
-
-```typescript
-session.verifyOffline(sessionToken: string): Promise<Result<SessionClaims, TryMellonError>>
-```
-
-**Behaviour:**
-
-- Fetches and caches the JWKS for 1 hour (module-level singleton). Second call reuses the cache.
-- Verifies `RS256` signature against the matching `kid`; rejects anything else (alg-confusion defense).
-- Applies **±30s clock skew** on `exp` (reloj cliente atrasado no invalida tokens). `iat` strict — rejects future-dated tokens.
-- Flattens the `https://trymellon.dev/claims` namespace into `customClaims` on the result.
-
-**When to use:** high-traffic middleware, latency-sensitive paths, resilience when TryMellon is unreachable.
-**When to use `session.verify` instead:** you need revocation check in real time (introspection) — offline verify cannot detect server-side revocation; relies on webhooks.
-
-**Error codes:**
-
-| Code | Cause |
-|---|---|
-| `JWT_KID_MISMATCH` | kid not in JWKS, signature invalid, or algorithm mismatch |
-| `SESSION_EXPIRED` | `exp` exceeded (with 30s skew) |
-| `INVALID_ARGUMENT` | Malformed token, missing required claims, future `iat` |
-| `NETWORK_FAILURE` | JWKS fetch failed (network / 5xx / malformed body) |
-
-**Example (Node / Express middleware):**
-
-```typescript
-app.use(async (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).end();
-  const result = await client.session.verifyOffline(token);
-  if (!result.ok) return res.status(401).json({ error: result.error.code });
-  req.user = { id: result.value.userId, tenantId: result.value.tenantId };
-  next();
-});
-```
-
-**Example (browser):**
-
-```typescript
-const result = await client.session.verifyOffline(localStorage.getItem('token') ?? '');
-if (result.ok) {
-  console.log('Plan:', result.value.customClaims?.plan);
-}
-```
-
-**Design notes:** see ADR-SDK-003 for JWKS cache TTL, clock skew rationale, and algorithm lock.
-
----
-
-### `capabilities()`
-
-Gets WebAuthn support status on the client device.
-
-```typescript
-capabilities(): Promise<ClientStatus>
-```
-
-**Returns:**
-
-- `Promise<ClientStatus>`: Object with WebAuthn support information.
-
-**Example:**
-
-```typescript
-const status = await client.capabilities();
-
-if (status.isPasskeySupported) {
-  console.log('Passkeys available');
-  if (status.platformAuthenticatorAvailable) {
-    console.log('Platform authenticator available');
-  }
-} else {
-  console.log('Use fallback');
-}
-```
-
----
-
-### `on()`
-
-Subscribes a handler to SDK events.
-
-```typescript
-on(event: TryMellonEvent, handler: EventHandler): () => void
-```
-
-**Parameters:**
-
-- `event`: Event type ('start' | 'success' | 'error' | 'cancelled')
-- `handler`: Function to run when the event occurs
-
-**Returns:**
-
-- Function to unsubscribe from the event.
-
-**Example:**
-
-```typescript
-const unsubscribe = client.on('start', (payload) => {
-  console.log('Operation started:', payload.operation);
-});
-
-client.on('success', (payload) => {
-  console.log('Operation succeeded:', payload.operation);
-});
-
-client.on('error', (payload) => {
-  console.error('Error:', payload.error);
-});
-
-// Unsubscribe
-unsubscribe();
-```
-
----
-
-### `version()`
-
-Returns the SDK version.
-
-```typescript
-version(): string
-```
-
-**Example:**
-
-```typescript
-console.log('SDK version:', client.version());
-```
-
----
-
-## OTP Fallback
-
-Email OTP fallback when WebAuthn is not available.
-
-### `otp.send()`
-
-Sends an OTP code to the user's email.
-
-```typescript
-otp.send(options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>>
-```
-
-**Parameters:**
-
-- `options.userId` (string, required): External user identifier.
-- `options.email` (string, required): Email address to send the OTP code to.
-
-**Example:**
-
-```typescript
-const startResult = await client.otp.send({
-  userId: 'user_123',
-  email: 'user@example.com',
-});
-
-if (!startResult.ok) {
-  console.error('Error sending OTP:', startResult.error.message);
-  return;
-}
-console.log('OTP code sent by email');
-```
-
-**Errors (result.error.code):**
-
-- `INVALID_ARGUMENT`: Invalid `userId` or `email`
-- `NETWORK_FAILURE`: Network error
-
----
-
-### `otp.verify()`
-
-Verifies the OTP code and returns a sessionToken.
-
-```typescript
-otp.verify(options: EmailFallbackVerifyOptions): Promise<Result<EmailFallbackVerifyResult, TryMellonError>>
-```
-
-**Parameters:**
-
-- `options.userId` (string, required): User ID.
-- `options.code` (string, required): OTP code received by email.
-- `options.successUrl` (string, optional): Redirect URL after success (must be in allowlist).
-
-**Returns:**
-
-- `Promise<Result<EmailFallbackVerifyResult, TryMellonError>>`: `ok: true` with `value.sessionToken` on success.
-
-**Example:**
-
-```typescript
-const verifyResult = await client.otp.verify({
-  userId: 'user_123',
-  code: '123456',
-});
-
-if (!verifyResult.ok) {
-  console.error('Invalid code:', verifyResult.error.message);
-  return;
-}
-
-await fetch('/api/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ sessionToken: verifyResult.value.sessionToken }),
-});
-```
-
----
-
-## Cross-Device
-
-QR-based cross-device authentication. Desktop initiates; mobile approves.
-
-### `crossDevice.start()`
-
-Creates a cross-device auth session.
-
-```typescript
-crossDevice.start(): Promise<Result<CrossDeviceInitResult, TryMellonError>>
-```
-
-Returns `{ session_id, qr_url, expires_at, polling_token }`.
-
-### `crossDevice.startRegistration(options?)`
-
-Creates a cross-device registration session.
-
-```typescript
-crossDevice.startRegistration(options?: { externalUserId?: string }): Promise<Result<CrossDeviceInitResult, TryMellonError>>
-```
-
-### `crossDevice.waitForCompletion(sessionId, signal?, pollingToken?)`
-
-Polls until the mobile device approves. Returns `{ status, session_token }`.
-
-```typescript
-crossDevice.waitForCompletion(
-  sessionId: string,
-  signal?: AbortSignal,
-  pollingToken?: string | null
-): Promise<Result<CrossDeviceStatusResult, TryMellonError>>
-```
-
-### `crossDevice.context(sessionId)`
-
-Gets session context (used on the mobile side).
-
-```typescript
-crossDevice.context(sessionId: string): Promise<Result<CrossDeviceContextResult, TryMellonError>>
-```
-
-### `crossDevice.approve(sessionId)`
-
-Approves the cross-device session from the mobile device.
-
-```typescript
-crossDevice.approve(sessionId: string): Promise<Result<unknown, TryMellonError>>
-```
-
----
-
-## Bridge
-
-Bridge flows for QR-based enrollment and authentication from a second device.
-
-### `bridge.context(sessionId, kind)`
-
-Gets bridge session context.
-
-```typescript
-bridge.context(sessionId: string, kind: 'enrollment' | 'auth'): Promise<Result<BridgeContextResponse, TryMellonError>>
-```
-
-### `bridge.verifyPresence(sessionId, pin, kind)`
-
-Verifies presence PIN and returns WebAuthn options.
-
-```typescript
-bridge.verifyPresence(sessionId: string, pin: string, kind: 'enrollment' | 'auth'): Promise<Result<BridgeChallengeResponse, TryMellonError>>
-```
-
-### `bridge.complete(sessionId, options?)`
-
-Completes the bridge ceremony. `options.kind` is required.
-
-```typescript
-bridge.complete(sessionId: string, options?: BridgeCompleteOptions): Promise<Result<BridgeResult, TryMellonError>>
-```
-
-### `bridge.subscribe(sessionId, options?)`
-
-Polls or listens via SSE until the bridge session reaches a terminal state.
-
-```typescript
-bridge.subscribe(sessionId: string, options?: { useSse?: boolean; kind?: 'enrollment' | 'auth'; timeoutMs?: number }): Promise<Result<BridgeStatusSnapshot, TryMellonError>>
-```
-
----
-
-## Invite / Enrollment
-
-### `invite.accept(options)`
-
-Enrolls a device or entity using a single-use ticket.
-
-```typescript
-invite.accept(options: EnrollOptions): Promise<Result<EnrollmentResult, TryMellonError>>
-```
-
-**Parameters:**
-
-- `options.ticketId` (string, required): Enrollment ticket ID from `POST /v1/enrollment/tickets`.
-- `options.signal` (AbortSignal, optional): Cancel the operation.
-
----
-
-## Passkey Recovery
-
-### `passkey.recover(options)`
-
-Recovers an account using an email OTP and registers a new passkey.
-
-```typescript
-passkey.recover(options: RecoverAccountOptions): Promise<Result<RecoverAccountResult, TryMellonError>>
-```
-
-**Parameters:**
-
-- `options.externalUserId` (string, required): The external user ID.
-- `options.otp` (string, required): The 6-digit OTP from the recovery email.
-
----
-
-## getContextHash()
-
-Returns the context hash bound to the current browser session (64-char hex, SHA-256).
-
-```typescript
-getContextHash(): string
-```
-
----
-
-## Advanced — Web3 (F1)
-
-Opt-in surface gated by `preset: 'web3'`. See `documentation/advanced/web3.md` for the full guide and `ADR-SDK-004` for design rationale.
-
-### `identity.linkEmail(email)`
-
-```typescript
-client.identity.linkEmail(
-  email: string
-): Promise<Result<{ identifierId: string; expiresAt: string }, TryMellonError>>
-```
-
-Requires an authenticated session. Sends an OTP to `email` and returns the `identifierId` used for verification.
-
-### `identity.verifyEmailLink({ identifierId, otp })`
-
-```typescript
-client.identity.verifyEmailLink(opts: {
-  identifierId: string;
-  otp: string;
-}): Promise<Result<LinkedIdentifier, TryMellonError>>
-```
-
-Confirms the OTP. On success the identifier is marked `verified: true`.
-
-### `identity.list()` / `identity.unlink(identifierId)`
-
-```typescript
-client.identity.list(): Promise<Result<LinkedIdentifier[], TryMellonError>>
-client.identity.unlink(identifierId: string): Promise<Result<void, TryMellonError>>
-```
-
-`unlink` fails with `UNLINK_LAST_IDENTIFIER_DENIED` when removing the only identifier of an anonymous user.
-
-### `siwe.getNonce()`
-
-```typescript
-client.siwe.getNonce(): Promise<Result<{ nonce: string; expiresAt: string }, TryMellonError>>
-```
-
-### `siwe.prepareMessage(opts)` — pure, zero-dep
-
-```typescript
-client.siwe.prepareMessage(opts: SiwePrepareOptions): Result<string, TryMellonError>
-```
-
-Also exported standalone from `@trymellon/js/web3` as `prepareSiweMessage` for tree-shaken usage.
-
-### `siwe.verifyAndSignIn({ message, signature })`
-
-```typescript
-client.siwe.verifyAndSignIn(opts: {
-  message: string;
-  signature: string;
-}): Promise<Result<{ sessionToken: string; userId: string; walletAddress: string }, TryMellonError>>
-```
-
-Emits the standard `success` event with `operation: 'signIn'`.
-
----
-
-## Types
-
-### `TryMellonConfig`
-
-```typescript
-type TryMellonConfig = {
-  appId: string;
-  publishableKey: string;
-  apiBaseUrl?: string;
-  timeoutMs?: number;
-  maxRetries?: number;
-  retryDelayMs?: number;
-  logger?: Logger;
-  enableTelemetry?: boolean;
-  telemetrySender?: TelemetrySender;
-  telemetryEndpoint?: string;
-  /** When true, signUp() and signIn() return immediately with a sandbox token (no API/WebAuthn). */
-  sandbox?: boolean;
-  /** Custom token for sandbox mode. If not set, SANDBOX_SESSION_TOKEN is used. */
-  sandboxToken?: string;
-  /**
-   * Explicit origin for API requests. Defaults to window.location.origin.
-   * Set this in Node/SSR or when the document origin is not the correct RP ID origin.
-   */
-  origin?: string;
-  /**
-   * Custom storage for context hash (e.g. sessionStorage). Must implement getItem/setItem.
-   * Defaults to browser sessionStorage or in-memory fallback.
-   */
-  contextHashStorage?: {
-    getItem(key: string): string | null;
-    setItem(key: string, value: string): void;
-  };
-};
-```
-
-**Validation:**
-
-- `appId`: Must be a non-empty string
-- `publishableKey`: Must be a non-empty string
-- `apiBaseUrl`: Must be a valid URL (validated with `new URL()`)
-- `timeoutMs`: Must be a finite number between `1000` and `300000` milliseconds
-- `maxRetries`: Must be between `0` and `10`
-- `retryDelayMs`: Must be between `100` and `10000` milliseconds
-
-**Behavior with `sandbox === true`:** `signUp()` and `signIn()` do not perform HTTP or WebAuthn calls; they return immediately with a successful `Result` and `sessionToken` equal to `config.sandboxToken` or the `SANDBOX_SESSION_TOKEN` constant. `session.verify(sessionToken)` returns a valid mock when the token matches the sandbox token.
-
-### `SANDBOX_SESSION_TOKEN` (exported constant)
-
-Fixed value of the session token the SDK returns in sandbox mode. The client backend can import it to recognize the token in development and create a session without calling TryMellon. **In production the backend must NOT accept this token.**
-
-```typescript
-import { SANDBOX_SESSION_TOKEN } from '@trymellon/js';
-// Value: 'trymellon_sandbox_session_token_v1'
-```
-
-### `RegisterOptions`
-
-```typescript
-type RegisterOptions = {
-  externalUserId?: string;
-  external_user_id?: string; // deprecated, use externalUserId
-  authenticatorType?: 'platform' | 'cross-platform';
-  successUrl?: string;
-  signal?: AbortSignal;
-};
-```
-
-### `RegisterResult`
-
-```typescript
+#### Parameters — `RegisterOptions`
+
+| Field                | Type                                         | Required | Description                                                                             |
+| -------------------- | -------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `externalUserId`     | `string \| ExternalUserId`                   | no       | Stable user identifier in your system. Omit for anonymous signup (F1 · ADR-039).         |
+| `external_user_id`   | `string \| ExternalUserId`                   | no       | **Deprecated.** snake_case alias of `externalUserId`.                                    |
+| `authenticatorType`  | `'platform' \| 'cross-platform'`             | no       | Preferred authenticator attachment. Hint to the browser, not a guarantee.                |
+| `successUrl`         | `string`                                     | no       | Post-success redirect URL. Validated server-side against the app allowlist.              |
+| `customClaims`       | `CustomClaims`                               | no       | JWT custom claims. Max 10 keys, 2 KB serialised. Must match the app's schema.            |
+| `signal`             | `AbortSignal`                                | no       | Aborts the WebAuthn ceremony. In-flight HTTP requests are not cancelled.                 |
+
+#### Returns
+
+```ts
 interface RegisterResult {
   success: true;
   credentialId: string;
+  /** snake_case alias. Prefer `credentialId`. */
+  credential_id?: string;
   status: string;
   sessionToken: string;
   user: {
     userId: string;
+    /** Undefined when signed up anonymously. */
     externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
+    /** `true` when registered without `externalUserId` (F1). */
+    isAnonymous?: boolean;
   };
-  /** Set when successUrl was passed and allowed by application allowlist. */
+  /** Present when `successUrl` was accepted by the app allowlist. */
   redirectUrl?: string;
 }
 ```
 
-### `AuthenticateOptions`
+#### Example
 
-```typescript
-interface AuthenticateOptions {
-  externalUserId?: string;
-  /** @deprecated Use externalUserId */
-  external_user_id?: string;
-  hint?: string;
-  successUrl?: string;
-  signal?: AbortSignal;
-  /** Conditional UI mediation for passkey autofill. */
-  mediation?: 'optional' | 'conditional' | 'required';
+```ts
+import { TryMellon, type Result, type RegisterResult, type TryMellonError } from '@trymellon/js';
+
+async function register(client: TryMellon, externalUserId: string) {
+  const result: Result<RegisterResult, TryMellonError> = await client.signUp({
+    externalUserId,
+    authenticatorType: 'platform',
+    customClaims: { plan: 'pro', orgId: 'org_42' },
+  });
+  if (!result.ok) throw result.error;
+  return result.value.sessionToken;
 }
 ```
 
-### `AuthenticateResult`
+#### Errors
 
-```typescript
+- `NOT_SUPPORTED` · `USER_CANCELLED` · `ABORT_ERROR` · `TIMEOUT`
+- `CHALLENGE_MISMATCH` · `INVALID_ARGUMENT` · `RATE_LIMIT_EXCEEDED`
+- `CUSTOM_CLAIM_NOT_ALLOWED` · `CUSTOM_CLAIMS_TOO_LARGE`
+- `FORBIDDEN` · `TENANT_INACTIVE` · `SERVER_ERROR`
+
+---
+
+### `client.signIn(options)`
+
+Authenticates an existing user by prompting for a passkey assertion.
+
+```ts
+signIn(options: AuthenticateOptions): Promise<Result<AuthenticateResult, TryMellonError>>
+```
+
+#### Parameters — `AuthenticateOptions`
+
+| Field                | Type                                         | Required | Description                                                                                   |
+| -------------------- | -------------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `externalUserId`     | `string \| ExternalUserId`                   | no       | Your user id. Omit to use discoverable (resident) passkeys.                                   |
+| `external_user_id`   | `string \| ExternalUserId`                   | no       | **Deprecated.** snake_case alias.                                                              |
+| `hint`               | `string`                                     | no       | Human-readable hint propagated to telemetry and analytics.                                     |
+| `successUrl`         | `string`                                     | no       | Post-success redirect URL. Validated against the app allowlist.                                |
+| `mediation`          | `'optional' \| 'conditional' \| 'required'`  | no       | WebAuthn mediation hint. Use `'conditional'` for passkey autofill.                             |
+| `customClaims`       | `CustomClaims`                               | no       | JWT custom claims. Max 10 keys, 2 KB serialised.                                               |
+| `signal`             | `AbortSignal`                                | no       | Aborts the WebAuthn ceremony.                                                                  |
+
+#### Returns
+
+```ts
 interface AuthenticateResult {
   authenticated: boolean;
   sessionToken: string;
@@ -732,6 +315,7 @@ interface AuthenticateResult {
     externalUserId?: string;
     email?: string;
     metadata?: Record<string, unknown>;
+    isAnonymous?: boolean;
   };
   signals?: {
     userVerification?: boolean;
@@ -742,9 +326,79 @@ interface AuthenticateResult {
 }
 ```
 
-### `ClientStatus`
+#### Example
 
-```typescript
+```ts
+const result = await client.signIn({ mediation: 'conditional' });
+if (result.ok) {
+  setSessionCookie(result.value.sessionToken);
+}
+```
+
+#### Errors
+
+- `NOT_SUPPORTED` · `USER_CANCELLED` · `ABORT_ERROR` · `TIMEOUT`
+- `PASSKEY_NOT_FOUND` · `CHALLENGE_MISMATCH` · `SESSION_EXPIRED`
+- `RATE_LIMIT_EXCEEDED` · `CUSTOM_CLAIM_NOT_ALLOWED` · `CUSTOM_CLAIMS_TOO_LARGE`
+
+---
+
+### `client.enroll(options)`
+
+Redeems an enrollment ticket (issued by your backend via the `/v1/enrollment`
+APIs) to attach a new passkey to an existing user.
+
+```ts
+enroll(options: EnrollOptions): Promise<Result<EnrollmentResult, TryMellonError>>
+```
+
+#### Parameters — `EnrollOptions`
+
+| Field          | Type            | Required | Description                                           |
+| -------------- | --------------- | -------- | ----------------------------------------------------- |
+| `ticketId`     | `string`        | yes      | Opaque ticket id from `POST /v1/enrollment/tickets`.  |
+| `customClaims` | `CustomClaims`  | no       | JWT custom claims. Max 10 keys, 2 KB serialised.      |
+| `signal`       | `AbortSignal`   | no       | Aborts the WebAuthn ceremony.                          |
+
+#### Returns
+
+```ts
+type EnrollmentResult = {
+  sessionToken: string;
+  credentialId: string;
+  userId: string;
+  entityId?: string;
+};
+```
+
+#### Example
+
+```ts
+const result = await client.enroll({ ticketId: 'enr_abc123' });
+if (!result.ok) return showError(result.error);
+
+console.log(result.value.sessionToken, result.value.credentialId);
+```
+
+#### Errors
+
+- `TICKET_NOT_FOUND` · `TICKET_EXPIRED` · `TICKET_ALREADY_USED`
+- `CHALLENGE_MISMATCH` · `USER_CANCELLED` · `ABORT_ERROR` · `TIMEOUT`
+
+---
+
+### `client.capabilities()`
+
+Reports whether WebAuthn, a platform authenticator, and which recommended flow
+the client should present.
+
+```ts
+capabilities(): Promise<ClientStatus>
+```
+
+#### Returns
+
+```ts
 type ClientStatus = {
   isPasskeySupported: boolean;
   platformAuthenticatorAvailable: boolean;
@@ -752,9 +406,98 @@ type ClientStatus = {
 };
 ```
 
-### `SessionValidateResponse`
+#### Example
 
-```typescript
+```ts
+const status = await client.capabilities();
+if (status.recommendedFlow === 'fallback') {
+  renderEmailOtpForm();
+}
+```
+
+---
+
+### `client.getContextHash()`
+
+Returns the SHA-256 context hash bound to the current browser session. Pass it
+to your backend when creating enrollment or bridge tickets so the ticket only
+redeems from the browser that requested it.
+
+```ts
+getContextHash(): string
+```
+
+#### Example
+
+```ts
+const hash = client.getContextHash();
+await fetch('/api/issue-ticket', {
+  method: 'POST',
+  body: JSON.stringify({ contextHash: hash }),
+});
+```
+
+---
+
+### `client.version()`
+
+Returns the SDK version string baked in at build time.
+
+```ts
+version(): string
+```
+
+---
+
+### `client.on(event, handler)`
+
+Subscribes to SDK lifecycle events. Returns an unsubscribe function.
+
+```ts
+on(event: TryMellonEvent, handler: EventHandler): () => void
+
+type TryMellonEvent = 'start' | 'success' | 'error' | 'cancelled';
+type EventHandler = (payload: EventPayload) => void;
+
+type EventPayload =
+  | { type: 'start';     operation: 'signUp' | 'signIn' | 'enroll'; nonce?: string }
+  | {
+      type: 'success';
+      operation: 'signUp' | 'signIn' | 'enroll';
+      token: string;
+      user?: { userId: string; externalUserId?: string; email?: string; metadata?: Record<string, unknown> };
+      nonce?: string;
+    }
+  | { type: 'error';     error: TryMellonError; operation?: 'signUp' | 'signIn' | 'enroll'; nonce?: string }
+  | { type: 'cancelled'; operation: 'signUp' | 'signIn'; nonce?: string };
+```
+
+> Note: `cancelled` is only emitted for `signUp` and `signIn` (not `enroll`).
+
+#### Example
+
+```ts
+const off = client.on('success', (payload) => {
+  if (payload.type !== 'success') return;
+  analytics.track('auth_success', { op: payload.operation });
+});
+
+// later
+off();
+```
+
+---
+
+## Session Namespace
+
+### `client.session.verify(sessionToken)`
+
+Asks the API to introspect a session token. Use server-side for authoritative
+validation.
+
+```ts
+session.verify(sessionToken: string): Promise<Result<SessionValidateResponse, TryMellonError>>
+
 type SessionValidateResponse = {
   valid: boolean;
   userId: string;
@@ -764,137 +507,1091 @@ type SessionValidateResponse = {
 };
 ```
 
-### `TryMellonEvent`
+#### Example — Express middleware
 
-```typescript
-type TryMellonEvent = 'start' | 'success' | 'error' | 'cancelled';
+```ts
+app.use(async (req, res, next) => {
+  const token = req.cookies.trymellon_session;
+  if (!token) return res.sendStatus(401);
+
+  const result = await client.session.verify(token);
+  if (!result.ok || !result.value.valid) return res.sendStatus(401);
+
+  req.user = { userId: result.value.userId, tenantId: result.value.tenantId };
+  next();
+});
 ```
 
-### `EventPayload`
+#### Errors
 
-```typescript
-type EventPayload =
-  | { type: 'start'; operation: 'register' | 'authenticate' | 'enroll'; nonce?: string }
-  | {
-      type: 'success';
-      operation: 'register' | 'authenticate' | 'enroll';
-      token: string;
-      user?: SuccessEventUserInfo;
-      nonce?: string;
-    }
-  | {
-      type: 'error';
-      error: TryMellonError;
-      operation?: 'register' | 'authenticate' | 'enroll';
-      nonce?: string;
-    }
-  | { type: 'cancelled'; operation: 'register' | 'authenticate'; nonce?: string };
-```
-
-> Note: `operation` values in `EventPayload` are internal runtime strings (`'register'`, `'authenticate'`) — they do not change when the public method is renamed.
-
-### `EmailFallbackStartOptions`
-
-```typescript
-type EmailFallbackStartOptions = {
-  userId: string;
-  email: string;
-};
-```
-
-### `EmailFallbackVerifyOptions`
-
-```typescript
-type EmailFallbackVerifyOptions = {
-  userId: string;
-  code: string;
-  successUrl?: string;
-};
-```
-
-### `EmailFallbackVerifyResult`
-
-```typescript
-type EmailFallbackVerifyResult = {
-  sessionToken: string;
-  redirectUrl?: string;
-};
-```
+- `SESSION_EXPIRED` · `INVALID_ARGUMENT` · `NETWORK_FAILURE` · `SERVER_ERROR`
 
 ---
 
-## Errors
+### `client.session.verifyOffline(sessionToken)`
 
-### `TryMellonError`
+Verifies the session JWT locally against the tenant JWKS. Zero round-trips
+after the first JWKS fetch (cached for 1h). Suitable for hot paths where the
+authoritative `verify()` is too expensive.
 
-Main SDK error class.
+```ts
+session.verifyOffline(sessionToken: string): Promise<Result<SessionClaims, TryMellonError>>
 
-```typescript
-class TryMellonError extends Error {
-  readonly code: TryMellonErrorCode;
-  readonly details?: unknown;
-  readonly isTryMellonError: true;
+type SessionClaims = {
+  userId: string;
+  externalUserId?: string;
+  tenantId: string;
+  appId: string;
+  customClaims?: Record<string, string | number | boolean>;
+  iat: number;
+  exp: number;
+  kid?: string;
+};
+```
+
+Only `alg: RS256` is accepted. A 30-second clock skew is tolerated on `exp`.
+
+#### Example
+
+```ts
+const decoded = await client.session.verifyOffline(token);
+if (!decoded.ok) return respond401();
+
+const { userId, tenantId, customClaims } = decoded.value;
+```
+
+#### Errors
+
+- `INVALID_ARGUMENT` (malformed JWT or missing claims) · `SESSION_EXPIRED`
+- `JWT_KID_MISMATCH` (key not in JWKS or signature invalid)
+- `NETWORK_FAILURE` (JWKS fetch failed)
+
+---
+
+## OTP Namespace
+
+One-time-password (email) flow — used as a fallback when passkeys aren't
+available or as a recovery rail.
+
+### `client.otp.send(options)`
+
+```ts
+otp.send(options: EmailFallbackStartOptions): Promise<Result<void, TryMellonError>>
+
+type EmailFallbackStartOptions = { userId: string; email: string };
+```
+
+### `client.otp.verify(options)`
+
+```ts
+otp.verify(options: EmailFallbackVerifyOptions): Promise<Result<EmailFallbackVerifyResult, TryMellonError>>
+
+type EmailFallbackVerifyOptions = { userId: string; code: string; successUrl?: string };
+type EmailFallbackVerifyResult  = { sessionToken: string; redirectUrl?: string };
+```
+
+#### Example
+
+```ts
+await client.otp.send({ userId: 'usr_42', email: 'augusto@example.com' });
+// … user enters code …
+const result = await client.otp.verify({ userId: 'usr_42', code: '123456' });
+if (result.ok) setSession(result.value.sessionToken);
+```
+
+#### Errors
+
+- `OTP_INVALID_OR_EXPIRED` · `RATE_LIMIT_EXCEEDED` · `INVALID_ARGUMENT`
+
+---
+
+## Passkey Recovery
+
+### `client.passkey.recover(options)`
+
+Redeems a recovery OTP, re-runs a WebAuthn registration ceremony, and returns a
+fresh session token.
+
+```ts
+passkey.recover(options: RecoverAccountOptions): Promise<Result<RecoverAccountResult, TryMellonError>>
+```
+
+#### Parameters — `RecoverAccountOptions`
+
+| Field              | Type                         | Required | Description                                        |
+| ------------------ | ---------------------------- | -------- | -------------------------------------------------- |
+| `externalUserId`   | `string \| ExternalUserId`   | yes      | The external id of the account being recovered.    |
+| `external_user_id` | `string \| ExternalUserId`   | no       | **Deprecated.** snake_case alias.                  |
+| `otp`              | `string`                     | yes      | 6-digit OTP delivered via email.                    |
+
+#### Returns
+
+```ts
+interface RecoverAccountResult {
+  success: true;
+  credentialId: string;
+  status: string;
+  sessionToken: string;
+  user: {
+    userId: string;
+    externalUserId?: string;
+    email?: string;
+    metadata?: Record<string, unknown>;
+  };
+  redirectUrl?: string;
 }
 ```
 
-### `TryMellonErrorCode`
+#### Example
 
-Available error codes:
-
-- `'NOT_SUPPORTED'`: WebAuthn is not available
-- `'USER_CANCELLED'`: User cancelled the operation
-- `'PASSKEY_NOT_FOUND'`: No passkey found
-- `'SESSION_EXPIRED'`: Session expired
-- `'NETWORK_FAILURE'`: Network error
-- `'INVALID_ARGUMENT'`: Invalid argument
-- `'TIMEOUT'`: Operation expired
-- `'ABORT_ERROR'`: Operation aborted by user or timeout
-- `'CHALLENGE_MISMATCH'`: Challenge mismatch — link was already used or expired
-- `'TICKET_NOT_FOUND'`: Enrollment ticket not found or invalid
-- `'TICKET_EXPIRED'`: Enrollment ticket has expired
-- `'TICKET_ALREADY_USED'`: Enrollment ticket was already used
-- `'PIN_MISMATCH'`: PIN does not match
-- `'PIN_LOCKED'`: PIN locked due to too many failed attempts
-- `'BRIDGE_SESSION_EXPIRED'`: Bridge session has expired
-- `'OTP_INVALID_OR_EXPIRED'`: Email OTP (fallback or recovery) is invalid or expired
-- `'ACTION_CHALLENGE_EXPIRED'`: Action signing challenge TTL exceeded
-- `'ACTION_ALREADY_CLAIMED'`: Action challenge already used (single-use anti-replay)
-- `'ACTION_PAYLOAD_MISMATCH'`: Signed payload hash does not match server-issued hash
-- `'SECRET_ROTATION_FORBIDDEN'`: Caller not allowed to rotate application secret
-- `'JWT_KID_MISMATCH'`: JWT `kid` not found in JWKS (key rotated)
-- `'INTROSPECTION_FAILED'`: Token introspection rejected by server
-- `'CUSTOM_CLAIM_NOT_ALLOWED'`: `customClaims` key not in application whitelist
-- `'CUSTOM_CLAIMS_TOO_LARGE'`: `customClaims` payload exceeds size cap
-- `'RATE_LIMIT_EXCEEDED'`: Too many requests (SDK retries with backoff)
-- `'FORBIDDEN'`: Access denied (missing role/scope)
-- `'NOT_FOUND'`: Requested resource (application, entity, etc.) not found
-- `'TENANT_INACTIVE'`: Target tenant is inactive
-- `'INVITATION_NOT_FOUND'`: Invitation not found, already consumed, or revoked
-- `'SERVER_ERROR'`: Unrecoverable server-side error
-- `'UNKNOWN_ERROR'`: Unknown error
-
-**Note on retries:** The SDK retries automatically with exponential backoff for HTTP 5xx, HTTP 429, and transient network errors. Not applied to 4xx (except 429), timeout, or validation errors.
-
-### Error Helper Functions
-
-#### `isTryMellonError(error)`
-
-```typescript
-isTryMellonError(error: unknown): error is TryMellonError
+```ts
+const result = await client.passkey.recover({
+  externalUserId: 'user_42',
+  otp: '123456',
+});
+if (!result.ok) return showError(result.error);
+setSessionCookie(result.value.sessionToken);
 ```
 
-#### `createError(code, message?, details?)`
+#### Errors
 
-```typescript
-createError(code: TryMellonErrorCode, message?: string, details?: unknown): TryMellonError
-```
-
-#### Other helpers
-
-`createNotSupportedError()`, `createUserCancelledError()`, `createNetworkError(cause?)`, `createTimeoutError()`, `createInvalidArgumentError(field, reason)`, `mapWebAuthnError(error)`.
+- `OTP_INVALID_OR_EXPIRED` · `ANONYMOUS_RECOVERY_NOT_AVAILABLE`
+- `USER_CANCELLED` · `ABORT_ERROR` · `INVALID_ARGUMENT`
 
 ---
 
-## Usage Examples
+## Cross-Device Namespace
 
-See [EXAMPLES.md](./EXAMPLES.md) for full integration examples.
+Runs a QR-based cross-device flow. Desktop initiates, mobile approves with a
+passkey, desktop polls (or streams via SSE) for completion.
+
+### Shape
+
+```ts
+client.crossDevice = {
+  start(): Promise<Result<CrossDeviceInitResult, TryMellonError>>;
+  startRegistration(options?: { externalUserId?: string }):
+    Promise<Result<CrossDeviceInitResult, TryMellonError>>;
+  waitForCompletion(
+    sessionId: string,
+    signal?: AbortSignal,
+    pollingToken?: string | null,
+  ): Promise<Result<
+    { sessionToken: string; userId: string; redirectUrl?: string },
+    TryMellonError
+  >>;
+  getContext(sessionId: string):
+    Promise<Result<CrossDeviceContextResult, TryMellonError>>;
+  approve(sessionId: string): Promise<Result<void, TryMellonError>>;
+};
+```
+
+### Types
+
+```ts
+type CrossDeviceInitResult = {
+  session_id: string;
+  qr_url: string;
+  expires_at: string;
+  polling_token: string;
+  external_user_id?: string;
+};
+
+type CrossDeviceContextResult =
+  | { type: 'auth'; options: AuthStartResponse['challenge']; approval_context?: string; application_name?: string }
+  | { type: 'registration'; options: RegisterStartResponse['challenge']; approval_context?: string; application_name?: string };
+```
+
+### Desktop example
+
+```ts
+// 1. Desktop: generate the QR
+const init = await client.crossDevice.start();
+if (!init.ok) throw init.error;
+renderQr(init.value.qr_url);
+
+// 2. Desktop: wait for the mobile side to complete
+const done = await client.crossDevice.waitForCompletion(
+  init.value.session_id,
+  undefined,
+  init.value.polling_token,
+);
+if (done.ok) setSessionCookie(done.value.sessionToken);
+```
+
+### Mobile example
+
+```ts
+// Mobile: user scanned the QR; session id is in the URL
+const sessionId = new URL(location.href).searchParams.get('session')!;
+
+const context = await client.crossDevice.getContext(sessionId);
+if (!context.ok) return showError(context.error);
+
+// Shows the user what they're approving (auth or registration)
+if (context.value.type === 'registration') renderConsent(context.value.application_name);
+
+// Runs the WebAuthn ceremony and calls the backend verify endpoint.
+await client.crossDevice.approve(sessionId);
+```
+
+---
+
+## Bridge Namespace
+
+Variant of cross-device where the second device completes a pin-gated bridge
+flow (e.g. enrollment-bridge, auth-bridge).
+
+### Shape
+
+```ts
+client.bridge = {
+  getContext(sessionId: string, kind: 'enrollment' | 'auth'):
+    Promise<Result<BridgeContextResponse, TryMellonError>>;
+
+  verifyPresence(sessionId: string, pin: string, kind: 'enrollment' | 'auth'):
+    Promise<Result<BridgeChallengeResponse, TryMellonError>>;
+
+  complete(sessionId: string, options?: BridgeCompleteOptions):
+    Promise<Result<BridgeResult, TryMellonError>>;
+
+  waitForResult(
+    sessionId: string,
+    options?: {
+      useSse?: boolean;
+      kind?: 'enrollment' | 'auth';
+      timeoutMs?: number;
+      signal?: AbortSignal;
+    },
+  ): Promise<Result<BridgeStatusSnapshot, TryMellonError>>;
+};
+```
+
+### Types
+
+```ts
+type BridgeContextResponse = {
+  type: 'auth' | 'registration';
+  options: Record<string, unknown>;
+  application_name?: string;
+};
+
+type BridgeChallengeResponse = {
+  session_id: string;
+  challenge?: string;
+  registration_options?: Record<string, unknown>;
+  authentication_options?: Record<string, unknown>;
+};
+
+type BridgeOptions = {
+  onPinRequired?: () => Promise<string>;
+  presencePin?: string;
+  signal?: AbortSignal;
+};
+
+type BridgeCompleteOptions = BridgeOptions & {
+  /** Required — selects the bridge variant. */
+  kind: 'enrollment' | 'auth';
+  /** Required for enrollment bridges. */
+  ticketId?: string;
+  /** Required for enrollment bridges. */
+  entityId?: string;
+};
+
+type BridgeEnrollmentResult = {
+  kind: 'enrollment';
+  sessionToken: string;
+  credentialId?: string;
+  userId?: string;
+  entityId?: string;
+};
+
+type BridgeAuthResult = { kind: 'auth'; sessionToken: string };
+type BridgeResult     = BridgeEnrollmentResult | BridgeAuthResult;
+
+type BridgeStatusSnapshot = {
+  status: 'pending' | 'pin_verified' | 'pin_locked' | 'completed' | 'expired' | 'cancelled';
+  ts?: string;
+};
+```
+
+### Example — enrollment bridge
+
+```ts
+const result = await client.bridge.complete(sessionId, {
+  kind: 'enrollment',
+  ticketId: 'tkt_…',
+  entityId: 'ent_…',
+  onPinRequired: () => promptForPin(),
+});
+
+if (!result.ok) return showError(result.error);
+// Narrow by kind — BridgeResult is a discriminated union
+if (result.value.kind === 'enrollment') {
+  console.log(result.value.credentialId, result.value.sessionToken);
+}
+```
+
+### Example — wait for terminal status
+
+```ts
+const status = await client.bridge.waitForResult(sessionId, {
+  kind: 'enrollment',
+  timeoutMs: 300_000,
+});
+if (status.ok && status.value.status === 'pin_locked') reset();
+```
+
+#### Errors
+
+- `PIN_MISMATCH` · `PIN_LOCKED` · `BRIDGE_SESSION_EXPIRED`
+- `TICKET_NOT_FOUND` · `TICKET_EXPIRED` · `TICKET_ALREADY_USED`
+- `USER_CANCELLED` · `ABORT_ERROR` · `TIMEOUT`
+
+---
+
+## Action Signing
+
+Prompts the user to authorise a specific payload with their passkey. Returns a
+short-lived JWT (120 s TTL) scoped to `actionType + payloadHash`. Your backend
+MUST verify the token before executing the action.
+
+### `client.action.sign(options)`
+
+```ts
+action.sign(options: ActionSignOptions): Promise<Result<ActionSignResult, TryMellonError>>
+```
+
+#### Parameters — `ActionSignOptions`
+
+| Field          | Type           | Required | Description                                                                                                      |
+| -------------- | -------------- | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `actionType`   | `string`       | yes      | `namespace:verb` format, `^[a-z0-9_]+:[a-z0-9_]+$`. Example: `'finance:wire_transfer'`.                           |
+| `payloadHash`  | `string`       | yes      | 64-char lowercase hex SHA-256 of the exact payload being authorised. The SDK validates the format.                |
+| `rpId`         | `string`       | yes      | Relying-Party ID. Must match the domain the passkey was registered under.                                         |
+| `ttlSeconds`   | `number`       | no       | Challenge TTL. Default `300`. Backend clamps to 60–900.                                                            |
+| `signal`       | `AbortSignal`  | no       | Aborts the WebAuthn ceremony.                                                                                     |
+
+#### Returns
+
+```ts
+interface ActionSignResult {
+  token: string;
+  verifiedAt: string;
+  actionType: string;
+  credentialId: string;
+}
+```
+
+#### Example
+
+```ts
+const payload = JSON.stringify({ to: '0xAbc…', amountCents: 1_000_000 });
+const payloadHash = await sha256Hex(payload);
+
+const result = await client.action.sign({
+  actionType: 'finance:wire_transfer',
+  payloadHash,
+  rpId: 'app.example.com',
+});
+
+if (!result.ok) throw result.error;
+// Attach to the request your backend will verify:
+fetch('/api/transfer', {
+  method: 'POST',
+  headers: { 'X-Action-Token': result.value.token },
+  body: payload,
+});
+```
+
+#### Errors
+
+- `INVALID_STATE` — no active session; call `signUp` / `signIn` / `enroll` first.
+- `INVALID_ARGUMENT` — bad `actionType`, `payloadHash`, or `rpId`.
+- `ACTION_CHALLENGE_EXPIRED` · `ACTION_ALREADY_CLAIMED` · `ACTION_PAYLOAD_MISMATCH`
+- `USER_CANCELLED` · `ABORT_ERROR`
+
+---
+
+## Identity Linking
+
+> **Preset gate:** only available when the client was created with
+> `preset: 'web3'`. On a `'saas'` client, `client.identity` is typed `never`.
+
+Associates additional identifiers (email, wallet, custom) to the authenticated
+user. All methods read the `userId` from the active session.
+
+### Shape
+
+```ts
+client.identity = {
+  linkEmail(email: string):
+    Promise<Result<LinkChallengeResult, TryMellonError>>;
+  verifyEmailLink(options: LinkVerifyOptions):
+    Promise<Result<LinkedIdentifier, TryMellonError>>;
+  list(): Promise<Result<LinkedIdentifier[], TryMellonError>>;
+  unlink(identifierId: string): Promise<Result<void, TryMellonError>>;
+};
+```
+
+### Types
+
+```ts
+interface LinkChallengeResult { identifierId: string; expiresAt: string }
+
+interface LinkVerifyOptions    { identifierId: string; otp: string }
+
+interface LinkedIdentifier {
+  id: string;
+  type: 'email' | 'wallet' | 'custom';
+  value: string;
+  verified: boolean;
+  linkedAt: string;
+}
+```
+
+### Example
+
+```ts
+const challenge = await client.identity.linkEmail('augusto@example.com');
+if (!challenge.ok) throw challenge.error;
+
+// … user enters OTP from email …
+
+const linked = await client.identity.verifyEmailLink({
+  identifierId: challenge.value.identifierId,
+  otp: userInput,
+});
+if (linked.ok) renderLinked(linked.value);
+```
+
+#### Errors
+
+- `INVALID_ARGUMENT` — no active session.
+- `LINK_CHALLENGE_NOT_FOUND` · `LINK_OTP_INVALID` · `LINK_OTP_EXPIRED`
+- `IDENTIFIER_ALREADY_LINKED` · `IDENTIFIER_NOT_OWNED` · `EMAIL_ALREADY_TAKEN`
+- `UNLINK_LAST_IDENTIFIER_DENIED`
+
+---
+
+## SIWE
+
+> **Preset gate:** only when `preset: 'web3'`.
+
+EIP-4361 "Sign-In with Ethereum". The SDK never signs — the external wallet
+does. Flow: `getNonce` → `prepareMessage` (pure) → wallet signs → `verifyAndSignIn`.
+
+### Shape
+
+```ts
+client.siwe = {
+  getNonce(): Promise<Result<SiweNonceResult, TryMellonError>>;
+  prepareMessage(options: SiwePrepareOptions): Result<string, TryMellonError>;
+  verifyAndSignIn(options: SiweVerifyOptions):
+    Promise<Result<SiweVerifyResult, TryMellonError>>;
+};
+```
+
+### Types
+
+```ts
+interface SiweNonceResult   { nonce: string; expiresAt: string }
+interface SiweVerifyOptions { message: string; signature: string }
+interface SiweVerifyResult  { sessionToken: string; userId: string; walletAddress: string }
+```
+
+See also [`SiwePrepareOptions`](#trymellonjsweb3) — it is re-exported from the
+main entry and from `@trymellon/js/web3`.
+
+### Example
+
+```ts
+const nonceR = await client.siwe.getNonce();
+if (!nonceR.ok) throw nonceR.error;
+
+const messageR = client.siwe.prepareMessage({
+  domain: 'app.example.com',
+  address: wallet.address,
+  chainId: 1,
+  uri: 'https://app.example.com/login',
+  nonce: nonceR.value.nonce,
+  statement: 'Sign in to Example',
+});
+if (!messageR.ok) throw messageR.error;
+
+const signature = await wallet.signMessage(messageR.value);
+
+const result = await client.siwe.verifyAndSignIn({
+  message: messageR.value,
+  signature,
+});
+if (result.ok) setSessionCookie(result.value.sessionToken);
+```
+
+#### Errors
+
+- `SIWE_NONCE_EXPIRED` · `SIWE_NONCE_REPLAY` · `SIWE_SIGNATURE_INVALID`
+- `SIWE_MESSAGE_MALFORMED` · `SIWE_CHAIN_NOT_ALLOWED`
+- `SIWE_DOMAIN_MISMATCH` · `SIWE_ADDRESS_MISMATCH`
+
+---
+
+## Webhook Verification
+
+Verify the HMAC-SHA256 signature of an incoming webhook delivery. Zero runtime
+dependencies — uses WebCrypto (`globalThis.crypto.subtle`), available on Node
+19+ and all modern browsers.
+
+### `verifyWebhookSignature(rawBody, signatureHeader, secret)`
+
+```ts
+async function verifyWebhookSignature(
+  rawBody: string,
+  signatureHeader: string,
+  secret: string,
+): Promise<boolean>
+```
+
+Returns `true` when the signature matches, `false` otherwise (including any
+internal error). The comparison is constant-time.
+
+### `WebhookEvent` — discriminated union
+
+```ts
+type WebhookEventType =
+  | 'auth.success'
+  | 'credential.revoked'
+  | 'application.secret_rotated'
+  | 'session.revoked'
+  | 'session.logout'
+  | 'user.locked'
+  | 'identifier.linked'
+  | 'identifier.unlinked'
+  | 'recovery.enrollment.issued'
+  | 'recovery.enrollment.completed';
+
+type WebhookEvent =
+  | { event: 'auth.success';                 timestamp: string; data: AuthSuccessPayload }
+  | { event: 'credential.revoked';           timestamp: string; data: CredentialRevokedPayload }
+  | { event: 'application.secret_rotated';   timestamp: string; data: ApplicationSecretRotatedPayload }
+  | { event: 'session.revoked';              timestamp: string; data: SessionRevokedPayload }
+  | { event: 'session.logout';               timestamp: string; data: SessionLogoutPayload }
+  | { event: 'user.locked';                  timestamp: string; data: UserLockedPayload }
+  | { event: 'identifier.linked';            timestamp: string; data: IdentifierLinkedPayload }
+  | { event: 'identifier.unlinked';          timestamp: string; data: IdentifierUnlinkedPayload }
+  | { event: 'recovery.enrollment.issued';   timestamp: string; data: RecoveryEnrollmentIssuedPayload }
+  | { event: 'recovery.enrollment.completed'; timestamp: string; data: RecoveryEnrollmentCompletedPayload };
+
+type WebhookPayload<E extends WebhookEventType = WebhookEventType> =
+  Extract<WebhookEvent, { event: E }>;
+```
+
+Each payload type is exported individually (see the [index barrel](#trymellonjsplatform)
+contents): `AuthSuccessPayload`, `CredentialRevokedPayload`,
+`ApplicationSecretRotatedPayload`, `SessionRevokedPayload`,
+`SessionLogoutPayload`, `UserLockedPayload`, `IdentifierLinkedPayload`,
+`IdentifierUnlinkedPayload`, `RecoveryEnrollmentIssuedPayload`,
+`RecoveryEnrollmentCompletedPayload`.
+
+### Example — Express handler
+
+```ts
+import express from 'express';
+import { verifyWebhookSignature, type WebhookEvent } from '@trymellon/js';
+
+const app = express();
+
+// Important: use raw body — do NOT parse before verifying.
+app.post('/webhooks/trymellon', express.raw({ type: 'application/json' }), async (req, res) => {
+  const raw = req.body.toString('utf8');
+  const signature = req.header('X-TryMellon-Signature') ?? '';
+  const valid = await verifyWebhookSignature(raw, signature, process.env.WEBHOOK_SECRET!);
+  if (!valid) return res.sendStatus(401);
+
+  const event = JSON.parse(raw) as WebhookEvent;
+  switch (event.event) {
+    case 'auth.success':
+      await onAuthSuccess(event.data);
+      break;
+    case 'credential.revoked':
+      await onCredentialRevoked(event.data);
+      break;
+    // … narrow the rest …
+  }
+  res.sendStatus(200);
+});
+```
+
+---
+
+## Logger & Device Helpers
+
+### `Logger`, `LogLevel`, `ConsoleLogger`
+
+```ts
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+interface Logger {
+  debug(message: string, meta?: Record<string, unknown>): void;
+  info(message: string, meta?: Record<string, unknown>): void;
+  warn(message: string, meta?: Record<string, unknown>): void;
+  error(message: string, meta?: Record<string, unknown>): void;
+}
+
+class ConsoleLogger implements Logger { /* forwards to `console.*` */ }
+```
+
+Inject your own implementation via `TryMellonConfig.logger` to correlate
+request ids with your observability stack.
+
+### AAGUID helpers
+
+Resolve a human-readable name for a credential given its AAGUID and/or a
+user-set alias. Data sourced from the FIDO Alliance Metadata Service.
+
+```ts
+function getDeviceName(aaguid: string): string | null;
+
+function resolveCredentialName(
+  aaguid: string | null | undefined,
+  alias: string | null | undefined,
+): string;
+```
+
+Priority: alias → AAGUID lookup → `'Passkey'` fallback.
+
+### `SANDBOX_SESSION_TOKEN`
+
+```ts
+const SANDBOX_SESSION_TOKEN: 'trymellon_sandbox_session_token_v1';
+```
+
+Exported for asserting sandbox behaviour in tests. Your production backend
+MUST reject this value.
+
+---
+
+## `@trymellon/js/platform`
+
+Stateless helper for integrators orchestrating TryMellon tenant sign-up via
+the hosted signup link pattern (ADR-SDK-005 · ADR-076). No publishable key or
+`TryMellon` instance required — `POST /v1/onboarding/start` is public by design.
+
+### `createPlatform(config?)`
+
+```ts
+function createPlatform(config?: TryMellonPlatformConfig): TryMellonPlatform;
+
+interface TryMellonPlatformConfig {
+  /** @default 'https://api.trymellon.com' */
+  apiBaseUrl?: string;
+}
+
+interface TryMellonPlatform {
+  createSignupLink(opts: CreateSignupLinkOptions):
+    Promise<Result<CreateSignupLinkResult, TryMellonError>>;
+
+  getSignupStatus(sessionId: string):
+    Promise<Result<SignupStatusResult, TryMellonError>>;
+
+  awaitSignupCompletion(
+    sessionId: string,
+    opts?: AwaitSignupCompletionOptions,
+  ): Promise<Result<AwaitSignupCompletionResult, TryMellonError>>;
+}
+```
+
+### `createSignupLink(opts)`
+
+| Field        | Type                                              | Required | Description                                                                                                  |
+| ------------ | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| `returnUrl`  | `string`                                          | no       | https URL where the hosted page redirects on success. Omit to use polling-only coordination.                  |
+| `refreshUrl` | `string`                                          | no       | https URL fallback used when the hosted `sessionId` expires.                                                  |
+| `prefill`    | `{ companyName?: string; email?: string }`        | no       | UX prefill only — never treated as trust input.                                                               |
+| `userRole`   | `'maintainer' \| 'app_user'`                      | no       | Defaults to `'maintainer'`.                                                                                  |
+
+Returns:
+
+```ts
+interface CreateSignupLinkResult {
+  sessionId: string;
+  hostedUrl: string;
+  expiresInSeconds: number;
+}
+```
+
+### `getSignupStatus(sessionId)`
+
+```ts
+type SignupStatus =
+  | 'pending_data'
+  | 'pending_passkey'
+  | 'completed'
+  | 'expired'
+  | 'failed';
+
+interface SignupStatusResult {
+  status: SignupStatus;
+  hostedUrl?: string;
+  expiresInSeconds?: number;
+}
+```
+
+### `awaitSignupCompletion(sessionId, opts?)`
+
+Polls `getSignupStatus` until the terminal state is reached.
+
+```ts
+interface AwaitSignupCompletionOptions {
+  signal?: AbortSignal;
+  /** @default 2000ms */
+  intervalMs?: number;
+  /** @default 60 (≈ 2 min with default intervalMs) */
+  maxAttempts?: number;
+}
+
+interface AwaitSignupCompletionResult {
+  status: 'completed';
+  hostedUrl: string;
+}
+```
+
+### Example — server-side orchestration
+
+```ts
+import { createPlatform } from '@trymellon/js/platform';
+
+const platform = createPlatform();
+
+const linkR = await platform.createSignupLink({
+  userRole: 'maintainer',
+  prefill: { companyName: 'ACME' },
+});
+if (!linkR.ok) throw linkR.error;
+
+// Send linkR.value.hostedUrl to the user (email, QR, redirect, …)
+
+const doneR = await platform.awaitSignupCompletion(linkR.value.sessionId, {
+  intervalMs: 3000,
+  maxAttempts: 120,
+});
+if (doneR.ok) markTenantProvisioned();
+```
+
+#### Errors
+
+- `INVALID_ARGUMENT` (`returnUrl` / `refreshUrl` not https, bad `sessionId`)
+- `RATE_LIMIT_EXCEEDED` · `NOT_FOUND` · `FORBIDDEN`
+- `SESSION_EXPIRED` (terminal `'expired'`) · `TIMEOUT` · `ABORT_ERROR`
+- `NETWORK_FAILURE` · `SERVER_ERROR`
+
+---
+
+## `@trymellon/js/web3`
+
+Zero-dep helpers usable without instantiating a full `TryMellon` client.
+
+### `prepareSiweMessage(options)`
+
+Pure function that builds an EIP-4361 canonical SIWE message string. Caller
+hands it to the external wallet (MetaMask, Rabby, Coinbase, …) for signing.
+
+```ts
+function prepareSiweMessage(options: SiwePrepareOptions): Result<string, TryMellonError>;
+```
+
+### `SiwePrepareOptions`
+
+| Field            | Type                 | Required | Description                                                                                     |
+| ---------------- | -------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `domain`         | `string`             | yes      | RFC 3986 authority the user signs in to (e.g. `app.example.com`). No whitespace or newlines.    |
+| `address`        | `string`             | yes      | 0x-prefixed 40-char hex Ethereum address. EIP-55 checksum is the wallet's responsibility.        |
+| `chainId`        | `number`             | yes      | EIP-155 positive integer.                                                                        |
+| `uri`            | `string`             | yes      | RFC 3986 URI referring to the resource being signed in to.                                       |
+| `nonce`          | `string`             | yes      | Nonce from `client.siwe.getNonce()`. At least 8 alphanumeric chars.                              |
+| `statement`      | `string`             | no       | Human-readable assertion. ASCII printable, no newlines.                                          |
+| `issuedAt`       | `string`             | no       | ISO 8601. Defaults to `new Date().toISOString()`.                                                |
+| `expirationTime` | `string`             | no       | ISO 8601.                                                                                        |
+| `notBefore`      | `string`             | no       | ISO 8601.                                                                                        |
+| `requestId`      | `string`             | no       | Opaque correlation id.                                                                           |
+| `resources`      | `readonly string[]`  | no       | Ordered list of RFC 3986 URIs.                                                                   |
+
+### Example
+
+```ts
+import { prepareSiweMessage } from '@trymellon/js/web3';
+
+const r = prepareSiweMessage({
+  domain: 'app.example.com',
+  address: '0x1234567890123456789012345678901234567890',
+  chainId: 1,
+  uri: 'https://app.example.com/login',
+  nonce: 'r4nd0m12',
+  statement: 'Sign in to Example',
+});
+if (!r.ok) throw r.error;
+const signature = await wallet.signMessage(r.value);
+```
+
+### Re-exported types
+
+`LinkEmailOptions`, `LinkVerifyOptions`, `LinkChallengeResult`,
+`LinkedIdentifier`, `SiweNonceResult`, `SiweVerifyOptions`, `SiweVerifyResult`
+— identical to the shapes exposed on `client.identity` / `client.siwe`.
+
+---
+
+## `@trymellon/js/ui` — Web Components
+
+Side-effectful sub-path. Importing registers two custom elements on the global
+`customElements` registry:
+
+| Tag                         | Constant                    | Role                                                |
+| --------------------------- | --------------------------- | --------------------------------------------------- |
+| `<trymellon-auth>`          | `TRYMELLON_AUTH_TAG`        | Button + internal modal, or trigger-only mode.      |
+| `<trymellon-auth-modal>`    | `TRYMELLON_AUTH_MODAL_TAG`  | Standalone modal (hosted by the integrator).        |
+
+### Example
+
+```html
+<script type="module">
+  import '@trymellon/js/ui';
+</script>
+
+<trymellon-auth
+  app-id="app_abc123"
+  publishable-key="cli_xyz789"
+  mode="signIn"
+  button-variant="primary"
+  button-label="Sign in with Passkey"
+></trymellon-auth>
+```
+
+### Custom events
+
+Consumers listen for the typed events below (all re-exported constants):
+
+```ts
+import {
+  MELLON_START,
+  MELLON_SUCCESS,
+  MELLON_ERROR,
+  MELLON_CANCELLED,
+  MELLON_FALLBACK,
+  MELLON_TAB_CHANGE,
+  MELLON_OPEN,
+  MELLON_OPEN_REQUEST,
+  MELLON_CLOSE,
+  type MellonSuccessDetail,
+  type MellonErrorDetail,
+} from '@trymellon/js/ui';
+```
+
+For the complete observed-attributes list, render styles, and the internal FSM
+contract, see `documentation/WEB-COMPONENTS.md` alongside this file.
+
+---
+
+## Framework Wrappers
+
+All wrappers delegate to the same `TryMellon` instance — they only wire the
+dependency-injection idiomatic to each framework.
+
+### React — `@trymellon/js/react`
+
+```tsx
+import { TryMellon } from '@trymellon/js';
+import { TryMellonProvider, useSignUp } from '@trymellon/js/react';
+
+const client = TryMellon.create({ appId: 'app_…', publishableKey: 'cli_…' });
+if (!client.ok) throw client.error;
+
+export function Root() {
+  return (
+    <TryMellonProvider client={client.value}>
+      <SignUpButton />
+    </TryMellonProvider>
+  );
+}
+
+function SignUpButton() {
+  const { execute, loading, error } = useSignUp();
+  return (
+    <button
+      disabled={loading}
+      onClick={() => execute({ externalUserId: 'user_42' })}
+    >
+      {loading ? 'Signing up…' : 'Sign up'}
+      {error && <span>{error.message}</span>}
+    </button>
+  );
+}
+```
+
+Hooks: `useSignUp`, `useSignIn`, `useEnroll`, `useTryMellon`.
+
+### Vue — `@trymellon/js/vue`
+
+```ts
+import { TryMellon } from '@trymellon/js';
+import { provideTryMellon, useSignIn } from '@trymellon/js/vue';
+
+// Root setup
+const clientR = TryMellon.create({ appId: 'app_…', publishableKey: 'cli_…' });
+if (!clientR.ok) throw clientR.error;
+provideTryMellon(clientR.value);
+
+// Descendant component
+const { execute, loading, error } = useSignIn();
+```
+
+Composables: `useSignUp`, `useSignIn`, `useEnroll`, `useTryMellon`,
+`provideTryMellon`, `TryMellonKey`.
+
+### Angular — `@trymellon/js/angular`
+
+```ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { TryMellon } from '@trymellon/js';
+import { provideTryMellon, TryMellonService } from '@trymellon/js/angular';
+
+const clientR = TryMellon.create({ appId: 'app_…', publishableKey: 'cli_…' });
+if (!clientR.ok) throw clientR.error;
+
+bootstrapApplication(AppComponent, {
+  providers: [provideTryMellon(clientR.value)],
+});
+
+// In a component / service
+@Component({ selector: 'app-login', template: '<button (click)="signIn()">Sign in</button>' })
+export class LoginComponent {
+  constructor(private readonly trymellon: TryMellonService) {}
+
+  async signIn() {
+    const r = await this.trymellon.client.signIn({ mediation: 'conditional' });
+    if (r.ok) storeSession(r.value.sessionToken);
+  }
+}
+```
+
+Exports: `provideTryMellon`, `TryMellonService`, `TRYMELLON_CLIENT`.
+
+---
+
+## Error Codes
+
+Every async SDK method resolves to `Result<T, TryMellonError>`. `error.code`
+is a `TryMellonErrorCode` literal union.
+
+### Core
+
+| Code                      | Meaning                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `NOT_SUPPORTED`           | WebAuthn is not available in this environment.                            |
+| `USER_CANCELLED`          | The user dismissed the WebAuthn prompt.                                    |
+| `PASSKEY_NOT_FOUND`       | No passkey matched the allowCredentials list.                              |
+| `SESSION_EXPIRED`         | Session or challenge is no longer valid.                                   |
+| `NETWORK_FAILURE`         | Underlying `fetch` or DNS layer failed.                                    |
+| `INVALID_ARGUMENT`        | Validation failed client-side or the backend rejected the payload.         |
+| `TIMEOUT`                 | Deadline reached (HTTP timeout, polling budget, etc.).                     |
+| `ABORT_ERROR`             | Aborted via `AbortSignal` or user-initiated.                               |
+| `CHALLENGE_MISMATCH`      | Stale or replayed WebAuthn challenge.                                      |
+| `RATE_LIMIT_EXCEEDED`     | Client hit the server rate limit.                                          |
+| `FORBIDDEN`               | Caller lacks permission for the action.                                    |
+| `NOT_FOUND`               | Requested resource does not exist.                                         |
+| `TENANT_INACTIVE`         | Target tenant is suspended.                                                |
+| `INVITATION_NOT_FOUND`    | Invitation was consumed, revoked, or never existed.                        |
+| `SERVER_ERROR`            | Unspecified 5xx from the API.                                              |
+| `UNKNOWN_ERROR`           | Fallback when no mapping applies.                                          |
+
+### Enrollment / Bridge
+
+| Code                      | Meaning                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `TICKET_NOT_FOUND`        | Enrollment ticket is missing or invalid.                                   |
+| `TICKET_EXPIRED`          | Enrollment ticket TTL elapsed.                                             |
+| `TICKET_ALREADY_USED`     | Ticket was redeemed previously.                                            |
+| `PIN_MISMATCH`            | Bridge presence PIN is wrong.                                              |
+| `PIN_LOCKED`              | Bridge PIN locked after too many attempts.                                 |
+| `BRIDGE_SESSION_EXPIRED`  | Bridge session TTL elapsed.                                                |
+
+### Action Signing
+
+| Code                       | Meaning                                                                  |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `INVALID_STATE`            | `action.sign` called without an active session.                           |
+| `ACTION_CHALLENGE_EXPIRED` | Action challenge TTL elapsed — request a new one.                         |
+| `ACTION_ALREADY_CLAIMED`   | Challenge was already consumed.                                           |
+| `ACTION_PAYLOAD_MISMATCH`  | Signed data does not match the requested action.                          |
+
+### OTP / JWT / Custom claims
+
+| Code                       | Meaning                                                                  |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `OTP_INVALID_OR_EXPIRED`   | Verification code was wrong or has expired.                               |
+| `SECRET_ROTATION_FORBIDDEN`| Caller cannot rotate the application secret.                              |
+| `JWT_KID_MISMATCH`         | JWT `kid` not found in JWKS, or signature invalid.                        |
+| `INTROSPECTION_FAILED`     | Token introspection endpoint returned an error.                           |
+| `CUSTOM_CLAIM_NOT_ALLOWED` | A claim key is not in the app `custom_claims_schema`.                     |
+| `CUSTOM_CLAIMS_TOO_LARGE`  | Custom claims exceed 10 keys or 2 KB serialised.                          |
+
+### Identity Linking (preset `web3`)
+
+| Code                            | Meaning                                                             |
+| ------------------------------- | ------------------------------------------------------------------- |
+| `LINK_CHALLENGE_NOT_FOUND`      | Link challenge expired or was not found.                             |
+| `LINK_OTP_INVALID`              | OTP entered is wrong.                                                |
+| `LINK_OTP_EXPIRED`              | OTP TTL elapsed.                                                     |
+| `IDENTIFIER_ALREADY_LINKED`     | Identifier already attached to another account.                       |
+| `IDENTIFIER_NOT_OWNED`          | Identifier belongs to a different user.                               |
+| `EMAIL_ALREADY_TAKEN`           | Email already associated with an account in this tenant.             |
+| `UNLINK_LAST_IDENTIFIER_DENIED` | Cannot unlink the last identifier of an anonymous user.               |
+
+### SIWE (preset `web3`)
+
+| Code                       | Meaning                                                                  |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `SIWE_NONCE_EXPIRED`       | SIWE nonce expired — request a new one.                                   |
+| `SIWE_NONCE_REPLAY`        | SIWE nonce was already consumed.                                          |
+| `SIWE_SIGNATURE_INVALID`   | Signature verification failed.                                            |
+| `SIWE_MESSAGE_MALFORMED`   | Message is not EIP-4361 canonical.                                        |
+| `SIWE_CHAIN_NOT_ALLOWED`   | Chain id not in the app allowlist.                                        |
+| `SIWE_DOMAIN_MISMATCH`     | Message `domain` ≠ expected domain.                                       |
+| `SIWE_ADDRESS_MISMATCH`    | Recovered address ≠ declared address.                                     |
+
+### Recovery
+
+| Code                                  | Meaning                                                         |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `ANONYMOUS_RECOVERY_NOT_AVAILABLE`    | Anonymous accounts cannot be recovered.                          |
+| `RECOVERY_USER_NOT_FOUND`             | Target user for B2B recovery enrollment does not exist.          |
+| `RECOVERY_TICKET_LIMIT_EXCEEDED`      | Maximum recovery tickets already issued for this user.           |
+
+### Error constructors
+
+```ts
+import {
+  TryMellonError,
+  createError,
+  isTryMellonError,
+  createNotSupportedError,
+  createUserCancelledError,
+  createNetworkError,
+  createTimeoutError,
+  createInvalidArgumentError,
+  mapWebAuthnError,
+} from '@trymellon/js';
+```
+
+- `createError(code, message?, details?)` — generic factory.
+- `isTryMellonError(value)` — type guard.
+- `createNotSupportedError()`, `createUserCancelledError()`,
+  `createNetworkError(cause?)`, `createTimeoutError()` — preset constructors.
+- `createInvalidArgumentError(field, reason)` — populates `details.field` and
+  `details.reason`.
+- `mapWebAuthnError(error)` — normalises a `DOMException` from
+  `navigator.credentials.{create,get}` into a `TryMellonError`.
+
+---
+
+Last updated for SDK `v4.0.0`.

@@ -8,11 +8,11 @@ See ADR-SDK-004 for design rationale (naming, preset gate, sub-path export, size
 
 ## When do I need this?
 
-| Need | Preset |
-|------|--------|
-| Passkey signup + signIn only | `'saas'` (default) |
-| Users sign in with an Ethereum wallet (SIWE) | `'web3'` |
-| Link email / wallet identifiers to existing users | `'web3'` |
+| Need                                                           | Preset                                 |
+| -------------------------------------------------------------- | -------------------------------------- |
+| Passkey signup + signIn only                                   | `'saas'` (default)                     |
+| Users sign in with an Ethereum wallet (SIWE)                   | `'web3'`                               |
+| Link email / wallet identifiers to existing users              | `'web3'`                               |
 | Build an EIP-4361 message standalone (no `TryMellon` instance) | any — import from `@trymellon/js/web3` |
 
 ## Enabling the preset
@@ -74,7 +74,7 @@ if (!nonceR.ok) return nonceR.error;
 // 2. Build the canonical EIP-4361 message
 const messageR = trymellon.siwe.prepareMessage({
   domain: window.location.host,
-  address: walletAddress,         // from wallet.getAddress()
+  address: walletAddress, // from wallet.getAddress()
   chainId: 1,
   uri: window.location.origin,
   nonce: nonceR.value.nonce,
@@ -168,14 +168,16 @@ const signature = await signer.signMessage(message);
 
 - **`client.identity.linkWallet`** — requires a backend endpoint to link a wallet
   to an already-authenticated user. Tracked as SPRINT-F1.3-BACK-WALLET-LINK.
-- **`RegisterResult.isAnonymous`** — tracked as SPRINT-F1.4-BACK-ANONYMOUS-FLAG.
 - **Wallet connection UI** — the SDK deliberately avoids shipping wallet connectors;
   use wagmi, RainbowKit, Web3Modal, ConnectKit, or your own.
 - **EIP-712 / ERC-1271 / session keys** — F2 scope (ADR-041, ADR-042, ADR-043).
 
+> `RegisterResult.user.isAnonymous` and `AuthenticateResult.user.isAnonymous` shipped
+> in v4.0.0 — already part of the core surface, no preset gating needed.
+
 ## Size-limit targets (CI-enforced)
 
-| Entry | Limit (gzipped) |
-|-------|------------------|
-| `dist/index.global.js` (core IIFE) | 20 KB |
-| `dist/web3/index.js` (sub-path ESM) | 10 KB |
+| Entry                               | Limit (gzipped) |
+| ----------------------------------- | --------------- |
+| `dist/index.global.js` (core IIFE)  | 20 KB           |
+| `dist/web3/index.js` (sub-path ESM) | 10 KB           |

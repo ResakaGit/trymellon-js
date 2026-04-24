@@ -32,6 +32,8 @@ export type {
   OnboardingCompleteResult,
   EnrollOptions,
   EnrollmentResult,
+  RecoverAccountOptions,
+  RecoverAccountResult,
   ContextHash,
   BridgeContextResponse,
   BridgeChallengeResponse,

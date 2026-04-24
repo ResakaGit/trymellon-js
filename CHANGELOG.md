@@ -1,67 +1,61 @@
+# Changelog
+
 ## [4.0.1](https://github.com/ResakaGit/trymellon-js/compare/v4.0.0...v4.0.1) (2026-04-24)
 
 # [4.0.0](https://github.com/ResakaGit/trymellon-js/compare/v3.7.0...v4.0.0) (2026-04-24)
 
+All notable changes to `@trymellon/js` will be documented in this file.
 
-### chore
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-* **sdk:** retrigger 4.0.0 release with canonical BREAKING CHANGE footer ([f3478cb](https://github.com/ResakaGit/trymellon-js/commit/f3478cbc745a8ef7f4a88ffe1ebf27a12aae29d6))
+---
 
+## [Unreleased]
 
-### BREAKING CHANGES
+_No unreleased changes._
 
-* **sdk:** client.platform.signUp() and OnboardingManager removed
-from main client (ADR-SDK-005). Hosted onboarding moves to dedicated
-sub-path @trymellon/js/platform. TryMellonClient.platform typed never
-across all presets. X-App-Id header removed from defaultHeaders.
-ApiClient.issueActionChallenge(body, sessionToken) +
-verifyActionSignature(id, body, sessionToken) now require explicit
-session token override. See commit bfd0aba for full migration guide.
+---
 
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+## [4.0.0] - 2026-04-24
 
-# [3.7.0](https://github.com/ResakaGit/trymellon-js/compare/v3.6.0...v3.7.0) (2026-04-17)
+Hosted onboarding moves to a dedicated sub-path; action signing now requires an explicit session token on the wire.
 
+### Added
 
-### Features
-
-* **sdk:** F1-R.4 B2B recovery error codes + webhook event types ([0191f5b](https://github.com/ResakaGit/trymellon-js/commit/0191f5bafff9fc69e7d49046b1ef1b43cc599430))
-
-# [Unreleased]
-
-### feat(sdk)!: hosted onboarding via `@trymellon/js/platform` + action signing session token (SPRINT-ENDPOINT-AUDIT-REMEDIATION-2026-04-23)
-
-**BREAKING — major bump expected:** `client.platform.signUp()` and the `OnboardingManager` class were removed from the main client. The hosted onboarding surface moves to a dedicated sub-path (ADR-SDK-005). `client.platform` is now typed `never` across every preset.
-
-**Added:**
-- **`@trymellon/js/platform`** sub-path — stateless `createPlatform()` factory. Public surface (3 methods, stateless, no publishable key required):
+- **`@trymellon/js/platform`** sub-path — stateless `createPlatform({ apiBaseUrl })` factory. Public surface (3 methods, no publishable key required):
   - `createSignupLink({ returnUrl, refreshUrl?, prefill?, userRole? })` → `{ sessionId, hostedUrl, expiresInSeconds }`.
   - `getSignupStatus(sessionId)` → snapshot of the onboarding FSM.
   - `awaitSignupCompletion(sessionId, { signal?, intervalMs?, maxAttempts? })` — loop polling with `AbortSignal` + backoff; resolves on `completed`, rejects `SESSION_EXPIRED`/`SERVER_ERROR` on terminal failure, `ABORT_ERROR` on cancel.
-- `package.json` exports `./platform` + tsup entry + `size-limit` gate **< 5 KB gzip** (measured: **2.92 KB**).
+- `package.json` exports `./platform` + tsup entry + `size-limit` gate **< 5 KB gzip** (measured: 2.92 KB).
 - `TryMellonErrorCode` gains `INVALID_STATE` — emitted by `client.action.sign()` when called without an active session (fail-fast, zero HTTP).
 
-**Changed (behavior):**
-- **`client.action.sign()`** — ADR-028 Amendment + ADR-SDK-001 Amendment 2026-04-23. The SDK now passes the current user_session JWT as an explicit `Authorization: Bearer <session>` override for `/v1/actions/challenges` + `/v1/actions/:id/verify`. The default publishable-key header is replaced on those two calls. No session = `INVALID_STATE` before any network I/O. `ApiClient.issueActionChallenge(body, sessionToken)` + `ApiClient.verifyActionSignature(challengeId, body, sessionToken)` now require the session token as a positional argument.
-- **`TryMellon.create(config).platform`** typed `never` (ADR-SDK-005 §2.3) — the TS compiler rejects `client.platform.signUp` on all presets. Migration snippet in README/docs.
-- `OnboardingManager` class, `OnboardingStartOptions` + `OnboardingCompleteResult` removed from the main bundle; re-exported under new types in `@trymellon/js/platform`.
+### Changed
 
-**Removed:**
-- `X-App-Id` header removed from `defaultHeaders` (backend never read it — ghost header cleanup). The `appId` config field is still validated at construction-time for back-compat but no longer attached.
+- **`client.action.sign()`** (ADR-028 Amendment + ADR-SDK-001 Amendment 2026-04-23): the SDK now passes the current `user_session` JWT as an explicit `Authorization: Bearer <session>` override for `POST /v1/actions/challenges` and `POST /v1/actions/:id/verify`. No active session → `INVALID_STATE` before any network I/O.
+- **`TryMellon.create(config).platform`** typed `never` (ADR-SDK-005 §2.3) — the TS compiler rejects `client.platform.signUp` on all presets.
 
-**Bundle:**
-- **Core bundle:** `19.97 KB` → **`19.69 KB`** gzip (−0.28 KB thanks to the OnboardingManager removal).
+### Removed
+
+- **BREAKING — `client.platform.signUp()` and the `OnboardingManager` class** are no longer part of the main client bundle (ADR-SDK-005). The hosted onboarding surface lives exclusively under `@trymellon/js/platform`.
+- **BREAKING — `OnboardingStartOptions` + `OnboardingCompleteResult`** removed from the main bundle; re-exported under new types in `@trymellon/js/platform`.
+- **BREAKING — `X-App-Id` header** removed from `defaultHeaders` (backend never read it — ghost header cleanup). The `appId` config field is still validated at construction-time for back-compat but no longer attached to requests.
+- **BREAKING — `ApiClient.issueActionChallenge(body, sessionToken)` and `ApiClient.verifyActionSignature(challengeId, body, sessionToken)`** now require the session token as a positional argument.
+
+### Performance
+
+- **Core bundle:** `19.97 KB` → `19.69 KB` gzip (−0.28 KB from `OnboardingManager` removal).
 - **Web3 sub-path:** 2.70 KB / 10 KB budget (unchanged).
-- **Platform sub-path:** **2.92 KB / 5 KB budget** (new).
+- **Platform sub-path:** 2.92 KB / 5 KB budget (new).
 
-**Migration:**
+### Migration Guide
 
 ```ts
-// Before
+// Before (v3.x)
 const client = TryMellon.create({ apiBaseUrl, appId, publishableKey });
 const result = await client.platform.signUp({ user_role: 'founder', company_name: 'ACME' });
 
-// After
+// After (v4.x)
 import { createPlatform } from '@trymellon/js/platform';
 const platform = createPlatform({ apiBaseUrl });
 const link = await platform.createSignupLink({
@@ -74,57 +68,45 @@ if (link.ok) {
 }
 ```
 
-### feat(sdk): map B2B recovery enrollment errors + webhook types (F1-R.4)
+---
 
-- **`TryMellonErrorCode`** gains `RECOVERY_USER_NOT_FOUND` (maps backend HTTP 404) and `RECOVERY_TICKET_LIMIT_EXCEEDED` (maps backend HTTP 409). Added to `DEFAULT_MESSAGES` with B2B-oriented wording.
-- **`mapBackendErrorCodeToTryMellon`** covers the two new backend wire codes (`recovery_user_not_found` / `recovery_ticket_limit_exceeded`). Case normalization already handled by the existing `toLowerCase().trim()` pipeline.
-- **`WebhookEventType`** gains `recovery.enrollment.issued` + `recovery.enrollment.completed`.
-- **`WebhookEvent`** discriminated union extended with both events and their payload types `RecoveryEnrollmentIssuedPayload` / `RecoveryEnrollmentCompletedPayload`. Both exported from the main entry.
+## [3.7.0] - 2026-04-17
+
+### Added
+
+- **`TryMellonErrorCode`** gains `RECOVERY_USER_NOT_FOUND` (maps backend HTTP 404 `recovery_user_not_found`) and `RECOVERY_TICKET_LIMIT_EXCEEDED` (maps backend HTTP 409 `recovery_ticket_limit_exceeded`). Added to `DEFAULT_MESSAGES` with B2B-oriented wording.
+- **`WebhookEventType`** gains `recovery.enrollment.issued` and `recovery.enrollment.completed`.
+- **`WebhookEvent`** discriminated union extended with both events and their payload types `RecoveryEnrollmentIssuedPayload` / `RecoveryEnrollmentCompletedPayload`, both exported from the main entry.
 - `recovery.enrollment.completed` payload carries `reason: 'b2b_enrollment'` (literal) — distinguishes the B2B flow from the legacy OTP-based recovery at the webhook consumer level.
+
+### Changed
+
+- **`mapBackendErrorCodeToTryMellon`** covers the two new backend wire codes. Case normalization already handled by the existing `toLowerCase().trim()` pipeline.
+
+### Notes
+
 - **No new `TryMellonClient` surface** — B2B recovery completion reuses the existing `client.enroll({ ticketId })` (ADR-045). Integrators issue the ticket via the backend S2S endpoint and deliver the enrollment URL through their own channel.
-- **Backend counterpart:** `feat(backend)` commit with the same `Session-Id: 2026-04-17-opus47-f1r4` promotes the domain error codes to real throw points and emits the webhooks this SDK change maps.
 
-# [3.6.0](https://github.com/ResakaGit/trymellon-js/compare/v3.5.0...v3.6.0) (2026-04-17)
+---
 
+## [3.6.0] - 2026-04-17
 
-### Features
+### Added
 
-* **sdk:** expose isAnonymous in RegisterResult + AuthenticateResult (F1.4) ([a9c9b85](https://github.com/ResakaGit/trymellon-js/commit/a9c9b85adbd1acb80a531b2c8ba197c7f54535c0))
+- **`RegisterResult.user.isAnonymous`** and **`AuthenticateResult.user.isAnonymous`** — optional boolean reflecting whether the user was registered anonymously (no `externalUserId`). The backend already emits `is_anonymous` in `POST /v1/passkeys/{register,auth}/finish` responses (F1 · ADR-039); SDK now propagates it through the validators + camelCase transform. Absent when the backend omits the field (older deployments — back-compat preserved).
 
-# [3.5.0](https://github.com/ResakaGit/trymellon-js/compare/v3.4.0...v3.5.0) (2026-04-17)
+### Fixed
 
-
-### Features
-
-* **sdk:** F1 Identity Interop — converge to ADR-SDK-004 ([25ff4dd](https://github.com/ResakaGit/trymellon-js/commit/25ff4dddbafb87e7ff16cfee5080a06cef16e379))
-* **sdk:** F1 Identity Interop — identity + siwe namespaces, error codes, webhook types ([4bf81cf](https://github.com/ResakaGit/trymellon-js/commit/4bf81cffd1ebebf03ccd4f0b63b735b15fa7af91))
-
-# [3.4.0](https://github.com/ResakaGit/trymellon-js/compare/v3.3.0...v3.4.0) (2026-04-15)
-
-
-### Features
-
-* **sdk:** client.session.verifyOffline — zero-dep JWT validation via JWKS ([203f4a0](https://github.com/ResakaGit/trymellon-js/commit/203f4a01ec9d38cb9d0bdf43f26c35e9fd222c66))
-
-# [3.3.0](https://github.com/ResakaGit/trymellon-js/compare/v3.2.0...v3.3.0) (2026-04-15)
-
-
-### Features
-
-* **sdk:** F0 Drop-In surface — preset + customClaims + webhook types + HMAC verifier ([62a448c](https://github.com/ResakaGit/trymellon-js/commit/62a448c046db5087f39923bb09cd9ae3c407c9e0))
-
-# [Unreleased]
-
-### Added (F1.4 — anonymous user signal exposed in SDK)
-
-- **`RegisterResult.user.isAnonymous`** and **`AuthenticateResult.user.isAnonymous`** — optional boolean reflecting whether the user was registered anonymously (no `externalUserId`). Backend already emits `is_anonymous` in `POST /v1/passkeys/{register,auth}/finish` responses (F1 · ADR-039); SDK now propagates it through the validators + camelCase transform. Absent when the backend omits the field (older deployments — back-compat preserved).
-
-### Fixed (F1.4)
-
-- **`validateUserEntity` accepts `external_user_id: null`** for anonymous users. Previous strict `isString` check rejected the anonymous response shape at validator level, making the flow unreachable via SDK end-to-end. Null is mapped to `undefined` on the camelCase side (`RegisterResult.user.externalUserId` stays optional).
+- **`validateUserEntity` accepts `external_user_id: null`** for anonymous users. The previous strict `isString` check rejected the anonymous response shape at validator level, making the flow unreachable via SDK end-to-end. Null is mapped to `undefined` on the camelCase side (`RegisterResult.user.externalUserId` stays optional).
 - **`validateUserEntity` validates optional `is_anonymous: boolean`** — non-boolean values return `INVALID_ARGUMENT` with the `is_anonymous` field hint.
 
-### Added (F1 — Web3 identity interop)
+---
+
+## [3.5.0] - 2026-04-17
+
+Web3 identity interop: SIWE + identifier linking surfaces, `web3` preset, tree-shakeable sub-path.
+
+### Added
 
 - **`client.identity.*` namespace** (preset `'web3'`): `linkEmail(email)`, `verifyEmailLink({ identifierId, otp })`, `list()`, `unlink(identifierId)`. `userId` is read from the active session (no parameter needed). Backed by `POST /v1/users/:id/identifiers(/verify)` and `DELETE /v1/users/:id/identifiers/:identifier_id`.
 - **`client.siwe.*` namespace** (preset `'web3'`, EIP-4361): `getNonce()`, `prepareMessage(opts)` (pure, zero-dep), `verifyAndSignIn({ message, signature })`. Signing is always the wallet's responsibility.
@@ -133,28 +115,19 @@ if (link.ok) {
 - **Error codes (F1):** `IDENTIFIER_NOT_OWNED`, `UNLINK_LAST_IDENTIFIER_DENIED`, `SIWE_MESSAGE_MALFORMED`, `SIWE_ADDRESS_MISMATCH`. Full mapping documented in ADR-SDK-004 §2.6.
 - **Docs:** `documentation/advanced/web3.md` — integration guide (wagmi / viem / ethers).
 
-### Fixed (F1)
+### Changed
+
+- **`TryMellonPreset`** expanded from `'saas'` to `'saas' | 'web3'`. Default remains `'saas'` — existing integrators are not affected.
+- **`client.siwe.verifyAndSignIn`** emits the standard `success` event (`operation: 'signIn'`), wiring SIWE sign-ins into the existing observability surface.
+
+### Fixed
 
 - **`confirmLinkEmail` request body:** the SDK was sending `{ otp }` but the backend schema requires `{ identifier_id, otp }`. Requests now include `identifier_id` propagated from `linkEmail` challenge. `LinkVerifyOptions` gained the `identifierId` field.
 - **Error mapping — `identity_link_unlink_last_identifier_denied`:** previously aliased to `IDENTIFIER_ALREADY_LINKED` (wrong semantics); now maps to the new `UNLINK_LAST_IDENTIFIER_DENIED` code.
 - **Error mapping — `identity_link_identifier_not_owned_by_user`:** previously aliased to `FORBIDDEN`; now maps to the specific `IDENTIFIER_NOT_OWNED` code.
-
-### Changed (F1)
-
-- **`TryMellonPreset`** expanded from `'saas'` to `'saas' | 'web3'`. Default remains `'saas'` — existing integrators are not affected.
-- **`client.siwe.verifyAndSignIn` emits** the standard `success` event (`operation: 'signIn'`), wiring SIWE sign-ins into the existing observability surface.
-
-### Fixed (F1 audit)
-
-- **CHANGELOG typo:** F1 entry referenced `client.session.verifyAndSignIn` — corrected to `client.siwe.verifyAndSignIn` (the `session` namespace never exposed this method).
 - **`prepareSiweMessage` — `statement` runtime guard:** the field is typed `string`, but a consumer passing a non-string via `as any` previously reached `.includes('\n')` and threw a `TypeError`. Now validates `typeof === 'string'` and returns `INVALID_ARGUMENT` — consistent with every other SIWE field validator.
 
-### Tests (F1 audit)
-
-- **`tests/core/api.test.ts`** — added 6 F1 contract tests: regression guard for `confirmLinkEmail` body shape (must include `identifier_id`, per ADR-SDK-004 §2.6 bug fix), happy paths for `requestLinkEmail` / `listIdentifiers` / `unlinkIdentifier` / `getSiweNonce` / `verifySiwe`.
-- **`tests/core/siwe-message.test.ts`** — added non-string `statement` test covering the new runtime guard.
-
-### Migrating from F0
+### Migration
 
 Existing integrators using the default `'saas'` preset see no behavior changes. To opt into F1:
 
@@ -168,11 +141,24 @@ Then `client.value.identity` and `client.value.siwe` become available. No import
 import { prepareSiweMessage } from '@trymellon/js/web3';
 ```
 
+---
+
+## [3.4.0] - 2026-04-15
+
 ### Added
 
 - **`client.session.verifyOffline(token)`:** local JWT validation consuming the backend JWKS (`/.well-known/jwks.json`). Zero runtime dependencies (native WebCrypto). Module-level JWKS cache (TTL 1h). Clock skew ±30s on `exp`. Rejects anything other than RS256 (algorithm-confusion defense). Flattens `https://trymellon.dev/claims` into `customClaims` on the returned `SessionClaims`. New exported type `SessionClaims`. Design and trade-offs documented in ADR-SDK-003.
+
+---
+
+## [3.3.0] - 2026-04-15
+
+F0 Drop-In SaaS surface: preset scaffolding, custom claims, webhook types + HMAC verifier.
+
+### Added
+
 - **`preset` field in `TryMellonConfig`:** opt-in mechanism for future F1/F2 feature namespaces. Default is `'saas'` (only value accepted in F0 — reserves the API surface without shipping unimplemented namespaces). Unknown values fail validation with `INVALID_ARGUMENT`.
-- **`customClaims` parameter in `signUp`, `signIn`, and `enroll`:** integrators can inject allow-listed claims into the session JWT under the `https://trymellon.dev/claims` namespace. Validated server-side against the application's `custom_claims_schema`. Limits: 10 keys, 2KB serialized. Backend rejects with `CUSTOM_CLAIM_NOT_ALLOWED` or `CUSTOM_CLAIMS_TOO_LARGE`.
+- **`customClaims` parameter in `signUp`, `signIn`, and `enroll`:** integrators can inject allow-listed claims into the session JWT under the `https://trymellon.dev/claims` namespace. Validated server-side against the application's `custom_claims_schema`. Limits: 10 keys, 2 KB serialized. Backend rejects with `CUSTOM_CLAIM_NOT_ALLOWED` or `CUSTOM_CLAIMS_TOO_LARGE`.
 - **Webhook types + HMAC verifier (`src/core/webhook.ts`):** new public surface for integrators consuming webhook deliveries.
   - Discriminated union `WebhookEvent` over event types: `auth.success`, `credential.revoked`, `application.secret_rotated`, `session.revoked`, `session.logout`, `user.locked`.
   - `verifyWebhookSignature(rawBody, signatureHeader, secret)` with constant-time HMAC-SHA256 comparison, using WebCrypto (zero runtime deps).
@@ -184,97 +170,37 @@ import { prepareSiweMessage } from '@trymellon/js/web3';
 ### Changed
 
 - **Backend error code mapper coverage** extended to cover `credential_not_found`, `no_credentials`, `replay_detected`, `gone`, `application_not_found`, `tenant_inactive`, `invitation_not_found`, OTP codes, and F0 codes. Previously these fell through to `UNKNOWN_ERROR`.
-- **Comments stripped of sprint/ADR references** in `src/errors.ts` per CLAUDE.md Yanagi rule; comments now describe *what* the codes are for, not *when they were added*.
+- **Comments in `src/errors.ts`** stripped of sprint/ADR references; comments now describe *what* the codes are for, not *when they were added*.
 
 ### Removed
 
 - **Alias `already_claimed` → `ACTION_ALREADY_CLAIMED`:** backend emits only the specific `challenge_already_claimed`. The loose alias would mis-categorize unrelated "X already claimed" codes.
-- **`'ABORTED'` from `API.md` error-code list:** was a documentation-only entry; not present in the `TryMellonErrorCode` union.
+- **`'ABORTED'`** from the `API.md` error-code list — it was a documentation-only entry and never present in the `TryMellonErrorCode` union.
 
 ---
 
-# [3.2.0](https://github.com/ResakaGit/trymellon-js/compare/v3.1.5...v3.2.0) (2026-04-09)
+## [3.2.0] - 2026-04-09
 
-
-### Features
-
-* **release:** v3.2.0 — ActionManager (KP-ACTION-01) ([4271818](https://github.com/ResakaGit/trymellon-js/commit/4271818dc179396864e9746d241618dce37c826b))
-
-## [3.2.0] - 2026-04-08
-
-### Added
-
-- **`ActionManager` — API pública para Action Signing (KP-ACTION-01):** Nueva clase `ActionManager` exportada desde `@trymellon/js`. Expone `client.action.issueChallenge(payload)` y `client.action.verify(challenge, payload, options)` para el flujo de firma WebAuthn de acciones críticas (transfers, confirmaciones). Integrado en `TryMellon` como `this.action`. Tipos `ActionChallenge`, `ActionVerifyOptions`, `ActionVerifyResult` exportados desde el índice público.
-- **`createError` — nuevo código `ACTION_SIGN_ERROR`:** Agregado a `errors.ts` para errores específicos del flujo de firma de acción.
-- **Tipos de SDK extendidos:** `src/types.ts` incluye los nuevos tipos de Action Signing. `src/index.ts` exporta `ActionManager`, tipos de acción y `ACTION_SIGN_ERROR`.
-- **Tests unitarios para `ActionManager` y validators:** 38 tests cubriendo happy path, sad paths de seguridad (challenge expirado, payload mismatch, signature inválida) y edge cases.
-- **`validateIssueActionChallengeResponse` / `validateVerifyActionSignatureResponse`:** Validators en `src/core/validators/action.ts` para verificar shapes de respuesta del backend.
-
-### Changed
-
-- **`README.MD` actualizado:** Documentación del nuevo flujo de Action Signing con ejemplos de uso de `client.action.issueChallenge()` y `client.action.verify()`.
-
-## [3.1.5](https://github.com/ResakaGit/trymellon-js/compare/v3.1.4...v3.1.5) (2026-04-09)
-
-
-### Bug Fixes
-
-* **sdk:** close EventSource on abort, snake_case body fields, test alignment ([b402f94](https://github.com/ResakaGit/trymellon-js/commit/b402f94625975f611ec159a30da16c54e1c69418))
-
-## [3.1.5] - 2026-04-08
-
-### Fixed
-
-- **`withSseFallback` — cierra EventSource en abort:** El handler de abort (`onAbort`) ahora llama a `es?.close()` antes de resolver el error `ABORT_ERROR`. La `es` se declara antes del handler para que la closure capture el binding por referencia. Antes el EventSource quedaba abierto si se abortaba la señal externamente.
-- **`startEmailFallback` / `verifyEmailCode` — payload snake_case correcto:** Los tests actualizados para reflejar que el SDK envía `user_id` (snake_case) al backend, no `userId`. Alineado con la convención SDK → backend de la plataforma.
-- **`bridge-manager.test.ts` — mock `createInMemoryStorage` agregado:** El `vi.mock('../../src/core/context-hash')` ahora incluye `createInMemoryStorage` que `bridge-manager.ts` requiere. 18 tests que fallaban por export faltante ahora pasan.
-- **`context-hash.test.ts` — tests actualizados al nuevo comportamiento:** Eliminada expectativa de hash consistente entre llamadas cuando el storage lanza excepción. El nuevo diseño no tiene singleton de fallback; cada llamada fallida genera un hash fresco. Callers que necesiten consistencia deben pasar un `createInMemoryStorage()` propio.
-- **`cross-device-manager.test.ts` — pollingToken via X-Polling-Token header:** Test actualizado para verificar que cuando se provee `pollingToken`, se usa el path fetch-based SSE (no EventSource), el header `X-Polling-Token` se envía, y `getCrossDeviceStatusUrl` se llama solo con `sessionId`.
-
-## [3.1.4](https://github.com/ResakaGit/trymellon-js/compare/v3.1.3...v3.1.4) (2026-04-08)
-
-
-### Bug Fixes
-
-* **sdk:** audit-21 — bridge terminal states, enrollment result fields, bridge discriminator ([eeb9702](https://github.com/ResakaGit/trymellon-js/commit/eeb9702279fd24c737984917fb14198a36339a40)), closes [#11](https://github.com/ResakaGit/trymellon-js/issues/11) [#12](https://github.com/ResakaGit/trymellon-js/issues/12) [#15](https://github.com/ResakaGit/trymellon-js/issues/15)
-
-## [3.1.3](https://github.com/ResakaGit/trymellon-js/compare/v3.1.2...v3.1.3) (2026-04-08)
-
-
-### Bug Fixes
-
-* **sdk:** audit wave fixes — wire types, bridge statuses, error codes ([573ec7b](https://github.com/ResakaGit/trymellon-js/commit/573ec7b2d2140137275f2715f888611008db4e38))
-* **tests:** update tests to match audit fixes from previous session ([2d445ea](https://github.com/ResakaGit/trymellon-js/commit/2d445eae36679e0c9d73877d0e4bfbba97b4a031))
-
-## [3.1.2](https://github.com/ResakaGit/trymellon-js/compare/v3.1.1...v3.1.2) (2026-04-08)
-
-# Changelog
-
-All notable changes to `@trymellon/js` are documented in this file.
-Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newest entries appear first.
-
----
-
-## [3.2.0] — 2026-04-08
+Shared SSE + polling fallback between cross-device and bridge flows. Unified abort semantics. Action signing wiring note.
 
 ### Added
 
 - **Shared SSE-with-polling fallback (`withSseFallback`).** Internal utility extracted from `CrossDeviceManager` and `BridgeManager` into `polling-utils`. Both cross-device and bridge flows now share a single, tested SSE implementation with automatic polling fallback when `EventSource` is unavailable.
-- **README: `### Action Signing` section.** Documents `client.action.sign()` API (challenge/verify flow), error codes (`ACTION_CHALLENGE_EXPIRED`, `ACTION_ALREADY_CLAIMED`, `ACTION_PAYLOAD_MISMATCH`), and backend verification pattern. Feature is gated behind backend wiring (KP Trust Layer ADR-029) — SDK UI layer pending sprint implementation.
+- **README: `### Action Signing` section.** Documents `client.action.sign(opts)` (the only public action-signing surface) with `ActionSignOptions` / `ActionSignResult` types and the error codes `ACTION_CHALLENGE_EXPIRED`, `ACTION_ALREADY_CLAIMED`, `ACTION_PAYLOAD_MISMATCH`. Backend verification pattern covered per KP Trust Layer ADR-029.
 
 ### Fixed
 
 - **Bridge: abort signal was silently dropped during SSE wait.** Calling `bridge.waitForResult()` with an `AbortSignal` and firing that signal while an SSE connection was open caused the operation to hang instead of resolving. The signal is now wired through `withSseFallback` and cancels correctly.
-- **Unified `ABORT_ERROR` code.** Two codes (`ABORT_ERROR` and `ABORTED`) existed for aborted operations, leading to inconsistent error handling. All abort paths now return `ABORT_ERROR`. If your code checks for `ABORTED`, rename it to `ABORT_ERROR`.
+- **Unified `ABORT_ERROR` code.** Two codes (`ABORT_ERROR` and `ABORTED`) existed for aborted operations, leading to inconsistent error handling. All abort paths now return `ABORT_ERROR`. **Breaking at the consumer level** for any code checking for `ABORTED` — rename to `ABORT_ERROR`.
 - **`QR_*` backend error codes now map to SDK errors.** 13 server error codes prefixed `QR_` (e.g. `qr_rate_limited`, `qr_session_expired`) were previously surfaced as unknown errors. They now map to the correct SDK error codes. Rate-limit errors trigger the exponential backoff logic in `crossDevice.waitForCompletion()`.
 - **`StorageLike | undefined` in `EnrollmentManager` and `TryMellon`.** Both classes now fall back to `createInMemoryStorage()` when the provided storage is `undefined` (SSR/Node environments), preventing a TypeScript error on construction.
 - **`onboarding-manager.ts`: `'pending'` not in `OnboardingStatus` union.** Status literal corrected to `'pending_data'` — the actual value emitted by the backend.
 - **`BridgeManager` + `CrossDeviceManager`: SSE callback type widened.** `parseBridgeStatusMessage` and `parseCrossDeviceMessage` callbacks now accept `MessageEvent | { data: string }` to cover both browser SSE and polling paths without a type error.
 - **`validateSession`: 30 s cache + request coalescing.** `ApiClient.validateSession()` now caches successful responses for 30 s and deduplicates in-flight requests for the same token. Concurrent calls during a single page render (e.g., multiple middleware guards) hit the network once. Revocations propagate within the TTL window.
 - **`startEmailFallback` / `verifyEmailCode`: payload field renamed `userId` → `user_id`.** The SDK was sending camelCase `userId` but the backend expects `user_id`. Fixed in `api.ts`. Previously both email fallback endpoints would always return a validation error silently.
-- **`getCrossDeviceStatusUrl`: polling token removed from query string.** The URL no longer appends `?polling_token=xxx`. The polling token is now sent via the `X-Polling-Token` header (fetch-based SSE path) to avoid exposure in server access logs and Referer headers. **Breaking for SSE via native `EventSource`** — but `EventSource` cannot send custom headers, so that path already required the workaround; the SDK's internal fetch-based SSE is unaffected.
+- **`getCrossDeviceStatusUrl`: polling token removed from query string.** The URL no longer appends `?polling_token=xxx`. The polling token is now sent via the `X-Polling-Token` header (fetch-based SSE path) to avoid exposure in server access logs and `Referer` headers. **Breaking for SSE via native `EventSource`** — but `EventSource` cannot send custom headers, so that path already required the workaround; the SDK's internal fetch-based SSE is unaffected.
 - **`context-hash.ts`: module-level singleton removed (SSR contamination fix).** The previous `inMemoryStorageFallback` was a module-level constant, meaning all SSR requests in the same Node.js process shared the same context hash. `getOrCreateContextHash` now requires an explicit `StorageLike` argument. Callers that need in-memory fallback must create one via `createInMemoryStorage()` and keep it as an instance-level field.
-- **`BridgeManager`: `MAX_BRIDGE_POLL_ATTEMPTS` cap + instance-level `_inMemoryFallback`.** The poll loop is now a bounded `for` loop (max 200 iterations ≈ 300 s / 1.5 s interval). Previously an unbounded `for(;;)` could run forever if the signal was never fired. Each `BridgeManager` instance owns its own `_inMemoryFallback` storage to prevent SSR cross-request contamination.
+- **`BridgeManager`: `MAX_BRIDGE_POLL_ATTEMPTS` cap + instance-level `_inMemoryFallback`.** The poll loop is now a bounded `for` loop (max 200 iterations ≈ 300 s at 1.5 s interval). Previously an unbounded `for (;;)` could run forever if the signal was never fired. Each `BridgeManager` instance owns its own `_inMemoryFallback` storage to prevent SSR cross-request contamination.
 
 ### Docs
 
@@ -285,12 +211,57 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [3.1.0] — 2026-04-08
+## [3.1.5] - 2026-04-09
+
+### Fixed
+
+- **`withSseFallback` — EventSource closed on abort.** The abort handler (`onAbort`) now calls `es?.close()` before resolving with `ABORT_ERROR`. `es` is declared before the handler so the closure captures the binding by reference. Previously the EventSource stayed open if the signal was fired externally.
+- **`startEmailFallback` / `verifyEmailCode` — snake_case payload correct.** Tests aligned to reflect that the SDK sends `user_id` (snake_case) to the backend, not `userId`. Matches the SDK → backend convention.
+- **`bridge-manager.test.ts` — missing `createInMemoryStorage` mock added.** `vi.mock('../../src/core/context-hash')` now includes `createInMemoryStorage` required by `bridge-manager.ts`. 18 tests that failed due to the missing export now pass.
+- **`context-hash.test.ts` — tests aligned to the new behavior.** Removed the expectation of hash consistency across calls when storage throws. The new design has no fallback singleton; each failed call generates a fresh hash. Callers needing consistency must pass their own `createInMemoryStorage()`.
+- **`cross-device-manager.test.ts` — `pollingToken` via `X-Polling-Token` header.** Test updated to verify that when `pollingToken` is provided, the fetch-based SSE path is used (not `EventSource`), `X-Polling-Token` is sent as a header, and `getCrossDeviceStatusUrl` is called with `sessionId` only.
+
+---
+
+## [3.1.4] - 2026-04-08
+
+### Fixed
+
+- **Audit-21 — bridge terminal states, enrollment result fields, bridge discriminator.** Closes #11, #12, #15. See commit `eeb9702`.
+
+---
+
+## [3.1.3] - 2026-04-08
+
+### Fixed
+
+- **Audit wave fixes — wire types, bridge statuses, error codes.** See commit `573ec7b`.
+- **Tests updated to match audit fixes** from the previous session. See commit `2d445ea`.
+
+---
+
+## [3.1.2] - 2026-04-08
+
+### Fixed
+
+- Release-only version bump (`chore(release): 3.1.2`). No user-facing changes.
+
+---
+
+## [3.1.1] - 2026-04-08
+
+### Fixed
+
+- Release-only version bump (`chore(release): 3.1.1`). No user-facing changes.
+
+---
+
+## [3.1.0] - 2026-04-08
 
 ### Added
 
 - **Cross-device real-time push via SSE.** `crossDevice.waitForCompletion()` now opens a Server-Sent Events connection in the browser, receiving a push notification the instant the mobile device approves the session. Falls back automatically to polling when `EventSource` is unavailable (Node.js, server-side rendering). No configuration required.
-- **Polling token passed as query param for SSE.** `EventSource` cannot send custom request headers. The SDK now appends `polling_token` as a query parameter in the SSE URL so authenticated connections work without additional configuration.
+- **Polling token passed as query param for SSE.** `EventSource` cannot send custom request headers. The SDK now appends `polling_token` as a query parameter in the SSE URL so authenticated connections work without additional configuration. (Later tightened in 3.2.0 — moved to `X-Polling-Token` header on the fetch-based path.)
 
 ### Fixed
 
@@ -303,11 +274,19 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [3.0.0] — 2026-04-08
+## [3.0.1] - 2026-04-08
 
-### ⚠️ Breaking Changes
+### Fixed
+
+- Release-only version bump (`chore(release): 3.0.1`). No user-facing changes.
+
+---
+
+## [3.0.0] - 2026-04-08
 
 **All renames are intent-based — no behavior changes. Update call sites as listed.**
+
+### Changed
 
 #### `TryMellon` class — method renames
 
@@ -347,7 +326,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [2.3.6] — 2026-04-08
+## [2.3.6] - 2026-04-08
 
 ### Added
 
@@ -360,7 +339,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [2.3.0] — 2026-03-16
+## [2.3.0] - 2026-03-16
 
 ### Added
 
@@ -380,7 +359,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.7.0] — 2026-02-28
+## [1.7.0] - 2026-02-28
 
 ### Added
 
@@ -389,7 +368,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.6.0] — 2026-02-22
+## [1.6.0] - 2026-02-22
 
 ### Added
 
@@ -397,7 +376,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.5.0] — 2026-02-21
+## [1.5.0] - 2026-02-21
 
 ### Added
 
@@ -408,7 +387,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.4.5] — 2026-02-19
+## [1.4.5] - 2026-02-19
 
 ### Fixed
 
@@ -416,7 +395,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.4.4] — 2026-02-17
+## [1.4.4] - 2026-02-17
 
 ### Fixed
 
@@ -424,7 +403,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.4.0] — 2026-02-16
+## [1.4.0] - 2026-02-16
 
 ### Added
 
@@ -432,7 +411,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.3.3] — 2026-02-15
+## [1.3.3] - 2026-02-15
 
 ### Added
 
@@ -440,7 +419,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.3.0] — 2026-02-13
+## [1.3.0] - 2026-02-13
 
 ### Added
 
@@ -449,7 +428,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.2.2] — 2026-02-13
+## [1.2.2] - 2026-02-13
 
 ### Added
 
@@ -457,7 +436,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.2.0] — 2026-02-12
+## [1.2.0] - 2026-02-12
 
 ### Added
 
@@ -473,7 +452,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [1.0.0] — 2026-02-11
+## [1.0.0] - 2026-02-11
 
 ### Added
 
@@ -481,7 +460,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 
 ---
 
-## [0.1.0] — initial release
+## [0.1.0] - initial release
 
 ### Added
 
@@ -497,3 +476,36 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Newe
 - **`AbortSignal` support** on all async operations.
 - **Zero runtime dependencies.** ESM, CJS, and UMD builds. Works in browser, Node.js 18+, and Edge runtimes.
 - **TypeScript strict mode.** Complete type coverage with `Result<T, E>` on all public methods.
+
+---
+
+[Unreleased]: https://github.com/ResakaGit/trymellon-js/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.7.0...v4.0.0
+[3.7.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.6.0...v3.7.0
+[3.6.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.5.0...v3.6.0
+[3.5.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.4.0...v3.5.0
+[3.4.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.3.0...v3.4.0
+[3.3.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.2.0...v3.3.0
+[3.2.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.1.5...v3.2.0
+[3.1.5]: https://github.com/ResakaGit/trymellon-js/compare/v3.1.4...v3.1.5
+[3.1.4]: https://github.com/ResakaGit/trymellon-js/compare/v3.1.3...v3.1.4
+[3.1.3]: https://github.com/ResakaGit/trymellon-js/compare/v3.1.2...v3.1.3
+[3.1.2]: https://github.com/ResakaGit/trymellon-js/compare/v3.1.1...v3.1.2
+[3.1.1]: https://github.com/ResakaGit/trymellon-js/compare/v3.1.0...v3.1.1
+[3.1.0]: https://github.com/ResakaGit/trymellon-js/compare/v3.0.1...v3.1.0
+[3.0.1]: https://github.com/ResakaGit/trymellon-js/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/ResakaGit/trymellon-js/compare/v2.3.13...v3.0.0
+[2.3.6]: https://github.com/ResakaGit/trymellon-js/compare/v2.3.5...v2.3.6
+[2.3.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.7.0...v2.3.0
+[1.7.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.6.0...v1.7.0
+[1.6.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.4.5...v1.5.0
+[1.4.5]: https://github.com/ResakaGit/trymellon-js/compare/v1.4.4...v1.4.5
+[1.4.4]: https://github.com/ResakaGit/trymellon-js/compare/v1.4.0...v1.4.4
+[1.4.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.3.3...v1.4.0
+[1.3.3]: https://github.com/ResakaGit/trymellon-js/compare/v1.3.0...v1.3.3
+[1.3.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.2.2...v1.3.0
+[1.2.2]: https://github.com/ResakaGit/trymellon-js/compare/v1.2.0...v1.2.2
+[1.2.0]: https://github.com/ResakaGit/trymellon-js/compare/v1.0.0...v1.2.0
+[1.0.0]: https://github.com/ResakaGit/trymellon-js/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/ResakaGit/trymellon-js/releases/tag/v0.1.0

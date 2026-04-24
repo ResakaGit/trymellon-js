@@ -151,6 +151,8 @@ if (!result.ok) {
 }
 
 const { sessionToken, credentialId, userId, entityId } = result.value;
+// sessionToken is always present. entityId is optional on EnrollmentResult —
+// guard before using it if your enrollment flow does not set one.
 ```
 
 The SDK binds a SHA-256 context hash to the ticket automatically. A ticket opened in a different browser or device will fail with `CHALLENGE_MISMATCH`.
@@ -325,6 +327,8 @@ const result = await client.bridge.complete(sessionId, {
 
 if (result.ok) {
   if (result.value.kind === 'enrollment') {
+    // sessionToken is always present. credentialId, userId and entityId are
+    // optional on BridgeEnrollmentResult — guard before using them.
     const { sessionToken, credentialId, userId, entityId } = result.value;
   } else {
     const { sessionToken } = result.value; // kind === 'auth'
