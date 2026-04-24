@@ -13,7 +13,10 @@ import { createPlatform } from '../../src/platform';
 function stubFetch(responses: Array<{ status?: number; body: unknown }>): ReturnType<typeof vi.fn> {
   let call = 0;
   return vi.fn(async () => {
-    const spec = responses[Math.min(call, responses.length - 1)]!;
+    const spec = responses[Math.min(call, responses.length - 1)];
+    if (!spec) {
+      throw new Error('stubFetch requires at least one response');
+    }
     call += 1;
     return {
       ok: (spec.status ?? 200) < 400,
@@ -39,7 +42,8 @@ describe('createPlatform · createSignupLink', () => {
           ok: true,
           data: {
             session_id: 'sess-uuid',
-            hosted_url: 'https://trymellon.com/signup/sess-uuid?return=https%3A%2F%2Fintegrator.com%2Fdone',
+            hosted_url:
+              'https://trymellon.com/signup/sess-uuid?return=https%3A%2F%2Fintegrator.com%2Fdone',
             expires_in: 900,
           },
         },
@@ -103,7 +107,12 @@ describe('createPlatform · awaitSignupCompletion', () => {
   it('Given status cycles pending_passkey → completed, when awaitSignupCompletion, then resolves to completed', async () => {
     const mock = stubFetch([
       { body: { ok: true, data: { status: 'pending_passkey' } } },
-      { body: { ok: true, data: { status: 'completed', hosted_url: 'https://trymellon.com/signup/x' } } },
+      {
+        body: {
+          ok: true,
+          data: { status: 'completed', hosted_url: 'https://trymellon.com/signup/x' },
+        },
+      },
     ]);
     vi.stubGlobal('fetch', mock);
 
@@ -143,9 +152,7 @@ describe('createPlatform · awaitSignupCompletion', () => {
   });
 
   it('Given status terminal failed, when awaitSignupCompletion, then SERVER_ERROR', async () => {
-    const mock = stubFetch([
-      { body: { ok: true, data: { status: 'failed' } } },
-    ]);
+    const mock = stubFetch([{ body: { ok: true, data: { status: 'failed' } } }]);
     vi.stubGlobal('fetch', mock);
 
     const platform = createPlatform();

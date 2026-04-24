@@ -16,7 +16,7 @@ const SHA256_HEX_RE = /^[0-9a-f]{64}$/;
 export class ActionManager {
   constructor(
     private readonly apiClient: ApiClient,
-    private readonly getSessionToken: () => string | null,
+    private readonly getSessionToken: () => string | null
   ) {}
 
   /**
@@ -70,8 +70,8 @@ export class ActionManager {
       return err(
         createError(
           'INVALID_STATE',
-          'action.sign requires an active session — call signIn/signUp/enroll first.',
-        ),
+          'action.sign requires an active session — call signIn/signUp/enroll first.'
+        )
       );
     }
 
@@ -83,7 +83,7 @@ export class ActionManager {
         rp_id: opts.rpId.trim(),
         ...(opts.ttlSeconds !== undefined && { ttl_seconds: opts.ttlSeconds }),
       },
-      sessionToken,
+      sessionToken
     );
 
     if (!issueResult.ok) return err(issueResult.error);
@@ -142,7 +142,7 @@ export class ActionManager {
         },
         rp_id: opts.rpId.trim(),
       },
-      sessionToken,
+      sessionToken
     );
 
     if (!verifyResult.ok) return err(verifyResult.error);

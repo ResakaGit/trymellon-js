@@ -102,8 +102,7 @@ const DEFAULT_MESSAGES: Record<TryMellonErrorCode, string> = {
   ACTION_ALREADY_CLAIMED: 'Action challenge was already used. Request a new one.',
   ACTION_PAYLOAD_MISMATCH:
     'Payload mismatch — the signed data does not match the requested action.',
-  INVALID_STATE:
-    'Operation requires an active session — sign in first.',
+  INVALID_STATE: 'Operation requires an active session — sign in first.',
   // Email / OTP fallback + recovery
   OTP_INVALID_OR_EXPIRED: 'The verification code is invalid or has expired. Request a new one.',
   // Application rotation · JWKS validation · custom claims · introspection

@@ -63,10 +63,7 @@ interface FintechEnvelopeErr {
 
 type FintechEnvelope<T> = FintechEnvelopeOk<T> | FintechEnvelopeErr;
 
-async function fetchJson<T>(
-  url: string,
-  init: RequestInit,
-): Promise<Result<T, TryMellonError>> {
+async function fetchJson<T>(url: string, init: RequestInit): Promise<Result<T, TryMellonError>> {
   let response: Response;
   try {
     response = await fetch(url, init);
@@ -104,7 +101,7 @@ export function createPlatform(config: TryMellonPlatformConfig = {}): TryMellonP
 
   return {
     async createSignupLink(
-      opts: CreateSignupLinkOptions,
+      opts: CreateSignupLinkOptions
     ): Promise<Result<CreateSignupLinkResult, TryMellonError>> {
       // B1 fix 2026-04-23 — returnUrl opcional. Si se provee, validar client-side.
       if (opts.returnUrl !== undefined) {
@@ -145,9 +142,7 @@ export function createPlatform(config: TryMellonPlatformConfig = {}): TryMellonP
       });
     },
 
-    async getSignupStatus(
-      sessionId: string,
-    ): Promise<Result<SignupStatusResult, TryMellonError>> {
+    async getSignupStatus(sessionId: string): Promise<Result<SignupStatusResult, TryMellonError>> {
       if (!sessionId || typeof sessionId !== 'string') {
         return err(createInvalidArgumentError('sessionId', 'must be a non-empty string'));
       }
@@ -166,7 +161,7 @@ export function createPlatform(config: TryMellonPlatformConfig = {}): TryMellonP
 
     async awaitSignupCompletion(
       sessionId: string,
-      opts: AwaitSignupCompletionOptions = {},
+      opts: AwaitSignupCompletionOptions = {}
     ): Promise<Result<AwaitSignupCompletionResult, TryMellonError>> {
       const intervalMs = opts.intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
       const maxAttempts = opts.maxAttempts ?? DEFAULT_POLL_MAX_ATTEMPTS;
@@ -189,8 +184,8 @@ export function createPlatform(config: TryMellonPlatformConfig = {}): TryMellonP
           return err(
             createError(
               status === 'expired' ? 'SESSION_EXPIRED' : 'SERVER_ERROR',
-              `Signup session reached terminal state: ${status}`,
-            ),
+              `Signup session reached terminal state: ${status}`
+            )
           );
         }
 

@@ -294,7 +294,10 @@ describe('TryMellon', () => {
           Origin: 'https://app.example.com',
         })
       );
-      const [, , headers] = vi.mocked(ApiClient).mock.calls[0]!;
+      const firstCall = vi.mocked(ApiClient).mock.calls[0];
+      expect(firstCall).toBeDefined();
+      if (!firstCall) return;
+      const [, , headers] = firstCall;
       expect(headers).not.toHaveProperty('X-App-Id');
     });
 

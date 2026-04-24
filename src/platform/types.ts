@@ -37,12 +37,7 @@ export interface CreateSignupLinkResult {
   expiresInSeconds: number;
 }
 
-export type SignupStatus =
-  | 'pending_data'
-  | 'pending_passkey'
-  | 'completed'
-  | 'expired'
-  | 'failed';
+export type SignupStatus = 'pending_data' | 'pending_passkey' | 'completed' | 'expired' | 'failed';
 
 export interface SignupStatusResult {
   status: SignupStatus;
@@ -66,15 +61,13 @@ export interface AwaitSignupCompletionResult {
 
 export interface TryMellonPlatform {
   createSignupLink(
-    opts: CreateSignupLinkOptions,
+    opts: CreateSignupLinkOptions
   ): Promise<Result<CreateSignupLinkResult, TryMellonError>>;
 
-  getSignupStatus(
-    sessionId: string,
-  ): Promise<Result<SignupStatusResult, TryMellonError>>;
+  getSignupStatus(sessionId: string): Promise<Result<SignupStatusResult, TryMellonError>>;
 
   awaitSignupCompletion(
     sessionId: string,
-    opts?: AwaitSignupCompletionOptions,
+    opts?: AwaitSignupCompletionOptions
   ): Promise<Result<AwaitSignupCompletionResult, TryMellonError>>;
 }

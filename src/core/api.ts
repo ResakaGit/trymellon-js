@@ -496,12 +496,9 @@ export class ApiClient {
     body: IssueActionChallengeRequest,
     sessionToken: string
   ): Promise<Result<IssueActionChallengeResponse, TryMellonError>> {
-    return this.post(
-      '/v1/actions/challenges',
-      body,
-      validateIssueActionChallengeResponse,
-      { Authorization: `Bearer ${sessionToken}` }
-    );
+    return this.post('/v1/actions/challenges', body, validateIssueActionChallengeResponse, {
+      Authorization: `Bearer ${sessionToken}`,
+    });
   }
 
   /**

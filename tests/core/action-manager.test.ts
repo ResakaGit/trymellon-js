@@ -132,7 +132,7 @@ describe('ActionManager.sign', () => {
           rp_id: VALID_RP_ID,
           ttl_seconds: 120,
         },
-        'test-session-token',
+        'test-session-token'
       );
     });
 
@@ -162,7 +162,7 @@ describe('ActionManager.sign', () => {
             type: 'public-key',
           }),
         }),
-        'test-session-token',
+        'test-session-token'
       );
     });
 
