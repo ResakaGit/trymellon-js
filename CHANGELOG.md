@@ -1,3 +1,23 @@
+# [4.0.0](https://github.com/ResakaGit/trymellon-js/compare/v3.7.0...v4.0.0) (2026-04-24)
+
+
+### chore
+
+* **sdk:** retrigger 4.0.0 release with canonical BREAKING CHANGE footer ([f3478cb](https://github.com/ResakaGit/trymellon-js/commit/f3478cbc745a8ef7f4a88ffe1ebf27a12aae29d6))
+
+
+### BREAKING CHANGES
+
+* **sdk:** client.platform.signUp() and OnboardingManager removed
+from main client (ADR-SDK-005). Hosted onboarding moves to dedicated
+sub-path @trymellon/js/platform. TryMellonClient.platform typed never
+across all presets. X-App-Id header removed from defaultHeaders.
+ApiClient.issueActionChallenge(body, sessionToken) +
+verifyActionSignature(id, body, sessionToken) now require explicit
+session token override. See commit bfd0aba for full migration guide.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+
 # [3.7.0](https://github.com/ResakaGit/trymellon-js/compare/v3.6.0...v3.7.0) (2026-04-17)
 
 
