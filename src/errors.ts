@@ -305,6 +305,13 @@ const BACKEND_ERROR_MAP: Readonly<Record<string, TryMellonErrorCode>> = {
   // WebAuthn ceremony / credential
   credential_not_found: 'PASSKEY_NOT_FOUND',
   no_credentials: 'PASSKEY_NOT_FOUND',
+  credential_inactive: 'PASSKEY_NOT_FOUND',
+  credential_mismatch: 'PASSKEY_NOT_FOUND',
+  invalid_response: 'CHALLENGE_MISMATCH',
+  sign_count_must_increase: 'CHALLENGE_MISMATCH',
+  invalid_ceremony_type: 'INVALID_ARGUMENT',
+  session_invalid: 'SESSION_EXPIRED',
+  account_locked: 'RATE_LIMIT_EXCEEDED',
   replay_detected: 'CHALLENGE_MISMATCH',
   gone: 'CHALLENGE_MISMATCH',
   application_not_found: 'NOT_FOUND',
