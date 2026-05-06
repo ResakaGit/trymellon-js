@@ -1,3 +1,10 @@
+## [4.0.2](https://github.com/ResakaGit/trymellon-js/compare/v4.0.1...v4.0.2) (2026-05-06)
+
+
+### Bug Fixes
+
+* **errors:** map 7 missing WebAuthn backend codes to discriminated SDK codes ([cd07341](https://github.com/ResakaGit/trymellon-js/commit/cd07341c4cac76473c6d8826ce2c742e5e4129e2))
+
 # Changelog
 
 ## [4.0.1](https://github.com/ResakaGit/trymellon-js/compare/v4.0.0...v4.0.1) (2026-04-24)
